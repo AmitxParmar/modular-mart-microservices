@@ -16,7 +16,7 @@ async function bootstrap(): Promise<void> {
   app.useLogger(app.get(Logger));
 
   const configService = app.get(ConfigService);
-  const port = configService.get<number>('app.port', 3000);
+  const port = configService.get<number>('app.port', 8000);
   const nodeEnv = configService.get<string>('app.nodeEnv', 'development');
 
   // ─── Trust Proxy ───────────────────────────────────────────────────────
@@ -55,10 +55,9 @@ async function bootstrap(): Promise<void> {
 
   // ─── Start server ──────────────────────────────────────────────────────
   await app.listen(port);
-  app.get(Logger).log(
-    `🚀 API Gateway running on port ${port} [${nodeEnv}]`,
-    'Bootstrap',
-  );
+  app
+    .get(Logger)
+    .log(`🚀 API Gateway running on port ${port} [${nodeEnv}]`, 'Bootstrap');
 
   // ─── Graceful Shutdown ─────────────────────────────────────────────────
   // Lets in-flight requests complete before exit.
@@ -66,10 +65,9 @@ async function bootstrap(): Promise<void> {
   app.enableShutdownHooks();
 
   const shutdown = async (signal: string): Promise<void> => {
-    app.get(Logger).log(
-      `Received ${signal}. Shutting down gracefully…`,
-      'Bootstrap',
-    );
+    app
+      .get(Logger)
+      .log(`Received ${signal}. Shutting down gracefully…`, 'Bootstrap');
     await app.close();
     process.exit(0);
   };

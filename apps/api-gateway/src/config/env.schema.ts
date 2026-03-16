@@ -11,7 +11,7 @@ export const EnvSchema = z.object({
   NODE_ENV: z
     .enum(['development', 'production', 'test'])
     .default('development'),
-  PORT: z.coerce.number().int().min(1).max(65535).default(3000),
+  PORT: z.coerce.number().int().min(1).max(65535).default(8000),
   LOG_LEVEL: z
     .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace'])
     .default('info'),
@@ -25,11 +25,11 @@ export const EnvSchema = z.object({
 
   // ── Downstream Services ──────────────────────────────────────────────────
   // All service URLs are required in non-dev environments.
-  USER_SERVICE_URL: z.string().url().default('http://localhost:3001'),
-  PRODUCT_SERVICE_URL: z.string().url().default('http://localhost:3002'),
-  ORDER_SERVICE_URL: z.string().url().default('http://localhost:3003'),
-  PAYMENT_SERVICE_URL: z.string().url().default('http://localhost:3004'),
-  CART_SERVICE_URL: z.string().url().default('http://localhost:3005'),
+  USER_SERVICE_URL: z.url().default('http://localhost:3001'),
+  PRODUCT_SERVICE_URL: z.url().default('http://localhost:3002'),
+  ORDER_SERVICE_URL: z.url().default('http://localhost:3003'),
+  PAYMENT_SERVICE_URL: z.url().default('http://localhost:3004'),
+  CART_SERVICE_URL: z.url().default('http://localhost:3005'),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

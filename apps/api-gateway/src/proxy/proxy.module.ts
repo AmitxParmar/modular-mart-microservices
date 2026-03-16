@@ -34,7 +34,7 @@ export class ProxyModule implements NestModule {
     private readonly configService: ConfigService,
     @InjectPinoLogger(ProxyModule.name)
     private readonly logger: PinoLogger,
-  ) { }
+  ) {}
 
   configure(consumer: MiddlewareConsumer): void {
     SERVICE_ROUTES.forEach(({ pathPrefix, configKey }) => {
@@ -82,7 +82,12 @@ export class ProxyModule implements NestModule {
               proxyReq.setHeader('x-request-id', correlationId);
             }
             this.logger.debug(
-              { method: req.method, url: req.url, target: targetUrl, correlationId },
+              {
+                method: req.method,
+                url: req.url,
+                target: targetUrl,
+                correlationId,
+              },
               `Proxying request`,
             );
           },
@@ -90,7 +95,7 @@ export class ProxyModule implements NestModule {
       };
 
       consumer.apply(createProxyMiddleware(proxyOptions)).forRoutes({
-        path: `${pathPrefix}*`,
+        path: `${pathPrefix}{*rest}`,
         method: RequestMethod.ALL,
       });
 

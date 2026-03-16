@@ -1,5 +1,8 @@
 import { Module } from '@nestjs/common';
-import { ThrottlerModule as NestThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import {
+  ThrottlerModule as NestThrottlerModule,
+  ThrottlerGuard,
+} from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 

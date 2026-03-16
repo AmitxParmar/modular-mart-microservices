@@ -10,7 +10,7 @@ import { registerAs } from '@nestjs/config';
  * so parseInt / string fallbacks here are just TypeScript safety nets.
  */
 export const appConfig = registerAs('app', () => ({
-  port: parseInt(process.env.PORT ?? '3000', 10),
+  port: parseInt(process.env.PORT ?? '8000', 10),
   nodeEnv: process.env.NODE_ENV ?? 'development',
   logLevel: process.env.LOG_LEVEL ?? 'info',
 }));

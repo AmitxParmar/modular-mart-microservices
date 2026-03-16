@@ -9,22 +9,19 @@ import {
 import { Request, Response } from 'express';
 import { PinoLogger, InjectPinoLogger } from 'nestjs-pino';
 
-interface ErrorResponse {
+export interface ErrorResponse {
   statusCode: number;
   message: string | string[];
   error: string;
   timestamp: string;
   path: string;
-  /** Echo the correlation ID so clients can cross-reference logs */
   correlationId?: string;
 }
 
 /**
- * Global HTTP exception filter.
- * - Formats ALL exceptions into a consistent JSON shape
- * - Logs 5xx with full stack traces (Pino structured JSON)
- * - Logs 4xx as warnings (no stack trace spam)
- * - Includes correlationId in the response if set by CorrelationMiddleware
+ * Shared global HTTP exception filter.
+ * Formats ALL exceptions into a consistent JSON shape and logs them via Pino.
+ * Import this from @repo/common and register globally in every service.
  */
 @Injectable()
 @Catch()
@@ -51,13 +48,11 @@ export class HttpExceptionFilter implements ExceptionFilter {
         : 'Internal server error';
 
     const errorName =
-      exception instanceof HttpException
-        ? exception.name
-        : 'InternalServerError';
+      exception instanceof HttpException ? exception.name : 'InternalServerError';
 
     const correlationId = request.headers['x-request-id'] as string | undefined;
 
-    const errorResponse: ErrorResponse = {
+    const body: ErrorResponse = {
       statusCode,
       message,
       error: errorName,
@@ -68,13 +63,8 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
     if (statusCode >= HttpStatus.INTERNAL_SERVER_ERROR) {
       this.logger.error(
-        {
-          method: request.method,
-          url: request.url,
-          statusCode,
-          correlationId,
-          err: exception instanceof Error ? exception : String(exception),
-        },
+        { method: request.method, url: request.url, statusCode, correlationId,
+          err: exception instanceof Error ? exception : String(exception) },
         `Unhandled exception on ${request.method} ${request.url}`,
       );
     } else {
@@ -84,6 +74,6 @@ export class HttpExceptionFilter implements ExceptionFilter {
       );
     }
 
-    response.status(statusCode).json(errorResponse);
+    response.status(statusCode).json(body);
   }
 }
