@@ -6,7 +6,8 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-    bufferLogs: true, // Buffer logs until Pino logger is initialized
+    bufferLogs: true,
+    rawBody: true, // Required: captures raw bytes for Clerk webhook signature verification
   });
 
   // Use Pino Logger globally

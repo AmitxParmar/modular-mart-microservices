@@ -1,5 +1,5 @@
-import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { Module } from "@nestjs/common";
+import { TypeOrmModule } from "@nestjs/typeorm";
 
 /**
  * Shared DatabaseModule.
@@ -10,12 +10,16 @@ import { TypeOrmModule } from '@nestjs/typeorm';
   imports: [
     TypeOrmModule.forRootAsync({
       useFactory: () => ({
-        type: 'postgres',
+        type: "postgres",
         url: process.env.DATABASE_URL as string,
-        autoLoadEntities: true, // Automatically load entities registered in forFeature()
+        autoLoadEntities: true,
+        ssl: true,
+
+        // Automatically load entities registered in forFeature()
         // Never use synchronize: true in production. We will use migrations instead.
-        synchronize: false,
-        logging: process.env.NODE_ENV === 'development',
+        synchronize: process.env.NODE_ENV !== "production",
+        logging: process.env.NODE_ENV === "development",
+        entities: [__dirname + "/**/*.entity{.ts,.js}"],
       }),
     }),
   ],
