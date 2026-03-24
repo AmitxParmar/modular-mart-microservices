@@ -1,7 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { User, UserRole } from './entities/user.entity';
+import { User } from './entities/user.entity';
+import { Role } from './entities/role.entity';
 
 @Injectable()
 export class UsersService {
@@ -10,10 +11,21 @@ export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(Role)
+    private readonly roleRepository: Repository<Role>,
   ) {}
 
   async findByClerkId(clerkId: string): Promise<User | null> {
-    return this.userRepository.findOne({ where: { clerkId }, relations: ['addresses'] });
+    return this.userRepository.findOne({ 
+      where: { clerkId }, 
+      relations: ['addresses', 'roles'] 
+    });
+  }
+
+  async getUserRoles(clerkId: string): Promise<string[]> {
+    const user = await this.findByClerkId(clerkId);
+    if (!user || (!user.roles)) return [];
+    return user.roles.map(r => r.name);
   }
 
   async syncUserFromClerk(payload: any): Promise<void> {
@@ -46,14 +58,19 @@ export class UsersService {
         return;
       }
 
-      // Create new user
+      // Create new user and fetch default CUSTOMER Role
       user = this.userRepository.create({
         clerkId: id,
         email,
         firstName: first_name,
         lastName: last_name,
-        role: UserRole.CUSTOMER, // default role
       });
+
+      const customerRole = await this.roleRepository.findOne({ where: { name: 'CUSTOMER' } });
+      if (customerRole) {
+        user.roles = [customerRole];
+      }
+
       await this.userRepository.save(user);
       this.logger.log(`Created new user ${user.id} from Clerk webhooks`);
     }

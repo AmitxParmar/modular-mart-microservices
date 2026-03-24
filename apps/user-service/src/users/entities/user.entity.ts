@@ -1,12 +1,7 @@
-import { Entity, Column, Index, OneToMany } from 'typeorm';
+import { Entity, Column, OneToMany, ManyToMany, JoinTable, Index } from 'typeorm';
 import { BaseEntity } from '@repo/database';
 import { Address } from './address.entity';
-
-export enum UserRole {
-  CUSTOMER = 'CUSTOMER',
-  ADMIN = 'ADMIN',
-  SUPPORT = 'SUPPORT',
-}
+import { Role } from './role.entity';
 
 @Entity('users')
 export class User extends BaseEntity {
@@ -23,8 +18,9 @@ export class User extends BaseEntity {
   @Column({ nullable: true })
   lastName: string;
 
-  @Column({ type: 'enum', enum: UserRole, default: UserRole.CUSTOMER })
-  role: UserRole;
+  @ManyToMany(() => Role)
+  @JoinTable({ name: 'user_roles' })
+  roles: Role[];
 
   @OneToMany(() => Address, (address) => address.user, { cascade: true })
   addresses: Address[];

@@ -4,4 +4,5 @@
  */
 export { ClerkAuthGuard } from './clerk.guard';
 export { CurrentUser } from './current-user.decorator';
+export { Roles, RolesGuard } from './roles.guard';
 export type { ClerkUser } from './types';

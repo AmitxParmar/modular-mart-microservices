@@ -1,6 +1,7 @@
 import { DataSource } from 'typeorm';
-import { User, UserRole } from './src/users/entities/user.entity';
+import { User } from './src/users/entities/user.entity';
 import { Address } from './src/users/entities/address.entity';
+import { Role } from './src/users/entities/role.entity';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
@@ -8,8 +9,9 @@ dotenv.config();
 const AppDataSource = new DataSource({
   type: 'postgres',
   url: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/user_service_db',
-  entities: [User, Address],
+  entities: [User, Address, Role],
   synchronize: false,
+  ssl: process.env.DATABASE_URL ? true : false,
 });
 
 async function runSeed() {
@@ -18,16 +20,31 @@ async function runSeed() {
 
   const userRepository = AppDataSource.getRepository(User);
   const addressRepository = AppDataSource.getRepository(Address);
+  const roleRepository = AppDataSource.getRepository(Role);
+
+  // Seed Roles natively
+  const rolesToSeed = ['CUSTOMER', 'SELLER', 'ADMIN'];
+  for (const roleName of rolesToSeed) {
+    let role = await roleRepository.findOne({ where: { name: roleName } });
+    if (!role) {
+      role = roleRepository.create({ name: roleName, description: `Default ${roleName} role` });
+      await roleRepository.save(role);
+      console.log(`${roleName} role seeded.`);
+    }
+  }
+
+  const adminRole = await roleRepository.findOne({ where: { name: 'ADMIN' } });
+  const customerRole = await roleRepository.findOne({ where: { name: 'CUSTOMER' } });
 
   // Seed Admin
   let admin = await userRepository.findOne({ where: { email: 'admin@example.com' } });
-  if (!admin) {
+  if (!admin && adminRole) {
     admin = userRepository.create({
       clerkId: 'admin_dummy_clerk_id',
       email: 'admin@example.com',
       firstName: 'Admin',
       lastName: 'User',
-      role: UserRole.ADMIN,
+      roles: [adminRole],
     });
     await userRepository.save(admin);
     console.log('Admin user seeded.');
@@ -37,13 +54,13 @@ async function runSeed() {
 
   // Seed Customer
   let customer = await userRepository.findOne({ where: { email: 'customer@example.com' } });
-  if (!customer) {
+  if (!customer && customerRole) {
     customer = userRepository.create({
       clerkId: 'customer_dummy_clerk_id',
       email: 'customer@example.com',
       firstName: 'Customer',
       lastName: 'User',
-      role: UserRole.CUSTOMER,
+      roles: [customerRole],
     });
     customer = await userRepository.save(customer);
     console.log('Customer user seeded.');

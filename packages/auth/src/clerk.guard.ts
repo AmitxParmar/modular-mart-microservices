@@ -3,25 +3,21 @@ import {
   ExecutionContext,
   Injectable,
   UnauthorizedException,
-} from '@nestjs/common';
-import { createClerkClient } from '@clerk/backend';
-import type { Request } from 'express';
-import type { ClerkUser } from './types';
+  Logger,
+} from "@nestjs/common";
+import { createClerkClient, verifyToken } from "@clerk/backend";
+import type { Request } from "express";
+import type { ClerkUser } from "./types";
 
 /**
  * ClerkAuthGuard
  *
  * Verifies the Clerk-issued JWT from the `Authorization: Bearer <token>` header.
  * Attaches the verified payload to `request.auth` for downstream use via @CurrentUser().
- *
- * Usage — apply to a controller or individual route:
- * @UseGuards(ClerkAuthGuard)
- *
- * The guard reads CLERK_SECRET_KEY from process.env at construction time.
- * Ensure it is set before the NestJS app bootstraps.
  */
 @Injectable()
 export class ClerkAuthGuard implements CanActivate {
+  private readonly logger = new Logger(ClerkAuthGuard.name);
   private readonly clerk = createClerkClient({
     secretKey: process.env.CLERK_SECRET_KEY,
   });
@@ -31,27 +27,44 @@ export class ClerkAuthGuard implements CanActivate {
 
     const token = this.extractBearerToken(request);
     if (!token) {
-      throw new UnauthorizedException('Missing or malformed Authorization header.');
+      throw new UnauthorizedException(
+        "Missing or malformed Authorization header.",
+      );
     }
 
     try {
-      const payload = await this.clerk.clients.verifyClient(token);
+      // 1. Verify the JWT cryptographically locally without a network request
+      const payload = await verifyToken(token, {
+        secretKey: process.env.CLERK_SECRET_KEY,
+      });
 
-      // Attach to request so @CurrentUser() can read it
+      const userId = payload.sub;
+
+      // 2. Attach to request so @CurrentUser() can read it
       (request as Request & { auth: ClerkUser }).auth = {
-        userId: payload.id,
-        sessionId: payload.lastActiveSessionId ?? '',
+        userId,
+        sessionId: payload.sid,
+        // Role is now resolved statelessly by RolesGuard via MessagePattern
       };
 
       return true;
-    } catch {
-      throw new UnauthorizedException('Invalid or expired Clerk session token.');
+    } catch (err) {
+      if (err instanceof Error) {
+        this.logger.error(`Clerk auth verification failed: ${err.message}`);
+        throw new UnauthorizedException(
+          "Invalid or expired Clerk session token.",
+        );
+      }
+      this.logger.error(`Clerk auth verification failed: ${err}`);
+      throw new UnauthorizedException(
+        "Invalid or expired Clerk session token.",
+      );
     }
   }
 
   private extractBearerToken(request: Request): string | null {
     const authHeader = request.headers.authorization;
-    if (!authHeader?.startsWith('Bearer ')) return null;
+    if (!authHeader?.startsWith("Bearer ")) return null;
     const token = authHeader.slice(7).trim();
     return token.length > 0 ? token : null;
   }

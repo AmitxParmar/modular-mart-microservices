@@ -10,6 +10,7 @@ import {
   NotFoundException,
   UseGuards,
 } from '@nestjs/common';
+import { MessagePattern, Payload } from '@nestjs/microservices';
 import { UsersService } from './users.service';
 import { Webhook } from 'svix';
 import { ConfigService } from '@nestjs/config';
@@ -24,6 +25,12 @@ export class UsersController {
     private readonly usersService: UsersService,
     private readonly configService: ConfigService,
   ) {}
+
+  @MessagePattern('get_user_role')
+  async getUserRole(@Payload() data: { userId: string }): Promise<string[]> {
+    this.logger.log(`Received internal role request for ${data.userId}`);
+    return this.usersService.getUserRoles(data.userId);
+  }
 
   @Get('me')
   @UseGuards(ClerkAuthGuard)

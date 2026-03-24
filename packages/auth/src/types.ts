@@ -9,4 +9,6 @@ export interface ClerkUser {
   userId: string;
   /** The Clerk session ID */
   sessionId: string;
+  /** Custom Role retrieved from Clerk publicMetadata */
+  role?: string;
 }
