@@ -1,3 +1,4 @@
+'use client';
 import type { Product } from '@/types/api';
 import { ProductCard } from './product-card';
 

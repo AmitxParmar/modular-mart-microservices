@@ -1,3 +1,4 @@
+'use client'
 import type { Order } from '@/types/api';
 import { OrderStatusBadge } from './order-status-badge';
 import { Package, ChevronDown, ChevronUp } from 'lucide-react';
