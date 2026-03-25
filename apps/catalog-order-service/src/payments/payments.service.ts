@@ -1,58 +1,59 @@
-import { Injectable, Inject, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ClientProxy } from '@nestjs/microservices';
+import { Logger } from '@repo/common';
+import { EVENT_PATTERNS, PaymentSucceededEvent } from '@repo/contracts';
 import { Payment, PaymentStatus } from './entities/payment.entity';
-import { Order, OrderStatus } from '../orders/entities/order.entity';
 
 @Injectable()
 export class PaymentsService {
-  private readonly logger = new Logger(PaymentsService.name);
-
   constructor(
-    @InjectRepository(Payment) private readonly paymentRepo: Repository<Payment>,
-    @InjectRepository(Order) private readonly orderRepo: Repository<Order>,
+    private readonly logger: Logger,
+    @InjectRepository(Payment)
+    private readonly paymentRepo: Repository<Payment>,
     @Inject('RABBITMQ_SERVICE') private readonly rabbitClient: ClientProxy,
   ) {}
 
   async handleStripeWebhook(event: any) {
-    // In a real scenario, you verify the Stripe signature securely here
-    // using stripe.webhooks.constructEvent(...)
-    
     if (event.type === 'payment_intent.succeeded') {
       const paymentIntent = event.data.object;
       const orderId = paymentIntent.metadata.orderId;
+      const userId = paymentIntent.metadata.userId; // Assuming userId is passed via metadata
 
       if (!orderId) {
-        this.logger.warn(`Payment succeeded but no orderId found in metadata for intent ${paymentIntent.id}`);
+        this.logger.warn(
+          `Payment succeeded but no orderId found in metadata for intent ${paymentIntent.id}`,
+        );
         return;
       }
 
-      const order = await this.orderRepo.findOne({ where: { id: orderId } });
-      if (!order) throw new NotFoundException('Order not found for payment update');
+      // Create Payment Record (Independent domain)
+      const amountPaid = paymentIntent.amount / 100; // Stripe defaults to cents
 
-      // Update Order Status
-      order.status = OrderStatus.PAID;
-      await this.orderRepo.save(order);
-
-      // Create Payment Record
       const payment = this.paymentRepo.create({
-        orderId: order.id,
-        amount: order.totalAmount, // Usually matches paymentIntent.amount / 100
+        orderId,
+        amount: amountPaid,
         status: PaymentStatus.SUCCESS,
         stripePaymentIntentId: paymentIntent.id,
       });
       await this.paymentRepo.save(payment);
 
-      this.logger.log(`Order ${order.id} marked as PAID. Publishing RabbitMQ event.`);
+      this.logger.log(
+        `Payment record created for Order ${orderId}. Publishing RabbitMQ event for Saga choreography.`,
+      );
 
-      // Publish RabbitMQ Event to notification-service
-      this.rabbitClient.emit('order_paid', {
-        orderId: order.id,
-        userId: order.userId,
-        amount: order.totalAmount,
-        timestamp: new Date().toISOString(),
-      });
+      // Publish RabbitMQ Event via Contracts
+      const payload: PaymentSucceededEvent = {
+        orderId,
+        userId: userId || 'unknown',
+        paymentId: payment.id,
+        amount: amountPaid,
+        currency: 'USD',
+        paidAt: new Date().toISOString(),
+      };
+
+      this.rabbitClient.emit(EVENT_PATTERNS.PAYMENT_SUCCEEDED, payload);
     }
   }
 }

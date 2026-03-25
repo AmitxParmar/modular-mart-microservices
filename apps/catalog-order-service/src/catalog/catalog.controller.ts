@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Param, Query, Body, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Param,
+  Query,
+  Body,
+  UseGuards,
+} from '@nestjs/common';
 import { CatalogService } from './catalog.service';
 import { ClerkAuthGuard, CurrentUser } from '@repo/auth';
 import type { ClerkUser } from '@repo/auth';

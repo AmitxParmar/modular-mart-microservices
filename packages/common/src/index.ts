@@ -16,3 +16,4 @@ export { HealthModule } from './health/health.module';
 
 // Logger
 export { createLoggerConfig } from './logger/logger.config';
+export { Logger } from 'nestjs-pino';

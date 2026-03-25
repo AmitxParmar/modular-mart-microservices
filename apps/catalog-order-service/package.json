@@ -33,6 +33,7 @@
     "@nestjs/typeorm": "^11.0.0",
     "@repo/auth": "workspace:^",
     "@repo/common": "workspace:^",
+    "@repo/contracts": "workspace:*",
     "@repo/database": "workspace:^",
     "@types/dotenv": "^8.2.3",
     "amqp-connection-manager": "^5.0.0",

@@ -5,7 +5,6 @@ import {
   Headers,
   Get,
   UnauthorizedException,
-  Logger,
   HttpCode,
   NotFoundException,
   UseGuards,
@@ -14,20 +13,22 @@ import { MessagePattern, Payload } from '@nestjs/microservices';
 import { UsersService } from './users.service';
 import { Webhook } from 'svix';
 import { ConfigService } from '@nestjs/config';
+import { Logger } from '@repo/common';
 import { CurrentUser, ClerkAuthGuard } from '@repo/auth';
+import { EVENT_PATTERNS } from '@repo/contracts';
+import type { GetUserRolePayload, GetUserRoleResponse } from '@repo/contracts';
 import type { ClerkUser } from '@repo/auth';
 
 @Controller('users')
 export class UsersController {
-  private readonly logger = new Logger(UsersController.name);
-
   constructor(
+    private readonly logger: Logger,
     private readonly usersService: UsersService,
     private readonly configService: ConfigService,
   ) {}
 
-  @MessagePattern('get_user_role')
-  async getUserRole(@Payload() data: { userId: string }): Promise<string[]> {
+  @MessagePattern(EVENT_PATTERNS.GET_USER_ROLE)
+  async getUserRole(@Payload() data: GetUserRolePayload): Promise<GetUserRoleResponse> {
     this.logger.log(`Received internal role request for ${data.userId}`);
     return this.usersService.getUserRoles(data.userId);
   }

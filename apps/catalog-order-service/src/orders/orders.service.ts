@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
+import { Logger } from '@repo/common';
 import { Order, OrderStatus } from './entities/order.entity';
 import { OrderItem } from './entities/order-item.entity';
 import { Product } from '../catalog/entities/product.entity';
@@ -9,6 +10,7 @@ import { CreateOrderDto } from './dto/create-order.dto';
 @Injectable()
 export class OrdersService {
   constructor(
+    private readonly logger: Logger,
     @InjectRepository(Order) private readonly orderRepo: Repository<Order>,
     private readonly dataSource: DataSource,
   ) {}
@@ -78,5 +80,16 @@ export class OrdersService {
 
     if (!order) throw new NotFoundException('Order not found');
     return order;
+  }
+
+  async markOrderAsPaid(orderId: string): Promise<void> {
+    const order = await this.orderRepo.findOne({ where: { id: orderId } });
+    if (order && order.status === OrderStatus.PENDING) {
+      order.status = OrderStatus.PAID;
+      await this.orderRepo.save(order);
+      this.logger.log(`Saga Event Processed: Order ${orderId} successfully marked as PAID.`);
+    } else {
+      this.logger.warn(`Saga Event Ignored: Order ${orderId} not found or not in PENDING status.`);
+    }
   }
 }

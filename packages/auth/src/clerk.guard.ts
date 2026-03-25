@@ -3,8 +3,8 @@ import {
   ExecutionContext,
   Injectable,
   UnauthorizedException,
-  Logger,
 } from "@nestjs/common";
+import { Logger } from "@repo/common";
 import { createClerkClient, verifyToken } from "@clerk/backend";
 import type { Request } from "express";
 import type { ClerkUser } from "./types";
@@ -17,10 +17,11 @@ import type { ClerkUser } from "./types";
  */
 @Injectable()
 export class ClerkAuthGuard implements CanActivate {
-  private readonly logger = new Logger(ClerkAuthGuard.name);
   private readonly clerk = createClerkClient({
     secretKey: process.env.CLERK_SECRET_KEY,
   });
+
+  constructor(private readonly logger: Logger) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();

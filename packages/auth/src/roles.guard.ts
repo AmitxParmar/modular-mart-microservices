@@ -1,7 +1,9 @@
-import { SetMetadata, Injectable, CanActivate, ExecutionContext, Inject, Logger } from '@nestjs/common';
+import { SetMetadata, Injectable, CanActivate, ExecutionContext, Inject } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
+import { Logger } from '@repo/common';
+import { EVENT_PATTERNS } from '@repo/contracts';
 import type { Request } from 'express';
 import type { ClerkUser } from './types';
 
@@ -10,9 +12,8 @@ export const Roles = (...roles: string[]) => SetMetadata(ROLES_KEY, roles);
 
 @Injectable()
 export class RolesGuard implements CanActivate {
-  private readonly logger = new Logger(RolesGuard.name);
-
   constructor(
+    private readonly logger: Logger,
     private reflector: Reflector,
     @Inject('AUTH_SERVICE') private readonly authClient: ClientProxy, // Must be provided by consuming app
   ) {}
@@ -38,7 +39,7 @@ export class RolesGuard implements CanActivate {
     // Ping the user-service to fetch relational roles via TCP!
     try {
       const roles: string[] = await firstValueFrom(
-        this.authClient.send('get_user_role', { userId: auth.userId })
+        this.authClient.send(EVENT_PATTERNS.GET_USER_ROLE, { userId: auth.userId })
       );
 
       auth.role = roles.length > 0 ? roles[0] : undefined; // Attach it for potential downstream controllers

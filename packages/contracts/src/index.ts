@@ -13,16 +13,24 @@ export const EVENT_PATTERNS = {
   USER_CREATED: 'user.created',
   USER_UPDATED: 'user.updated',
   USER_DELETED: 'user.deleted',
+  GET_USER_ROLE: 'user.get_role',
   ORDER_CREATED: 'order.created',
   ORDER_STATUS_UPDATED: 'order.status_updated',
   ORDER_CANCELLED: 'order.cancelled',
   STOCK_RESERVED: 'stock.reserved',
   STOCK_RELEASED: 'stock.released',
+  ORDER_PAID: 'order.paid',
   PAYMENT_SUCCEEDED: 'payment.succeeded',
   PAYMENT_FAILED: 'payment.failed',
 } as const;
 
 export type EventPattern = (typeof EVENT_PATTERNS)[keyof typeof EVENT_PATTERNS];
+
+export interface GetUserRolePayload {
+  userId: string;
+}
+
+export type GetUserRoleResponse = string[];
 
 // ─── User Events ──────────────────────────────────────────────────────────────
 

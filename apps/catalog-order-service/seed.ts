@@ -13,7 +13,7 @@ const AppDataSource = new DataSource({
   entities: [Category, Product],
   synchronize: true, // Use synchronize: true ONLY for seeding scripts in dev
   logging: true,
-  ssl: process.env.DATABASE_URL?.includes('neon.tech') ? true : false,
+  ssl: true,
 });
 
 async function main() {

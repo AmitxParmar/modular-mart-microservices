@@ -1,12 +1,25 @@
 import { Controller, Post, Get, Param, Body, UseGuards } from '@nestjs/common';
+import { EventPattern, Payload } from '@nestjs/microservices';
+import { Logger } from '@repo/common';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { ClerkAuthGuard, CurrentUser } from '@repo/auth';
+import { EVENT_PATTERNS } from '@repo/contracts';
+import type { PaymentSucceededEvent } from '@repo/contracts';
 import type { ClerkUser } from '@repo/auth';
 
 @Controller('orders')
 export class OrdersController {
-  constructor(private readonly ordersService: OrdersService) {}
+  constructor(
+    private readonly logger: Logger,
+    private readonly ordersService: OrdersService
+  ) {}
+
+  @EventPattern(EVENT_PATTERNS.PAYMENT_SUCCEEDED)
+  async handlePaymentSucceeded(@Payload() data: PaymentSucceededEvent) {
+    this.logger.log(`Received PAYMENT_SUCCEEDED RMQ event for Order ${data.orderId}`);
+    await this.ordersService.markOrderAsPaid(data.orderId);
+  }
 
   @Post()
   @UseGuards(ClerkAuthGuard)
