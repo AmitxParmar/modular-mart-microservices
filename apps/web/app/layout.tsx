@@ -6,7 +6,7 @@ import ThemeProvider from "@/providers/theme-provider";
 import { cn } from "@/lib/utils";
 import Header from "@/common/header";
 import { AuthDialogProvider } from "@/features/auth/auth-dialog-context";
-import { AuthDialog } from "@/features/auth/AuthDialog";
+import { AuthDialog } from "@/features/auth/auth-dialog";
 import Sidebar from "@/common/sidebar";
 
 const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono' });
