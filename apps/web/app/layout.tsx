@@ -26,6 +26,8 @@ export const metadata: Metadata = {
   description: "Microservices based E-commerce Application",
 };
 
+import { AppProviders } from "@/providers/app-providers";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -41,20 +43,22 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <ClerkProvider>
-            <AuthDialogProvider>
+            <AppProviders>
+              <AuthDialogProvider>
 
-              <Header />
+                <Header />
 
-              <div className="container mx-auto flex flex-1 w-full mt-6 gap-8 px-4 pb-12">
-                <Sidebar />
-                <main className="flex-1 w-full min-w-0">
-                  {children}
-                </main>
-              </div>
+                <div className="container mx-auto flex flex-1 w-full mt-6 gap-8 px-4 pb-12">
+                  <Sidebar />
+                  <main className="flex-1 w-full min-w-0">
+                    {children}
+                  </main>
+                </div>
 
-              <AuthDialog />
+                <AuthDialog />
 
-            </AuthDialogProvider>
+              </AuthDialogProvider>
+            </AppProviders>
           </ClerkProvider>
         </ThemeProvider>
       </body>
