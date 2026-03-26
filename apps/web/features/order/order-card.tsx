@@ -22,7 +22,7 @@ function formatDate(iso: string) {
 
 export function OrderCard({ order }: OrderCardProps) {
   const [expanded, setExpanded] = useState(false);
-  const shortId = order.id.split('-')[0].toUpperCase();
+  const shortId = (order.id.split('-')[0] || '').toUpperCase();
 
   return (
     <div className="bg-card border border-border overflow-hidden transition-all duration-200 hover:border-primary/30">

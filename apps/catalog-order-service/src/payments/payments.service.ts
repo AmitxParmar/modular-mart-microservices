@@ -2,14 +2,15 @@ import { Injectable, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ClientProxy } from '@nestjs/microservices';
-import { Logger } from '@repo/common';
 import { EVENT_PATTERNS, PaymentSucceededEvent } from '@repo/contracts';
 import { Payment, PaymentStatus } from './entities/payment.entity';
+import { InjectPinoLogger, PinoLogger } from '@repo/common';
 
 @Injectable()
 export class PaymentsService {
   constructor(
-    private readonly logger: Logger,
+    @InjectPinoLogger(PaymentsService.name)
+    private readonly logger: PinoLogger,
     @InjectRepository(Payment)
     private readonly paymentRepo: Repository<Payment>,
     @Inject('RABBITMQ_SERVICE') private readonly rabbitClient: ClientProxy,
@@ -39,7 +40,7 @@ export class PaymentsService {
       });
       await this.paymentRepo.save(payment);
 
-      this.logger.log(
+      this.logger.info(
         `Payment record created for Order ${orderId}. Publishing RabbitMQ event for Saga choreography.`,
       );
 

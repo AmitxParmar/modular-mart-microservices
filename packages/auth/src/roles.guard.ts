@@ -1,36 +1,44 @@
-import { SetMetadata, Injectable, CanActivate, ExecutionContext, Inject } from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
-import { ClientProxy } from '@nestjs/microservices';
-import { firstValueFrom } from 'rxjs';
-import { Logger } from '@repo/common';
-import { EVENT_PATTERNS } from '@repo/contracts';
-import type { Request } from 'express';
-import type { ClerkUser } from './types';
+import {
+  SetMetadata,
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  Inject,
+} from "@nestjs/common";
+import { Reflector } from "@nestjs/core";
+import { ClientProxy } from "@nestjs/microservices";
+import { firstValueFrom } from "rxjs";
+import { EVENT_PATTERNS } from "@repo/contracts";
+import type { Request } from "express";
+import type { ClerkUser } from "./types";
+import { PinoLogger } from "nestjs-pino";
 
-export const ROLES_KEY = 'roles';
+export const ROLES_KEY = "roles";
 export const Roles = (...roles: string[]) => SetMetadata(ROLES_KEY, roles);
 
 @Injectable()
 export class RolesGuard implements CanActivate {
   constructor(
-    private readonly logger: Logger,
+    private readonly logger: PinoLogger,
     private reflector: Reflector,
-    @Inject('AUTH_SERVICE') private readonly authClient: ClientProxy, // Must be provided by consuming app
+    @Inject("AUTH_SERVICE") private readonly authClient: ClientProxy, // Must be provided by consuming app
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const requiredRoles = this.reflector.getAllAndOverride<string[]>(ROLES_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
-    
+    const requiredRoles = this.reflector.getAllAndOverride<string[]>(
+      ROLES_KEY,
+      [context.getHandler(), context.getClass()],
+    );
+
     // If no roles are required, allow access
     if (!requiredRoles || requiredRoles.length === 0) {
       return true;
     }
 
-    const { auth } = context.switchToHttp().getRequest<Request & { auth?: ClerkUser }>();
-    
+    const { auth } = context
+      .switchToHttp()
+      .getRequest<Request & { auth?: ClerkUser }>();
+
     // If user is not authenticated natively, deny
     if (!auth || !auth.userId) {
       return false;
@@ -39,7 +47,9 @@ export class RolesGuard implements CanActivate {
     // Ping the user-service to fetch relational roles via TCP!
     try {
       const roles: string[] = await firstValueFrom(
-        this.authClient.send(EVENT_PATTERNS.GET_USER_ROLE, { userId: auth.userId })
+        this.authClient.send(EVENT_PATTERNS.GET_USER_ROLE, {
+          userId: auth.userId,
+        }),
       );
 
       auth.role = roles.length > 0 ? roles[0] : undefined; // Attach it for potential downstream controllers

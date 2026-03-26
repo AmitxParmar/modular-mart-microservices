@@ -1,6 +1,7 @@
 'use client';
 import type { Product } from '@/types/api';
 import { ShoppingCart, Tag } from 'lucide-react';
+import { useCart } from '@/hooks/use-cart';
 
 interface ProductCardProps {
   product: Product;
@@ -31,6 +32,12 @@ function StockBadge({ qty }: { qty: number }) {
 
 export function ProductCard({ product, onAddToCart }: ProductCardProps) {
   const inStock = product.stockQuantity > 0;
+  const { addItem } = useCart();
+
+  const handleAddToCart = () => {
+    addItem(product);
+    onAddToCart?.(product);
+  };
 
   return (
     <div className="group flex flex-col bg-card border border-border hover:border-primary/40 hover:shadow-md transition-all duration-200 overflow-hidden">
@@ -72,7 +79,7 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
         </div>
 
         <button
-          onClick={() => onAddToCart?.(product)}
+          onClick={handleAddToCart}
           disabled={!inStock}
           className="mt-2 w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
