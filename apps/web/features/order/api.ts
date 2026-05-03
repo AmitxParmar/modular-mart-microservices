@@ -1,6 +1,6 @@
 import { api } from '@/lib/api-client';
 import { ENDPOINTS } from '@/lib/endpoints';
-import type { Order, OrderItem } from '@/types/api';
+import type { Order } from '@/types/api';
 
 export interface CreateOrderPayload {
   items: { productId: string; quantity: number }[];
