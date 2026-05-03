@@ -12,6 +12,8 @@ export const envSchema = z.object({
     .url()
     .default('postgresql://postgres:postgres@localhost:5432'),
   RABBITMQ_URL: z.url().default('amqp://user:password@localhost:5672'),
+  STRIPE_SECRET_KEY: z.string().min(1),
+  STRIPE_WEBHOOK_SECRET: z.string().min(1),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;

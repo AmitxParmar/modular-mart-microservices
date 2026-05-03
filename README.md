@@ -1,159 +1,105 @@
-# Turborepo starter
+# 🛒 Modular Mart (E-Commerce Microservices)
 
-This Turborepo starter is maintained by the Turborepo core team.
+## 🧠 System Overview
+A microservices-based e-commerce platform where:
 
-## Using this example
+- **API Gateway** handles incoming requests, routing, and security.
+- **User Service** manages user profiles and preferences.
+- **Catalog & Order Service** processes product inventory, checkout, and integrates with **Stripe** for payments.
+- **Next.js Web App** serves as the customer-facing storefront.
+- **PostgreSQL** stores structured application data.
+- **RabbitMQ** enables asynchronous, event-driven communication (e.g., `PAYMENT_SUCCEEDED`).
+- **Clerk** handles authentication and identity management.
 
-Run the following command:
+> Services communicate via REST for synchronous reads/writes, and via RabbitMQ for asynchronous event choreography.
 
-```sh
-npx create-turbo@latest
+---
+
+## 🏗 Architecture Diagram
+```mermaid
+flowchart LR
+    Client[Web Frontend] --> API[API Gateway]
+    API --> Auth[Clerk Auth]
+    API --> User[User Service]
+    API --> Catalog[Catalog & Order Service]
+    
+    User --> DB[(PostgreSQL)]
+    Catalog --> DB
+    
+    Catalog -- Events --> RMQ[RabbitMQ]
+    RMQ -- Sagas --> Catalog
+    Catalog <--> Stripe[Stripe Payments]
 ```
 
-## What's inside?
+---
 
-This Turborepo includes the following packages/apps:
+## 🔄 Request Flow (Checkout & Payment)
+```mermaid
+sequenceDiagram
+    participant U as User (Frontend)
+    participant API as API Gateway
+    participant Order as Catalog/Order Service
+    participant Stripe as Stripe
+    participant RMQ as RabbitMQ
 
-### Apps and Packages
-
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
-
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo build
+    U->>API: POST /orders
+    API->>Order: Forward Request
+    Order->>Order: Lock Product & Check Stock
+    Order->>Order: Save Order (PENDING)
+    Order-->>API: Order Created
+    API-->>U: 201 Created (Order ID)
+    
+    U->>API: POST /payments/create-intent
+    API->>Order: Create Stripe Intent
+    Order->>Stripe: Request Client Secret
+    Stripe-->>Order: clientSecret
+    Order-->>U: Return clientSecret
+    
+    U->>Stripe: Confirm Payment (Client-side)
+    Stripe->>Order: Webhook: payment_intent.succeeded
+    Order->>RMQ: Publish PAYMENT_SUCCEEDED
+    RMQ->>Order: Handle Event
+    Order->>Order: Mark Order as PAID
 ```
 
-Without global `turbo`, use your package manager:
+---
 
-```sh
-cd my-turborepo
-npx turbo build
-yarn dlx turbo build
-pnpm exec turbo build
+## 🧩 Services
+
+| Service / App | Responsibility | Tech Stack |
+| --- | --- | --- |
+| **API Gateway** | Routing, auth verification, request forwarding | NestJS |
+| **Web** | Customer-facing storefront | Next.js, React, Tailwind |
+| **User Service** | User profile management | NestJS, PostgreSQL |
+| **Catalog/Order Service** | Product management, orders, Stripe payments | NestJS, PostgreSQL, Stripe |
+| **Database** | Core data storage | PostgreSQL |
+| **Message Broker** | Asynchronous event processing | RabbitMQ |
+
+---
+
+## 📁 Project Structure
+
+```text
+e-commerce-microservices/
+├── apps/
+│   ├── api-gateway/            # Central entry point for client requests
+│   ├── catalog-order-service/  # Manages products, orders, and payments
+│   ├── user-service/           # Manages user profiles
+│   ├── web/                    # Next.js storefront
+│   └── docs/                   # Next.js documentation site
+├── packages/
+│   ├── auth/                   # Shared Clerk auth guards and utilities
+│   ├── common/                 # Shared logging, middlewares, filters
+│   ├── contracts/              # Shared RabbitMQ event payloads and patterns
+│   ├── database/               # Shared TypeORM config and migrations
+│   └── ui/                     # Shared React components
+└── turbo.json                  # Turborepo build pipeline configuration
 ```
 
-You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+---
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo build --filter=docs
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo build --filter=docs
-yarn exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-```
-
-### Develop
-
-To develop all apps and packages, run the following command:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo dev
-```
-
-Without global `turbo`, use your package manager:
-
-```sh
-cd my-turborepo
-npx turbo dev
-yarn exec turbo dev
-pnpm exec turbo dev
-```
-
-You can develop a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo dev --filter=web
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo dev --filter=web
-yarn exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-```
-
-### Remote Caching
-
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo login
-```
-
-Without global `turbo`, use your package manager:
-
-```sh
-cd my-turborepo
-npx turbo login
-yarn exec turbo login
-pnpm exec turbo login
-```
-
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo link
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo link
-yarn exec turbo link
-pnpm exec turbo link
-```
-
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
-- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
+## 🎯 Design Decisions
+- **Monorepo (Turborepo)**: Simplifies code sharing (DTOs, interfaces, UI components) across services while maintaining independent build pipelines.
+- **Event-Driven Microservices**: Uses RabbitMQ for event-driven patterns to decouple domains (e.g., separating payment fulfillment from order status updates).
+- **Pessimistic Database Locking**: Prevents race conditions during checkout (e.g., overselling a product) by using row-level locks via TypeORM.
+- **Offloaded Authentication**: Uses Clerk to offload the complexity of credential management, password resets, and session handling.
