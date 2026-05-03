@@ -2,51 +2,61 @@
 
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
+import { Check } from "lucide-react";
 
 export default function Sidebar() {
     return (
-        <aside className="hidden lg:block w-72 shrink-0 ml-4">
-            <div className="sticky top-24 flex flex-col gap-10 bg-card/60 backdrop-blur-2xl p-6 rounded-2xl shadow-md border border-border/40 border-b-4 border-b-primary/40">
+        <aside className="hidden lg:block w-64 shrink-0">
+            <div className="sticky top-28 flex flex-col gap-12 pr-6">
 
                 {/* Categories Filter */}
                 <div>
-                    <h3 className="text-sm font-bold uppercase tracking-widest text-primary mb-4 pb-3 border-b-2 border-border/60">Categories</h3>
-                    <ul className="space-y-3 text-sm text-muted-foreground font-medium">
+                    <h3 className="text-xs font-bold uppercase tracking-widest text-foreground mb-4">Categories</h3>
+                    <ul className="space-y-3 text-sm text-muted-foreground">
                         <li>
-                            <Link href="/products/new" className="hover:text-primary transition-colors block px-2 py-1 rounded-md hover:bg-primary/5">New Arrivals</Link>
+                            <Link href="/products/new" className="hover:text-primary transition-colors block">New Arrivals</Link>
                         </li>
                         <li>
-                            <Link href="/products/men" className="hover:text-primary transition-colors block px-2 py-1 rounded-md hover:bg-primary/5">Men's Fashion</Link>
+                            <Link href="/products/men" className="hover:text-primary transition-colors block">Men&apos;s Fashion</Link>
                         </li>
                         <li>
-                            <Link href="/products/women" className="hover:text-primary transition-colors block px-2 py-1 rounded-md hover:bg-primary/5">Women's Fashion</Link>
+                            <Link href="/products/women" className="hover:text-primary transition-colors block">Women&apos;s Fashion</Link>
                         </li>
                         <li>
-                            <Link href="/products/electronics" className="hover:text-primary transition-colors block px-2 py-1 rounded-md hover:bg-primary/5">Electronics</Link>
+                            <Link href="/products/electronics" className="hover:text-primary transition-colors block">Electronics</Link>
                         </li>
                         <li>
-                            <Link href="/products/home" className="hover:text-primary transition-colors block px-2 py-1 rounded-md hover:bg-primary/5">Home & Living</Link>
+                            <Link href="/products/home" className="hover:text-primary transition-colors block">Home & Living</Link>
                         </li>
                         <li>
-                            <Link href="/products/accessories" className="hover:text-primary transition-colors block px-2 py-1 rounded-md hover:bg-primary/5">Accessories</Link>
+                            <Link href="/products/accessories" className="hover:text-primary transition-colors block">Accessories</Link>
                         </li>
                     </ul>
                 </div>
 
                 {/* Price Filter */}
                 <div>
-                    <h3 className="text-sm font-bold uppercase tracking-widest text-primary mb-4 pb-3 border-b-2 border-border/60">Price Range</h3>
-                    <div className="space-y-4 text-sm text-muted-foreground font-medium px-2">
+                    <h3 className="text-xs font-bold uppercase tracking-widest text-foreground mb-4">Price Range</h3>
+                    <div className="space-y-4 text-sm text-muted-foreground">
                         <label className="flex items-center gap-3 cursor-pointer group">
-                            <Input type="checkbox" className="!w-5 !h-5 !rounded-md border-input text-primary focus:ring-primary cursor-pointer transition-shadow" />
+                            <div className="relative flex items-center justify-center w-5 h-5 border border-border rounded transition-colors group-hover:border-primary">
+                                <Input type="checkbox" className="absolute opacity-0 w-full h-full cursor-pointer peer" />
+                                <Check className="w-3 h-3 text-primary opacity-0 peer-checked:opacity-100 transition-opacity" />
+                            </div>
                             <span className="group-hover:text-foreground transition-colors">Under $50</span>
                         </label>
                         <label className="flex items-center gap-3 cursor-pointer group">
-                            <Input type="checkbox" className="!w-5 !h-5 !rounded-md border-input text-primary focus:ring-primary cursor-pointer transition-shadow" />
+                            <div className="relative flex items-center justify-center w-5 h-5 border border-border rounded transition-colors group-hover:border-primary">
+                                <Input type="checkbox" className="absolute opacity-0 w-full h-full cursor-pointer peer" />
+                                <Check className="w-3 h-3 text-primary opacity-0 peer-checked:opacity-100 transition-opacity" />
+                            </div>
                             <span className="group-hover:text-foreground transition-colors">$50 - $100</span>
                         </label>
                         <label className="flex items-center gap-3 cursor-pointer group">
-                            <Input type="checkbox" className="!w-5 !h-5 !rounded-md border-input text-primary focus:ring-primary cursor-pointer transition-shadow" />
+                            <div className="relative flex items-center justify-center w-5 h-5 border border-border rounded transition-colors group-hover:border-primary">
+                                <Input type="checkbox" className="absolute opacity-0 w-full h-full cursor-pointer peer" />
+                                <Check className="w-3 h-3 text-primary opacity-0 peer-checked:opacity-100 transition-opacity" />
+                            </div>
                             <span className="group-hover:text-foreground transition-colors">Over $100</span>
                         </label>
                     </div>
@@ -54,18 +64,27 @@ export default function Sidebar() {
 
                 {/* Brands snippet */}
                 <div>
-                    <h3 className="text-sm font-bold uppercase tracking-widest text-primary mb-4 pb-3 border-b-2 border-border/60">Brands</h3>
-                    <div className="space-y-4 text-sm text-muted-foreground font-medium px-2">
+                    <h3 className="text-xs font-bold uppercase tracking-widest text-foreground mb-4">Brands</h3>
+                    <div className="space-y-4 text-sm text-muted-foreground">
                         <label className="flex items-center gap-3 cursor-pointer group">
-                            <Input type="checkbox" className="!w-5 !h-5 !rounded-md border-input text-primary focus:ring-primary cursor-pointer transition-shadow" />
+                            <div className="relative flex items-center justify-center w-5 h-5 border border-border rounded transition-colors group-hover:border-primary">
+                                <Input type="checkbox" className="absolute opacity-0 w-full h-full cursor-pointer peer" />
+                                <Check className="w-3 h-3 text-primary opacity-0 peer-checked:opacity-100 transition-opacity" />
+                            </div>
                             <span className="group-hover:text-foreground transition-colors">Modular Apparel</span>
                         </label>
                         <label className="flex items-center gap-3 cursor-pointer group">
-                            <Input type="checkbox" className="!w-5 !h-5 !rounded-md border-input text-primary focus:ring-primary cursor-pointer transition-shadow" />
+                            <div className="relative flex items-center justify-center w-5 h-5 border border-border rounded transition-colors group-hover:border-primary">
+                                <Input type="checkbox" className="absolute opacity-0 w-full h-full cursor-pointer peer" />
+                                <Check className="w-3 h-3 text-primary opacity-0 peer-checked:opacity-100 transition-opacity" />
+                            </div>
                             <span className="group-hover:text-foreground transition-colors">TechNova</span>
                         </label>
                         <label className="flex items-center gap-3 cursor-pointer group">
-                            <Input type="checkbox" className="!w-5 !h-5 !rounded-md border-input text-primary focus:ring-primary cursor-pointer transition-shadow" />
+                            <div className="relative flex items-center justify-center w-5 h-5 border border-border rounded transition-colors group-hover:border-primary">
+                                <Input type="checkbox" className="absolute opacity-0 w-full h-full cursor-pointer peer" />
+                                <Check className="w-3 h-3 text-primary opacity-0 peer-checked:opacity-100 transition-opacity" />
+                            </div>
                             <span className="group-hover:text-foreground transition-colors">LuxeLiving</span>
                         </label>
                     </div>

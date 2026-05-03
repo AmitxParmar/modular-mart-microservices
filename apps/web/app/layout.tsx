@@ -34,8 +34,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html suppressHydrationWarning lang="en" className={cn("font-mono", jetbrainsMono.variable)}>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}>
+    <html suppressHydrationWarning lang="en" className={cn("font-sans", geistSans.variable, geistMono.variable, jetbrainsMono.variable)}>
+      <body className="antialiased min-h-screen flex flex-col bg-background text-foreground transition-colors duration-300">
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -46,13 +46,14 @@ export default function RootLayout({
             <AppProviders>
               <AuthDialogProvider>
 
-                <Header />
-
-                <div className="container mx-auto flex flex-1 w-full mt-6 gap-8 px-4 pb-12">
-                  <Sidebar />
-                  <main className="flex-1 w-full min-w-0">
-                    {children}
-                  </main>
+                <div className="flex flex-col min-h-screen w-full">
+                  <Header />
+                  <div className="flex flex-1 w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 mt-12 gap-12 pb-24">
+                    <Sidebar />
+                    <main className="flex-1 w-full min-w-0">
+                      {children}
+                    </main>
+                  </div>
                 </div>
 
                 <AuthDialog />
