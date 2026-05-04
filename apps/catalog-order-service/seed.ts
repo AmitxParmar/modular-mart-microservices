@@ -1,6 +1,9 @@
 import { DataSource } from 'typeorm';
 import { Category } from './src/catalog/entities/category.entity';
 import { Product } from './src/catalog/entities/product.entity';
+import { Order, OrderStatus } from './src/orders/entities/order.entity';
+import { OrderItem } from './src/orders/entities/order-item.entity';
+import { Payment, PaymentStatus } from './src/payments/entities/payment.entity';
 import * as dotenv from 'dotenv';
 import * as dns from 'node:dns';
 
@@ -10,10 +13,9 @@ dotenv.config();
 const AppDataSource = new DataSource({
   type: 'postgres',
   url: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/catalog_order_db',
-  entities: [Category, Product],
-  synchronize: true, // Use synchronize: true ONLY for seeding scripts in dev
-  logging: true,
-  ssl: true,
+  entities: [Category, Product, Order, OrderItem, Payment],
+  synchronize: false,
+  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false,
 });
 
 async function main() {
@@ -22,32 +24,54 @@ async function main() {
 
   const categoryRepo = AppDataSource.getRepository(Category);
   const productRepo = AppDataSource.getRepository(Product);
+  const orderRepo = AppDataSource.getRepository(Order);
+  const paymentRepo = AppDataSource.getRepository(Payment);
 
-  await AppDataSource.query('TRUNCATE TABLE products CASCADE;');
-  await AppDataSource.query('TRUNCATE TABLE categories CASCADE;');
+  // 1. Ensure Categories and Products exist
+  let electronics = await categoryRepo.findOne({ where: { slug: 'electronics' } });
+  if (!electronics) {
+    electronics = await categoryRepo.save(categoryRepo.create({ name: 'Electronics', slug: 'electronics', description: 'Gadgets' }));
+  }
 
-  // Seed Categories
-  const catElectronics = categoryRepo.create({ name: 'Electronics', slug: 'electronics', description: 'Gadgets and devices' });
-  const catClothing = categoryRepo.create({ name: 'Clothing', slug: 'clothing', description: 'Apparel and accessories' });
-  const catHome = categoryRepo.create({ name: 'Home', slug: 'home', description: 'Furniture and decor' });
+  let laptop = await productRepo.findOne({ where: { slug: 'laptop-pro' } });
+  if (!laptop) {
+    laptop = await productRepo.save(productRepo.create({ 
+      name: 'Laptop Pro', slug: 'laptop-pro', description: 'High performance laptop', 
+      price: 1299.99, stockQuantity: 50, category: electronics 
+    }));
+  }
 
-  await categoryRepo.save([catElectronics, catClothing, catHome]);
-  console.log('✅ Categories seeded');
+  // 2. Seed Orders for the target user
+  const targetUserId = '019d0b6a-b3e4-70d6-a168-89e80598c929';
+  
+  const existingOrder = await orderRepo.findOne({ where: { userId: targetUserId } });
+  if (!existingOrder) {
+    const order = orderRepo.create({
+      userId: targetUserId,
+      status: OrderStatus.DELIVERED,
+      totalAmount: 1299.99,
+      items: [
+        { productId: laptop.id, quantity: 1, unitPrice: 1299.99 },
+      ],
+    });
+    const savedOrder = await orderRepo.save(order);
+    console.log(`✅ Order created for user ${targetUserId}`);
 
-  // Seed Products
-  const products = [
-    productRepo.create({ name: 'Laptop Pro', slug: 'laptop-pro', description: 'High performance laptop', price: 1299.99, stockQuantity: 50, category: catElectronics }),
-    productRepo.create({ name: 'Wireless Mouse', slug: 'wireless-mouse', description: 'Ergonomic wireless mouse', price: 49.99, stockQuantity: 150, category: catElectronics }),
-    productRepo.create({ name: 'Cotton T-Shirt', slug: 'cotton-tshirt', description: '100% Cotton everyday tee', price: 19.99, stockQuantity: 200, category: catClothing }),
-    productRepo.create({ name: 'Denim Jeans', slug: 'denim-jeans', description: 'Classic blue jeans', price: 59.99, stockQuantity: 100, category: catClothing }),
-    productRepo.create({ name: 'Coffee Table', slug: 'coffee-table', description: 'Modern wooden coffee table', price: 199.99, stockQuantity: 20, category: catHome }),
-  ];
-
-  await productRepo.save(products);
-  console.log('✅ Products seeded');
+    // 3. Seed Payment
+    const payment = paymentRepo.create({
+      orderId: savedOrder.id,
+      amount: 1299.99,
+      status: PaymentStatus.SUCCESS,
+      stripePaymentIntentId: 'pi_manual_seed_' + Date.now(),
+    });
+    await paymentRepo.save(payment);
+    console.log('✅ Payment created for order');
+  } else {
+    console.log(`ℹ️ Orders already exist for user ${targetUserId}`);
+  }
 
   await AppDataSource.destroy();
-  console.log('👋 Seeding complete');
+  console.log('👋 Seeding script finished');
 }
 
 main().catch((err) => {
