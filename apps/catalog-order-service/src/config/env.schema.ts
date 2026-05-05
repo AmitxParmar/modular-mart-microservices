@@ -14,6 +14,8 @@ export const envSchema = z.object({
   RABBITMQ_URL: z.url().default('amqp://user:password@localhost:5672'),
   STRIPE_SECRET_KEY: z.string().min(1),
   STRIPE_WEBHOOK_SECRET: z.string().min(1),
+  CLERK_PUBLISHABLE_KEY: z.string().min(1),
+  CLERK_SECRET_KEY: z.string().min(1),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;

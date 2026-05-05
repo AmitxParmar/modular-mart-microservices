@@ -12,9 +12,9 @@ export enum OrderStatus {
 
 @Entity('orders')
 export class Order extends BaseEntity {
-  @Column('uuid')
+  @Column()
   @Index()
-  userId: string; // Logical foreign key pointing to the user in user-service
+  userId: string; // Logical foreign key pointing to the Clerk ID
 
   @Column({ type: 'enum', enum: OrderStatus, default: OrderStatus.PENDING })
   status: OrderStatus;

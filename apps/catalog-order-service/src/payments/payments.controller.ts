@@ -1,4 +1,4 @@
-import { Controller, Post, Body, HttpCode, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, UseGuards, Headers, RawBody } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
 import { OrdersService } from '../orders/orders.service';
 import { ClerkAuthGuard, CurrentUser } from '@repo/auth';
@@ -24,9 +24,15 @@ export class PaymentsController {
 
   @Post('stripe-webhook')
   @HttpCode(200)
-  async handleWebhook(@Body() event: any) {
+  async handleWebhook(
+    @Headers('stripe-signature') signature: string,
+    @RawBody() rawBody: Buffer,
+  ) {
+    if (!signature) {
+      return { error: 'Missing signature' };
+    }
     // Return early to acknowledge receipt to Stripe
-    await this.paymentsService.handleStripeWebhook(event);
+    await this.paymentsService.handleStripeWebhook(rawBody, signature);
     return { received: true };
   }
 }

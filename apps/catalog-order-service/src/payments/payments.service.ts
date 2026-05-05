@@ -1,4 +1,5 @@
 import { Injectable, Inject } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ClientProxy } from '@nestjs/microservices';
@@ -6,6 +7,7 @@ import { EVENT_PATTERNS, PaymentSucceededEvent } from '@repo/contracts';
 import { Payment, PaymentStatus } from './entities/payment.entity';
 import { InjectPinoLogger, PinoLogger } from '@repo/common';
 import Stripe from 'stripe';
+import * as StripeNamespace from 'stripe';
 
 @Injectable()
 export class PaymentsService {
@@ -15,7 +17,8 @@ export class PaymentsService {
     @InjectRepository(Payment)
     private readonly paymentRepo: Repository<Payment>,
     @Inject('RABBITMQ_SERVICE') private readonly rabbitClient: ClientProxy,
-    @Inject('STRIPE_CLIENT') private readonly stripe: any,
+    @Inject('STRIPE_CLIENT') private readonly stripe: StripeNamespace.Stripe,
+    private readonly configService: ConfigService,
   ) {}
 
   async createPaymentIntent(amount: number, orderId: string, userId: string) {
@@ -36,11 +39,20 @@ export class PaymentsService {
     };
   }
 
-  async constructEvent(payload: Buffer, signature: string, secret: string) {
-    return this.stripe.webhooks.constructEvent(payload, signature, secret);
-  }
+  async handleStripeWebhook(payload: Buffer, signature: string) {
+    let event: any;
 
-  async handleStripeWebhook(event: any) {
+    try {
+      const secret = this.configService.get<string>('STRIPE_WEBHOOK_SECRET');
+      if (!secret) {
+        throw new Error('STRIPE_WEBHOOK_SECRET is not configured');
+      }
+      event = this.stripe.webhooks.constructEvent(payload, signature, secret);
+    } catch (err) {
+      this.logger.error(`Webhook signature verification failed: ${(err as Error).message}`);
+      throw err;
+    }
+
     if (event.type === 'payment_intent.succeeded') {
       const paymentIntent = event.data.object as any;
       const orderId = paymentIntent.metadata.orderId;
