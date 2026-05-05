@@ -1,10 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
-import { useAuth } from '@clerk/nextjs';
 import { fetchProducts, fetchProduct, fetchCategories } from './api';
 import { productKeys } from './keys';
 
 export function useProducts(filters?: { categoryId?: string }) {
-  const { isSignedIn } = useAuth();
   return useQuery({
     queryKey: productKeys.list(filters),
     queryFn: () => fetchProducts(filters),

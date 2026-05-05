@@ -99,6 +99,14 @@ export default function Header() {
 
           <ThemeToggle />
           
+          <Link 
+            href="/orders" 
+            className="hidden sm:flex flex-col items-start justify-center px-3 py-1 rounded-md hover:bg-accent/50 transition-colors group"
+          >
+            <span className="text-[10px] text-muted-foreground font-medium leading-none">Returns</span>
+            <span className="text-sm font-bold leading-none mt-0.5 group-hover:text-primary">& Orders</span>
+          </Link>
+
           <Cart />
 
           <div className="h-4 w-px bg-border/60 mx-1" />

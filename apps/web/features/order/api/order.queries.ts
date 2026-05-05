@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@clerk/nextjs';
-import { fetchOrders, fetchOrder } from './api';
+import { fetchOrders, fetchOrder } from '../services/api';
 import { orderKeys } from './keys';
 
 /**

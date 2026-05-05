@@ -1,5 +1,4 @@
 import { ProductsSection } from '@/features/products/products-section';
-import { OrdersSection } from '@/features/order/orders-section';
 import Link from 'next/link';
 import { ArrowRight, ShieldCheck, Truck, RotateCcw } from 'lucide-react';
 
@@ -56,10 +55,6 @@ export default function Home() {
       {/* Products Grid */}
       <div id="products" className="scroll-mt-32">
         <ProductsSection />
-      </div>
-
-      <div className="pt-8 border-t border-border/40">
-        <OrdersSection />
       </div>
     </div>
   );
