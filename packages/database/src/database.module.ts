@@ -10,16 +10,16 @@ import { TypeOrmModule } from "@nestjs/typeorm";
   imports: [
     TypeOrmModule.forRootAsync({
       useFactory: () => ({
-        type: "postgres",
-        url: process.env.DATABASE_URL as string,
+        type: 'postgres',
+        url: process.env.DATABASE_URL,
         autoLoadEntities: true,
-        ssl: true,
+        ssl: process.env.DATABASE_URL?.includes('sslmode=require') || process.env.NODE_ENV === 'production'
+          ? { rejectUnauthorized: false }
+          : false,
 
-        // Automatically load entities registered in forFeature()
         // Never use synchronize: true in production. We will use migrations instead.
-        synchronize: process.env.NODE_ENV !== "production",
-        logging: process.env.NODE_ENV === "development",
-        entities: [__dirname + "/**/*.entity{.ts,.js}"],
+        synchronize: process.env.NODE_ENV !== 'production',
+        logging: process.env.NODE_ENV === 'development',
       }),
     }),
   ],

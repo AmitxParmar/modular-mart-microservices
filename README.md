@@ -1,105 +1,136 @@
 # 🛒 Modular Mart (E-Commerce Microservices)
 
 ## 🧠 System Overview
-A microservices-based e-commerce platform where:
+Modular Mart is a cloud-native, microservices-based e-commerce platform designed with a focus on **domain isolation**, **event-driven choreography**, and **observability**.
 
-- **API Gateway** handles incoming requests, routing, and security.
-- **User Service** manages user profiles and preferences.
-- **Catalog & Order Service** processes product inventory, checkout, and integrates with **Stripe** for payments.
-- **Next.js Web App** serves as the customer-facing storefront.
-- **PostgreSQL** stores structured application data.
-- **RabbitMQ** enables asynchronous, event-driven communication (e.g., `PAYMENT_SUCCEEDED`).
-- **Clerk** handles authentication and identity management.
-
-> Services communicate via REST for synchronous reads/writes, and via RabbitMQ for asynchronous event choreography.
+- **API Gateway**: The single entry point using NestJS, handling routing, rate limiting, and auth verification.
+- **User Service**: Manages identity and profiles, synced with **Clerk**.
+- **Catalog & Order Service**: The core domain managing inventory and the **Saga-based checkout process**.
+- **Web Frontend**: A modern Next.js storefront using a shared headless UI system.
+- **Shared Chassis**: A set of internal packages (`@mart/auth`, `@mart/common`) providing consistent logging and tracing across all services.
 
 ---
 
-## 🏗 Architecture Diagram
+## 🏗 System Architecture
+The system follows the **Database-per-Service** and **Microservice Chassis** patterns to ensure high decoupling and consistency.
+
 ```mermaid
-flowchart LR
-    Client[Web Frontend] --> API[API Gateway]
-    API --> Auth[Clerk Auth]
-    API --> User[User Service]
-    API --> Catalog[Catalog & Order Service]
-    
-    User --> DB[(PostgreSQL)]
-    Catalog --> DB
-    
-    Catalog -- Events --> RMQ[RabbitMQ]
-    RMQ -- Sagas --> Catalog
-    Catalog <--> Stripe[Stripe Payments]
+graph TB
+    subgraph Client_Layer [Client Layer]
+        Web[Next.js Storefront]
+    end
+
+    subgraph Entry_Layer [Entry Layer]
+        Gateway[API Gateway]
+        Auth[Clerk Auth]
+    end
+
+    subgraph Logic_Layer [Service Layer]
+        UserSvc[User Service]
+        CatalogSvc[Catalog & Order Service]
+    end
+
+    subgraph Data_Layer [Isolated Data Layer]
+        UserDB[(User PostgreSQL)]
+        CatalogDB[(Catalog PostgreSQL)]
+    end
+
+    subgraph Event_Layer [Messaging & Integration]
+        RMQ[RabbitMQ Event Bus]
+        Stripe[Stripe API]
+    end
+
+    subgraph Observability [Cross-Cutting Chassis]
+        Pino[Pino Logging]
+        Tracing[Correlation IDs]
+    end
+
+    Web --> Gateway
+    Gateway --> Auth
+    Gateway --> UserSvc
+    Gateway --> CatalogSvc
+
+    UserSvc --> UserDB
+    CatalogSvc --> CatalogDB
+
+    CatalogSvc -- Choreography --> RMQ
+    CatalogSvc <--> Stripe
+
+    UserSvc -.-> Observability
+    CatalogSvc -.-> Observability
+    Gateway -.-> Observability
 ```
 
 ---
 
-## 🔄 Request Flow (Checkout & Payment)
+## 🔄 Core Architectural Patterns
+
+### 1. Saga Orchestration (Checkout)
+Checkout is handled as a distributed transaction. The `Catalog & Order Service` manages the state transition from `PENDING` to `PAID` via Stripe webhooks and RabbitMQ events.
+
 ```mermaid
 sequenceDiagram
-    participant U as User (Frontend)
-    participant API as API Gateway
+    participant U as User
+    participant Gateway as API Gateway
     participant Order as Catalog/Order Service
     participant Stripe as Stripe
     participant RMQ as RabbitMQ
 
-    U->>API: POST /orders
-    API->>Order: Forward Request
-    Order->>Order: Lock Product & Check Stock
-    Order->>Order: Save Order (PENDING)
-    Order-->>API: Order Created
-    API-->>U: 201 Created (Order ID)
+    U->>Gateway: POST /orders
+    Gateway->>Order: Create Order (PENDING)
+    Order->>Order: Lock Stock (Pessimistic)
+    Order-->>U: Return Client Secret
     
-    U->>API: POST /payments/create-intent
-    API->>Order: Create Stripe Intent
-    Order->>Stripe: Request Client Secret
-    Stripe-->>Order: clientSecret
-    Order-->>U: Return clientSecret
-    
-    U->>Stripe: Confirm Payment (Client-side)
-    Stripe->>Order: Webhook: payment_intent.succeeded
+    U->>Stripe: Confirm Payment
+    Stripe->>Order: Webhook: success
     Order->>RMQ: Publish PAYMENT_SUCCEEDED
-    RMQ->>Order: Handle Event
-    Order->>Order: Mark Order as PAID
+    RMQ->>Order: Finalize Order (PAID)
 ```
 
----
+### 2. Microservice Chassis
+All services inherit standard behavior from the `packages/` directory:
+- **Tracing**: Every request is tagged with a `Correlation ID` that persists across service boundaries.
+- **Logging**: Structured JSON logging via **Pino** for log aggregation.
+- **Health**: Standardized `/health` endpoints for liveness and readiness probes.
 
-## 🧩 Services
-
-| Service / App | Responsibility | Tech Stack |
-| --- | --- | --- |
-| **API Gateway** | Routing, auth verification, request forwarding | NestJS |
-| **Web** | Customer-facing storefront | Next.js, React, Tailwind |
-| **User Service** | User profile management | NestJS, PostgreSQL |
-| **Catalog/Order Service** | Product management, orders, Stripe payments | NestJS, PostgreSQL, Stripe |
-| **Database** | Core data storage | PostgreSQL |
-| **Message Broker** | Asynchronous event processing | RabbitMQ |
+### 3. Database Isolation
+Each microservice owns its schema and database instance. No service can directly query another service's database, ensuring that schema changes in one domain do not break others.
 
 ---
 
-## 📁 Project Structure
+## 📁 Engineering & Project Structure
+
+Managed via **Turborepo**, the codebase is optimized for sharing types and logic without tight coupling.
 
 ```text
 e-commerce-microservices/
 ├── apps/
-│   ├── api-gateway/            # Central entry point for client requests
-│   ├── catalog-order-service/  # Manages products, orders, and payments
-│   ├── user-service/           # Manages user profiles
-│   ├── web/                    # Next.js storefront
-│   └── docs/                   # Next.js documentation site
+│   ├── api-gateway/            # Entry point & Proxy logic
+│   ├── catalog-order-service/  # Inventory, Order & Payment logic (Core Hub)
+│   ├── user-service/           # Identity & Profile management
+│   └── web/                    # Storefront (Headless UI architecture)
 ├── packages/
-│   ├── auth/                   # Shared Clerk auth guards and utilities
-│   ├── common/                 # Shared logging, middlewares, filters
-│   ├── contracts/              # Shared RabbitMQ event payloads and patterns
-│   ├── database/               # Shared TypeORM config and migrations
-│   └── ui/                     # Shared React components
-└── turbo.json                  # Turborepo build pipeline configuration
+│   ├── auth/                   # Shared Clerk guards & RBAC
+│   ├── common/                 # Microservice Chassis (Logging, Tracing, Filters)
+│   ├── contracts/              # Event schemas & DTOs
+│   ├── database/               # Shared TypeORM abstractions
+│   └── ui/                     # Design System (Tailwind + cn utility)
 ```
 
 ---
 
-## 🎯 Design Decisions
-- **Monorepo (Turborepo)**: Simplifies code sharing (DTOs, interfaces, UI components) across services while maintaining independent build pipelines.
-- **Event-Driven Microservices**: Uses RabbitMQ for event-driven patterns to decouple domains (e.g., separating payment fulfillment from order status updates).
-- **Pessimistic Database Locking**: Prevents race conditions during checkout (e.g., overselling a product) by using row-level locks via TypeORM.
-- **Offloaded Authentication**: Uses Clerk to offload the complexity of credential management, password resets, and session handling.
+## 🛠 Tech Stack & Tools
+
+- **Backend**: NestJS, TypeORM, PostgreSQL
+- **Frontend**: Next.js 14, Tailwind CSS, Shadcn UI
+- **Messaging**: RabbitMQ (Asynchronous Choreography)
+- **Identity**: Clerk (Offloaded Authentication)
+- **Payments**: Stripe (Client-side confirmation + Webhooks)
+- **Infrastructure**: Docker, Turborepo, Render
+
+---
+
+## 🎯 Design Decisions (Verified by Graphify)
+- **Atomic UI**: The frontend uses a `cn()` utility as a bridge node to maintain styling consistency across disparate UI components.
+- **Pessimistic Locking**: Crucial for the `Catalog & Order Service` to prevent overselling during high-concurrency checkout windows.
+- **Environment Safety**: Centralized Zod-based validation for all environment variables at service bootstrap.

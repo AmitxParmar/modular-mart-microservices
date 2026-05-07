@@ -30,28 +30,32 @@ async function bootstrap() {
   // Trust proxy
   app.set('trust proxy', 1);
 
-  // Connect to RabbitMQ to listen for Saga Events (e.g. PAYMENT_SUCCEEDED)
-  app.connectMicroservice<MicroserviceOptions>({
-    transport: Transport.RMQ,
-    options: {
-      urls: [process.env.RABBITMQ_URL || 'amqp://localhost:5672'],
-      queue: 'catalog_orders_queue',
-      queueOptions: {
-        durable: true,
+  // Optional: Connect to RabbitMQ to listen for Saga Events (e.g. PAYMENT_SUCCEEDED)
+  // We only connect if explicitly enabled in development, to prevent the HTTP server
+  // from hanging indefinitely while trying to reconnect.
+  if (process.env.RABBITMQ_URL && process.env.RABBITMQ_URL !== 'false') {
+    app.connectMicroservice<MicroserviceOptions>({
+      transport: Transport.RMQ,
+      options: {
+        urls: [process.env.RABBITMQ_URL],
+        queue: 'catalog_orders_queue',
+        queueOptions: {
+          durable: true,
+        },
       },
-    },
-  });
+    });
 
-  // Try to connect to RabbitMQ — non-fatal in dev if unavailable.
-  // The HTTP server will still start and serve catalog/order/payment routes.
-  try {
-    await app.startAllMicroservices();
-    console.log('Connected to RabbitMQ — catalog_orders_queue active');
-  } catch (err) {
-    console.warn(
-      `[WARN] RabbitMQ unavailable (${(err as Error).message}). ` +
-      `Running without event queue. Start RabbitMQ to enable saga events.`,
-    );
+    // Start microservices in the background so we don't block the HTTP server
+    app.startAllMicroservices().then(() => {
+      console.log('Connected to RabbitMQ — catalog_orders_queue active');
+    }).catch((err) => {
+      console.warn(
+        `[WARN] RabbitMQ unavailable (${(err as Error).message}). ` +
+        `Running without event queue. Start RabbitMQ to enable saga events.`,
+      );
+    });
+  } else {
+    console.warn('[WARN] RabbitMQ connection disabled via environment configuration.');
   }
 
   const port = process.env.PORT ?? 3002;

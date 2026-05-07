@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
-import { createProxyMiddleware, Options } from 'http-proxy-middleware';
+import { createProxyMiddleware, Options, fixRequestBody } from 'http-proxy-middleware';
 import type { Request, Response } from 'express';
 
 interface ServiceRouteConfig {
@@ -52,6 +52,8 @@ export class ProxyModule implements NestModule {
       const proxyOptions: Options = {
         target: targetUrl,
         changeOrigin: true,
+        proxyTimeout: 10000, // 10s timeout for the proxy to connect
+        timeout: 10000, // 10s timeout for the upstream to respond
         on: {
           error: (err: Error, req: Request, res: Response) => {
             const correlationId = req.headers['x-request-id'];
@@ -76,12 +78,17 @@ export class ProxyModule implements NestModule {
               });
             }
           },
-          proxyReq: (proxyReq, req) => {
+          proxyReq: (proxyReq, req, res, options) => {
             // Ensure correlation ID is forwarded to every upstream service.
             const correlationId = req.headers['x-request-id'];
             if (correlationId) {
               proxyReq.setHeader('x-request-id', correlationId);
             }
+
+            // Fix for hanging body: If the body was already parsed by a middleware
+            // (like NestJS ValidationPipe), re-stream it to the proxy request.
+            fixRequestBody(proxyReq, req);
+
             this.logger.debug(
               {
                 method: req.method,
