@@ -7,7 +7,12 @@ import { EVENT_PATTERNS, PaymentSucceededEvent } from '@repo/contracts';
 import { Payment, PaymentStatus } from './entities/payment.entity';
 import { InjectPinoLogger, PinoLogger } from '@repo/common';
 import Stripe from 'stripe';
-import * as StripeNamespace from 'stripe';
+
+type StripeInstance = InstanceType<typeof Stripe>;
+// Derive Event type from constructEvent return (avoids Stripe namespace issues in v22)
+type StripeEvent = ReturnType<StripeInstance['webhooks']['constructEvent']>;
+// Derive PaymentIntent type from paymentIntents.create return
+type StripePaymentIntent = Awaited<ReturnType<StripeInstance['paymentIntents']['create']>>;
 
 @Injectable()
 export class PaymentsService {
@@ -17,12 +22,14 @@ export class PaymentsService {
     @InjectRepository(Payment)
     private readonly paymentRepo: Repository<Payment>,
     @Inject('RABBITMQ_SERVICE') private readonly rabbitClient: ClientProxy,
-    @Inject('STRIPE_CLIENT') private readonly stripe: StripeNamespace.Stripe,
+    @Inject('STRIPE_CLIENT') private readonly stripe: StripeInstance,
     private readonly configService: ConfigService,
   ) {}
 
   async createPaymentIntent(amount: number, orderId: string, userId: string) {
-    this.logger.info(`Creating PaymentIntent for Order ${orderId}, Amount: ${amount}`);
+    this.logger.info(
+      `Creating PaymentIntent for Order ${orderId}, Amount: ${amount}`,
+    );
 
     const paymentIntent = await this.stripe.paymentIntents.create({
       amount: Math.round(amount * 100), // Convert to cents
@@ -40,23 +47,29 @@ export class PaymentsService {
   }
 
   async handleStripeWebhook(payload: Buffer, signature: string) {
-    let event: any;
+    let stripeEvent: StripeEvent;
 
     try {
       const secret = this.configService.get<string>('STRIPE_WEBHOOK_SECRET');
       if (!secret) {
         throw new Error('STRIPE_WEBHOOK_SECRET is not configured');
       }
-      event = this.stripe.webhooks.constructEvent(payload, signature, secret);
+      stripeEvent = this.stripe.webhooks.constructEvent(
+        payload,
+        signature,
+        secret,
+      );
     } catch (err) {
-      this.logger.error(`Webhook signature verification failed: ${(err as Error).message}`);
+      this.logger.error(
+        `Webhook signature verification failed: ${(err as Error).message}`,
+      );
       throw err;
     }
 
-    if (event.type === 'payment_intent.succeeded') {
-      const paymentIntent = event.data.object as any;
-      const orderId = paymentIntent.metadata.orderId;
-      const userId = paymentIntent.metadata.userId;
+    if (stripeEvent.type === 'payment_intent.succeeded') {
+      const paymentIntent = stripeEvent.data.object as StripePaymentIntent;
+      const orderId = paymentIntent.metadata.orderId as string;
+      const userId = paymentIntent.metadata.userId as string;
 
       if (!orderId) {
         this.logger.warn(
@@ -66,9 +79,13 @@ export class PaymentsService {
       }
 
       // Check if payment record already exists
-      const existingPayment = await this.paymentRepo.findOne({ where: { stripePaymentIntentId: paymentIntent.id } });
+      const existingPayment = await this.paymentRepo.findOne({
+        where: { stripePaymentIntentId: paymentIntent.id },
+      });
       if (existingPayment) {
-        this.logger.info(`Payment record for intent ${paymentIntent.id} already exists. Skipping.`);
+        this.logger.info(
+          `Payment record for intent ${paymentIntent.id} already exists. Skipping.`,
+        );
         return;
       }
 

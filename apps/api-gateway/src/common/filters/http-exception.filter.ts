@@ -66,7 +66,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
       ...(correlationId && { correlationId }),
     };
 
-    if (statusCode >= HttpStatus.INTERNAL_SERVER_ERROR) {
+    if (statusCode >= (HttpStatus.INTERNAL_SERVER_ERROR as number)) {
       this.logger.error(
         {
           method: request.method,

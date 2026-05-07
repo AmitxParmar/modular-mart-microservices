@@ -1,4 +1,12 @@
-import { Controller, Post, Body, HttpCode, UseGuards, Headers, RawBody } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  HttpCode,
+  UseGuards,
+  Headers,
+  RawBody,
+} from '@nestjs/common';
 import { PaymentsService } from './payments.service';
 import { OrdersService } from '../orders/orders.service';
 import { ClerkAuthGuard, CurrentUser } from '@repo/auth';
@@ -18,8 +26,15 @@ export class PaymentsController {
     @CurrentUser() user: ClerkUser,
     @Body() body: CreateIntentDto,
   ) {
-    const order = await this.ordersService.getOrderById(user.userId, body.orderId);
-    return this.paymentsService.createPaymentIntent(Number(order.totalAmount), body.orderId, user.userId);
+    const order = await this.ordersService.getOrderById(
+      user.userId,
+      body.orderId,
+    );
+    return this.paymentsService.createPaymentIntent(
+      Number(order.totalAmount),
+      body.orderId,
+      user.userId,
+    );
   }
 
   @Post('stripe-webhook')
