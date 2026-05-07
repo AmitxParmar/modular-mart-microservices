@@ -37,9 +37,12 @@ import { OrdersModule } from '../orders/orders.module';
     {
       provide: 'STRIPE_CLIENT',
       useFactory: (configService: ConfigService) => {
-        return new Stripe(configService.get<string>('STRIPE_SECRET_KEY') as string, {
-          apiVersion: '2026-04-22.dahlia', // Use a stable version
-        });
+        return new Stripe(
+          configService.get<string>('STRIPE_SECRET_KEY') as string,
+          {
+            apiVersion: '2026-04-22.dahlia', // Use a stable version
+          },
+        );
       },
       inject: [ConfigService],
     },

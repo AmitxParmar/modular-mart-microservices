@@ -44,6 +44,8 @@ async function bootstrap() {
   // Use configured PORT or fallback
   const port = process.env.PORT ?? 3001;
   await app.listen(port);
-  console.log(`User Service listening on HTTP port ${port} and TCP port ${process.env.TCP_PORT || 3011}`);
+  console.log(
+    `User Service listening on HTTP port ${port} and TCP port ${process.env.TCP_PORT || 3011}`,
+  );
 }
 bootstrap();

@@ -50,7 +50,7 @@ async function bootstrap() {
   } catch (err) {
     console.warn(
       `[WARN] RabbitMQ unavailable (${(err as Error).message}). ` +
-      `Running without event queue. Start RabbitMQ to enable saga events.`,
+        `Running without event queue. Start RabbitMQ to enable saga events.`,
     );
   }
 

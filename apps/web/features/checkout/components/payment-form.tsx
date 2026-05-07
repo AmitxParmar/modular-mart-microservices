@@ -11,10 +11,15 @@ import { useCart } from "@/hooks/use-cart";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import Link from "next/link";
 
+import { useCreateOrder, useCreatePaymentIntent } from "../api/checkout.mutations";
+
 export function PaymentForm() {
   const stripe = useStripe();
   const elements = useElements();
-  const { clearCart } = useCart();
+  const { items, clearCart } = useCart();
+
+  const createOrder = useCreateOrder();
+  const createPaymentIntent = useCreatePaymentIntent();
 
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -23,26 +28,55 @@ export function PaymentForm() {
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 
-    if (!stripe || !elements) return;
+    if (!stripe || !elements || items.length === 0) return;
 
     setIsLoading(true);
     setErrorMessage(null);
 
-    // Trigger form validation and wallet collection
-    const { error: submitError } = await elements.submit();
-    if (submitError) {
-      setErrorMessage(submitError.message ?? "An unexpected error occurred.");
-      setIsLoading(false);
-      return;
-    }
+    try {
+      // 1. Validate the form and collect payment details
+      const { error: submitError } = await elements.submit();
+      if (submitError) {
+        setErrorMessage(submitError.message ?? "An unexpected error occurred.");
+        setIsLoading(false);
+        return;
+      }
 
-    // SIMULATION: Since we don't have a backend to create a PaymentIntent,
-    // we simulate a successful payment after a short delay.
-    setTimeout(() => {
+      // 2. Create the Order on the backend
+      const order = await createOrder.mutateAsync({
+        items: items.map((item) => ({
+          productId: item.product.id,
+          quantity: item.quantity,
+        })),
+      });
+
+      // 3. Create the PaymentIntent on the backend
+      const { clientSecret } = await createPaymentIntent.mutateAsync(order.id);
+
+      // 4. Confirm the payment with Stripe
+      const { error: confirmError } = await stripe.confirmPayment({
+        elements,
+        clientSecret,
+        confirmParams: {
+          return_url: `${globalThis.location.origin}/checkout/success`,
+        },
+        redirect: "if_required", // Handle success in-place if no redirect needed
+      });
+
+      if (confirmError) {
+        setErrorMessage(confirmError.message ?? "Payment confirmation failed.");
+      } else {
+        setIsSuccess(true);
+        clearCart();
+      }
+    } catch (err: any) {
+      console.error("Checkout error:", err);
+      setErrorMessage(
+        err.response?.data?.message || err.message || "Something went wrong during checkout."
+      );
+    } finally {
       setIsLoading(false);
-      setIsSuccess(true);
-      clearCart();
-    }, 2000);
+    }
   };
 
   if (isSuccess) {
@@ -80,7 +114,8 @@ export function PaymentForm() {
       )}
 
       <Button
-        disabled={isLoading || !stripe || !elements}
+        type="submit"
+        disabled={isLoading || !stripe || !elements || items.length === 0}
         className="w-full h-14 rounded-full text-lg font-bold shadow-lg hover:shadow-xl transition-all disabled:opacity-50"
       >
         {isLoading ? (

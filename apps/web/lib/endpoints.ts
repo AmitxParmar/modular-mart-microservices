@@ -13,8 +13,10 @@ export const ENDPOINTS = {
 
   // Orders Service
   ORDERS: '/orders',
+  CREATE_ORDER: '/orders',
   ORDER: (id: string) => `/orders/${id}`,
 
   // Payments Service
+  CREATE_INTENT: '/payments/create-intent',
   STRIPE_WEBHOOK: '/payments/stripe-webhook',
 } as const;

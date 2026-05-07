@@ -1,14 +1,12 @@
 import React from 'react';
 import { 
   ShieldCheck, 
-  Zap, 
   RefreshCcw, 
   Lock, 
   Database, 
   MessageSquare,
   AlertCircle,
   Terminal,
-  GitBranch,
   History,
   RotateCcw
 } from 'lucide-react';
@@ -105,7 +103,7 @@ export default function ProjectDocsPage() {
 
           <div className="space-y-16 relative">
             {/* Connection Line */}
-            <div className="absolute left-[19px] top-2 bottom-2 w-0.5 bg-gradient-to-b from-blue-500 via-purple-500 to-green-500 opacity-20 hidden sm:block"></div>
+            <div className="absolute left-[19px] top-2 bottom-2 w-0.5 bg-linear-to-b from-blue-500 via-purple-500 to-green-500 opacity-20 hidden sm:block"></div>
 
             {/* Step 1: Edge */}
             <div className="relative flex flex-col sm:flex-row gap-6">
@@ -123,7 +121,7 @@ export default function ProjectDocsPage() {
                 </p>
                 <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl text-xs font-mono text-slate-500 leading-relaxed">
                   // Traceability implementation<br/>
-                  req.headers['x-request-id'] = uuid();<br/>
+                  req.headers[&apos;x-request-id&apos;] = uuid();<br/>
                   logger.info(&#123; msg: "Request started", correlationId &#125;);
                 </div>
               </div>

@@ -4,7 +4,10 @@ import { Category } from './category.entity';
 
 @Entity('products')
 export class Product extends BaseEntity {
-  @ManyToOne(() => Category, (category) => category.products, { onDelete: 'SET NULL', nullable: true })
+  @ManyToOne(() => Category, (category) => category.products, {
+    onDelete: 'SET NULL',
+    nullable: true,
+  })
   @Index()
   category: Category;
 

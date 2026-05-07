@@ -22,7 +22,9 @@ export class PaymentsService {
   ) {}
 
   async createPaymentIntent(amount: number, orderId: string, userId: string) {
-    this.logger.info(`Creating PaymentIntent for Order ${orderId}, Amount: ${amount}`);
+    this.logger.info(
+      `Creating PaymentIntent for Order ${orderId}, Amount: ${amount}`,
+    );
 
     const paymentIntent = await this.stripe.paymentIntents.create({
       amount: Math.round(amount * 100), // Convert to cents
@@ -49,12 +51,14 @@ export class PaymentsService {
       }
       event = this.stripe.webhooks.constructEvent(payload, signature, secret);
     } catch (err) {
-      this.logger.error(`Webhook signature verification failed: ${(err as Error).message}`);
+      this.logger.error(
+        `Webhook signature verification failed: ${(err as Error).message}`,
+      );
       throw err;
     }
 
     if (event.type === 'payment_intent.succeeded') {
-      const paymentIntent = event.data.object as any;
+      const paymentIntent = event.data.object;
       const orderId = paymentIntent.metadata.orderId;
       const userId = paymentIntent.metadata.userId;
 
@@ -66,9 +70,13 @@ export class PaymentsService {
       }
 
       // Check if payment record already exists
-      const existingPayment = await this.paymentRepo.findOne({ where: { stripePaymentIntentId: paymentIntent.id } });
+      const existingPayment = await this.paymentRepo.findOne({
+        where: { stripePaymentIntentId: paymentIntent.id },
+      });
       if (existingPayment) {
-        this.logger.info(`Payment record for intent ${paymentIntent.id} already exists. Skipping.`);
+        this.logger.info(
+          `Payment record for intent ${paymentIntent.id} already exists. Skipping.`,
+        );
         return;
       }
 
