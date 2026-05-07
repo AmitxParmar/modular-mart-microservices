@@ -46,16 +46,21 @@ async function bootstrap() {
     });
 
     // Start microservices in the background so we don't block the HTTP server
-    app.startAllMicroservices().then(() => {
-      console.log('Connected to RabbitMQ — catalog_orders_queue active');
-    }).catch((err) => {
-      console.warn(
-        `[WARN] RabbitMQ unavailable (${(err as Error).message}). ` +
-        `Running without event queue. Start RabbitMQ to enable saga events.`,
-      );
-    });
+    app
+      .startAllMicroservices()
+      .then(() => {
+        console.log('Connected to RabbitMQ — catalog_orders_queue active');
+      })
+      .catch((err) => {
+        console.warn(
+          `[WARN] RabbitMQ unavailable (${(err as Error).message}). ` +
+            `Running without event queue. Start RabbitMQ to enable saga events.`,
+        );
+      });
   } else {
-    console.warn('[WARN] RabbitMQ connection disabled via environment configuration.');
+    console.warn(
+      '[WARN] RabbitMQ connection disabled via environment configuration.',
+    );
   }
 
   const port = process.env.PORT ?? 3002;

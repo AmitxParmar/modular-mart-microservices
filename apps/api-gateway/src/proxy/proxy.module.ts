@@ -6,7 +6,11 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
-import { createProxyMiddleware, Options, fixRequestBody } from 'http-proxy-middleware';
+import {
+  createProxyMiddleware,
+  Options,
+  fixRequestBody,
+} from 'http-proxy-middleware';
 import type { Request, Response } from 'express';
 
 interface ServiceRouteConfig {
@@ -78,7 +82,7 @@ export class ProxyModule implements NestModule {
               });
             }
           },
-          proxyReq: (proxyReq, req, res, options) => {
+          proxyReq: (proxyReq, req) => {
             // Ensure correlation ID is forwarded to every upstream service.
             const correlationId = req.headers['x-request-id'];
             if (correlationId) {
