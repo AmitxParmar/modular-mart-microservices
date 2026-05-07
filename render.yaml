@@ -5,7 +5,7 @@ services:
     env: docker
     dockerContext: .
     dockerfilePath: apps/api-gateway/Dockerfile
-    plan: starter
+    plan: free
     region: ohio
     healthCheckPath: /health/live
     envVars:
@@ -47,7 +47,7 @@ services:
     env: docker
     dockerContext: .
     dockerfilePath: apps/catalog-order-service/Dockerfile
-    plan: starter
+    plan: free
     region: ohio
     healthCheckPath: /health/live
     envVars:
@@ -74,7 +74,7 @@ services:
     env: docker
     dockerContext: .
     dockerfilePath: apps/user-service/Dockerfile
-    plan: starter
+    plan: free
     region: ohio
     healthCheckPath: /health/live
     envVars:
