@@ -6,6 +6,13 @@ import { User } from './entities/user.entity';
 import { Role } from './entities/role.entity';
 import { InjectPinoLogger, PinoLogger } from '@repo/common';
 
+interface ClerkUserPayload {
+  id: string;
+  email_addresses: Array<{ email_address: string }>;
+  first_name?: string;
+  last_name?: string;
+}
+
 @Injectable()
 export class UsersService {
   constructor(
@@ -29,7 +36,7 @@ export class UsersService {
     return user.roles.map((r) => r.name);
   }
 
-  async syncUserFromClerk(payload: any): Promise<void> {
+  async syncUserFromClerk(payload: ClerkUserPayload): Promise<void> {
     const { id, email_addresses, first_name, last_name } = payload;
     const email = email_addresses?.[0]?.email_address;
 

@@ -5,10 +5,13 @@ import { AppService } from './app.service';
 import { DatabaseModule } from '@repo/database';
 import { UsersModule } from './users/users.module';
 import { ConfigModule } from './config/config.module';
-import { HealthModule, HttpExceptionFilter, CorrelationMiddleware } from '@repo/common';
+import {
+  HealthModule,
+  HttpExceptionFilter,
+  CorrelationMiddleware,
+} from '@repo/common';
 import { LoggerModule } from 'nestjs-pino';
 import { createLoggerConfig } from '@repo/common';
-
 
 @Module({
   imports: [

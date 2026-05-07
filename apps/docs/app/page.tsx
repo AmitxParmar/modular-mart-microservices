@@ -1,14 +1,12 @@
 import React from 'react';
 import { 
   ShieldCheck, 
-  Zap, 
   RefreshCcw, 
   Lock, 
   Database, 
   MessageSquare,
   AlertCircle,
   Terminal,
-  GitBranch,
   History,
   RotateCcw
 } from 'lucide-react';
@@ -122,9 +120,9 @@ export default function ProjectDocsPage() {
                   Request enters via <strong>Next.js UI</strong>. The <strong>API Gateway</strong> intercepts the call, validates the <strong>Clerk JWT</strong>, and injects a <code>x-request-id</code>. 
                 </p>
                 <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl text-xs font-mono text-slate-500 leading-relaxed">
-                  // Traceability implementation<br/>
-                  req.headers['x-request-id'] = uuid();<br/>
-                  logger.info(&#123; msg: "Request started", correlationId &#125;);
+                  {"// Traceability implementation"}<br/>
+                  {"req.headers['x-request-id'] = uuid();"}<br/>
+                  {"logger.info({ msg: \"Request started\", correlationId });"}
                 </div>
               </div>
             </div>
@@ -141,7 +139,7 @@ export default function ProjectDocsPage() {
                   </div>
                 </div>
                 <p className="text-sm text-slate-600 mb-4">
-                  The Gateway proxies the request. A <strong>Circuit Breaker</strong> monitors the health of the <strong>Catalog-Order service</strong>. If failures spike, it "trips," returning a cached fallback to protect the system from cascading failure.
+                  The Gateway proxies the request. A <strong>Circuit Breaker</strong> monitors the health of the <strong>Catalog-Order service</strong>. If failures spike, it &quot;trips,&quot; returning a cached fallback to protect the system from cascading failure.
                 </p>
                 <div className="flex items-center gap-3">
                   <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
@@ -169,7 +167,7 @@ export default function ProjectDocsPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-lg">
                     <p className="text-[10px] font-bold text-indigo-700 uppercase mb-1">Stock Guard</p>
-                    <p className="text-[11px] text-indigo-900 font-medium tracking-tight">Prevents "Overselling" during flash sales.</p>
+                    <p className="text-[11px] text-indigo-900 font-medium tracking-tight">Prevents &quot;Overselling&quot; during flash sales.</p>
                   </div>
                   <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
                     <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Idempotency</p>
@@ -234,7 +232,7 @@ export default function ProjectDocsPage() {
             <div>
               <h4 className="text-lg font-bold text-slate-900 mb-1">Pessimistic Locking</h4>
               <p className="text-slate-600 text-sm">
-                We use TypeORM's <code>pessimistic_write</code> lock during checkout. This prevents "double-spend" of inventory where two users buy the last item at the exact same millisecond.
+                We use TypeORM&apos;s <code>pessimistic_write</code> lock during checkout. This prevents &quot;double-spend&quot; of inventory where two users buy the last item at the exact same millisecond.
               </p>
             </div>
           </div>
@@ -258,7 +256,7 @@ export default function ProjectDocsPage() {
             <div>
               <h4 className="text-lg font-bold text-slate-900 mb-1">Compensating Transactions</h4>
               <p className="text-slate-600 text-sm">
-                Since we operate across distributed databases, we use the <strong>Saga Pattern</strong>. If a payment fails after an order is created, the system triggers a "compensating transaction" to automatically restore inventory and mark the order as failed.
+                Since we operate across distributed databases, we use the <strong>Saga Pattern</strong>. If a payment fails after an order is created, the system triggers a &quot;compensating transaction&quot; to automatically restore inventory and mark the order as failed.
               </p>
             </div>
           </div>
@@ -283,7 +281,7 @@ export default function ProjectDocsPage() {
                 ACID Local Transactions
               </h3>
               <p className="text-slate-400 text-sm mb-6 leading-relaxed">
-                For operations within a single microservice, we leverage the underlying database's ACID properties. Every order creation, inventory update, and status change is wrapped in a <code>DB Transaction</code>.
+                For operations within a single microservice, we leverage the underlying database&apos;s ACID properties. Every order creation, inventory update, and status change is wrapped in a <code>DB Transaction</code>.
               </p>
               <div className="space-y-4">
                 <div className="flex items-start gap-3">
@@ -354,11 +352,11 @@ export default function ProjectDocsPage() {
               </tr>
               <tr>
                 <td className="px-6 py-4 font-medium text-slate-900">Clerk Webhook Delay</td>
-                <td className="px-6 py-4 text-slate-600">User profile fetches return a 404 until sync is complete, prompting the UI to show a "Setting up your account" state.</td>
+                <td className="px-6 py-4 text-slate-600">User profile fetches return a 404 until sync is complete, prompting the UI to show a &quot;Setting up your account&quot; state.</td>
               </tr>
               <tr>
                 <td className="px-6 py-4 font-medium text-slate-900">Partial Failure (Zombie Orders)</td>
-                <td className="px-6 py-4 text-slate-600">A background cleanup worker identifies "Pending" orders older than 15 minutes and triggers a saga-rollback to release reserved stock.</td>
+                <td className="px-6 py-4 text-slate-600">A background cleanup worker identifies &quot;Pending&quot; orders older than 15 minutes and triggers a saga-rollback to release reserved stock.</td>
               </tr>
             </tbody>
           </table>

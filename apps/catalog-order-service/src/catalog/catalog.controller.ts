@@ -11,6 +11,7 @@ import { CatalogService } from './catalog.service';
 import { ClerkAuthGuard, CurrentUser } from '@repo/auth';
 import type { ClerkUser } from '@repo/auth';
 import { AdminGuard } from './admin.guard';
+import { Product } from './entities/product.entity';
 
 @Controller('catalog')
 export class CatalogController {
@@ -33,7 +34,10 @@ export class CatalogController {
 
   @Post('products')
   @UseGuards(ClerkAuthGuard, AdminGuard)
-  createProduct(@CurrentUser() user: ClerkUser, @Body() productData: any) {
+  createProduct(
+    @CurrentUser() user: ClerkUser,
+    @Body() productData: Partial<Product>,
+  ) {
     return this.catalogService.createProduct(productData);
   }
 }
