@@ -1,4 +1,11 @@
-import { Entity, Column, OneToMany, ManyToMany, JoinTable, Index } from 'typeorm';
+import {
+  Entity,
+  Column,
+  OneToMany,
+  ManyToMany,
+  JoinTable,
+  Index,
+} from 'typeorm';
 import { BaseEntity } from '@repo/database';
 import { Address } from './address.entity';
 import { Role } from './role.entity';
@@ -24,5 +31,4 @@ export class User extends BaseEntity {
 
   @OneToMany(() => Address, (address) => address.user, { cascade: true })
   addresses: Address[];
-
 }

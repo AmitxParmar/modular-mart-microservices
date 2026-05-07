@@ -18,6 +18,6 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
       },
     ]),
   ],
-  exports: [ClientsModule]
+  exports: [ClientsModule],
 })
 export class AuthProxyModule {}

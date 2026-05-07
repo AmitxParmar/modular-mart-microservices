@@ -19,6 +19,17 @@ import type { GetUserRolePayload, GetUserRoleResponse } from '@repo/contracts';
 import type { ClerkUser } from '@repo/auth';
 import { InjectPinoLogger, PinoLogger } from '@repo/common';
 
+interface ClerkWebhookEvent {
+  type: string;
+  data: {
+    id: string;
+    email_addresses?: Array<{ email_address: string }>;
+    first_name?: string;
+    last_name?: string;
+    [key: string]: any;
+  };
+}
+
 @Controller('users')
 export class UsersController {
   constructor(
@@ -72,7 +83,7 @@ export class UsersController {
 
     const wh = new Webhook(webhookSecret);
 
-    let evt: any;
+    let evt: ClerkWebhookEvent;
 
     try {
       // Verify against the raw bytes — re-serializing a parsed object would break the HMAC
@@ -83,7 +94,7 @@ export class UsersController {
       });
     } catch (err) {
       this.logger.error(
-        `Webhook signature verification failed: ${err.message}`,
+        `Webhook signature verification failed: ${err instanceof Error ? err.message : String(err)}`,
       );
       throw new UnauthorizedException('Invalid webhook signature');
     }

@@ -7,12 +7,15 @@ import { Category } from './entities/category.entity';
 @Injectable()
 export class CatalogService {
   constructor(
-    @InjectRepository(Product) private readonly productRepo: Repository<Product>,
-    @InjectRepository(Category) private readonly categoryRepo: Repository<Category>,
+    @InjectRepository(Product)
+    private readonly productRepo: Repository<Product>,
+    @InjectRepository(Category)
+    private readonly categoryRepo: Repository<Category>,
   ) {}
 
   async getProducts(categoryId?: string) {
-    const query = this.productRepo.createQueryBuilder('product')
+    const query = this.productRepo
+      .createQueryBuilder('product')
       .leftJoinAndSelect('product.category', 'category');
 
     if (categoryId) {
@@ -25,7 +28,7 @@ export class CatalogService {
   async getProductBySlug(slug: string) {
     const product = await this.productRepo.findOne({
       where: { slug },
-      relations: ['category']
+      relations: ['category'],
     });
     if (!product) throw new NotFoundException('Product not found');
     return product;
