@@ -52,13 +52,13 @@ jobs:
           working-directory: ./apps/web
           vercel-args: '--prod'
 
-  deploy-backend:
-    needs: build-and-test
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Trigger Render Deploy
+  #deploy-backend:
+  #  needs: build-and-test
+  #  if: github.ref == 'refs/heads/main'
+  #  runs-on: ubuntu-latest
+  #  steps:
+  #    - name: Trigger Render Deploy
         # Render doesn't have an official action, so we use their deploy hook
         # or API. Using the Blueprint Sync hook is easiest.
-        run: |
-          curl -X POST https://api.render.com/deploy/{{RENDER_BLUEPRINT_ID}}?key=${{ secrets.RENDER_DEPLOY_KEY }}
+  #      run: |
+  #        curl -X POST "https://api.render.com/deploy/${{ secrets.RENDER_BLUEPRINT_ID }}?key=${{ secrets.RENDER_DEPLOY_KEY }}"

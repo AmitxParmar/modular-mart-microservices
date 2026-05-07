@@ -1,3 +1,13 @@
+envVarGroups:
+  - name: shared-infra
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: info
+      - key: RABBITMQ_URL
+        sync: false # Set to your CloudAMQP URL (e.g., amqps://...)
+
 services:
   # API Gateway
   - type: web
@@ -9,12 +19,15 @@ services:
     region: ohio
     healthCheckPath: /health/live
     envVars:
+      - fromGroup: shared-infra
       - key: PORT
         value: 3000
-      - key: NODE_ENV
-        value: production
       - key: ALLOWED_ORIGINS
         sync: false # Set to your Vercel production URL
+      - key: RATE_LIMIT_TTL
+        value: "60000"
+      - key: RATE_LIMIT_MAX
+        value: "100"
       - key: USER_SERVICE_URL
         fromService:
           name: user-service
@@ -51,14 +64,11 @@ services:
     region: ohio
     healthCheckPath: /health/live
     envVars:
+      - fromGroup: shared-infra
       - key: PORT
         value: 3000
-      - key: NODE_ENV
-        value: production
       - key: DATABASE_URL
-        sync: false # Set from Supabase
-      - key: RABBITMQ_URL
-        sync: false # Set your RabbitMQ connection string
+        sync: false # Set isolated Supabase URL for Catalog
       - key: STRIPE_SECRET_KEY
         sync: false
       - key: STRIPE_WEBHOOK_SECRET
@@ -78,12 +88,12 @@ services:
     region: ohio
     healthCheckPath: /health/live
     envVars:
+      - fromGroup: shared-infra
       - key: PORT
         value: 3000
-      - key: NODE_ENV
-        value: production
       - key: DATABASE_URL
-        sync: false # Set from Supabase
+        sync: false # Set isolated Supabase URL for Users
+
       - key: CLERK_SECRET_KEY
         sync: false
       - key: CLERK_WEBHOOK_SECRET
