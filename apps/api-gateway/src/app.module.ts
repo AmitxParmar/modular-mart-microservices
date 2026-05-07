@@ -27,7 +27,7 @@ import { ProxyModule } from './proxy/proxy.module';
     LoggerModule.forRoot({
       pinoHttp: {
         transport:
-          process.env.NODE_ENV !== 'production'
+          process.env.NODE_ENV === 'development'
             ? { target: 'pino-pretty', options: { colorize: true } }
             : undefined,
         level: process.env.LOG_LEVEL ?? 'info',

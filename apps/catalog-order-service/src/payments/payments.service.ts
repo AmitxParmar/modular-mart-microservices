@@ -12,7 +12,9 @@ type StripeInstance = InstanceType<typeof Stripe>;
 // Derive Event type from constructEvent return (avoids Stripe namespace issues in v22)
 type StripeEvent = ReturnType<StripeInstance['webhooks']['constructEvent']>;
 // Derive PaymentIntent type from paymentIntents.create return
-type StripePaymentIntent = Awaited<ReturnType<StripeInstance['paymentIntents']['create']>>;
+type StripePaymentIntent = Awaited<
+  ReturnType<StripeInstance['paymentIntents']['create']>
+>;
 
 @Injectable()
 export class PaymentsService {
@@ -68,8 +70,8 @@ export class PaymentsService {
 
     if (stripeEvent.type === 'payment_intent.succeeded') {
       const paymentIntent = stripeEvent.data.object as StripePaymentIntent;
-      const orderId = paymentIntent.metadata.orderId as string;
-      const userId = paymentIntent.metadata.userId as string;
+      const orderId = paymentIntent.metadata.orderId;
+      const userId = paymentIntent.metadata.userId;
 
       if (!orderId) {
         this.logger.warn(

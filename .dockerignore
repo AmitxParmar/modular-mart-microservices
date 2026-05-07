@@ -1,0 +1,48 @@
+# Git
+**/.git
+**/.gitignore
+**/.github
+
+# Node
+**/node_modules
+npm-debug.log
+yarn-error.log
+yarn-debug.log
+pnpm-debug.log*
+
+# Turborepo
+**/.turbo
+
+# Next.js
+**/.next
+**/out
+
+# NestJS / TypeScript build output
+**/dist
+**/coverage
+
+# Environment Variables
+**/.env
+**/.env.*
+!**/.env.example
+
+# IDEs and Editors
+**/.idea
+**/.vscode
+**/*.swp
+**/*.swo
+
+# Docker
+.dockerignore
+**/Dockerfile*
+
+# Gemini CLI / Agent
+**/.gemini
+GEMINI.md
+TASK_LIST.md
+graphify-out/
+**/graphify-out/
+
+# OS Files
+**/.DS_Store
+**/Thumbs.db

@@ -19,16 +19,7 @@ import type { GetUserRolePayload, GetUserRoleResponse } from '@repo/contracts';
 import type { ClerkUser } from '@repo/auth';
 import { InjectPinoLogger, PinoLogger } from '@repo/common';
 
-interface ClerkWebhookEvent {
-  type: string;
-  data: {
-    id: string;
-    email_addresses?: Array<{ email_address: string }>;
-    first_name?: string;
-    last_name?: string;
-    [key: string]: any;
-  };
-}
+import type { WebhookEvent } from '@clerk/backend';
 
 @Controller('users')
 export class UsersController {
@@ -83,7 +74,7 @@ export class UsersController {
 
     const wh = new Webhook(webhookSecret);
 
-    let evt: ClerkWebhookEvent;
+    let evt: WebhookEvent;
 
     try {
       // Verify against the raw bytes — re-serializing a parsed object would break the HMAC
@@ -91,7 +82,7 @@ export class UsersController {
         'svix-id': svixId,
         'svix-timestamp': svixTimestamp,
         'svix-signature': svixSignature,
-      });
+      }) as WebhookEvent;
     } catch (err) {
       this.logger.error(
         `Webhook signature verification failed: ${err instanceof Error ? err.message : String(err)}`,

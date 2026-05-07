@@ -1,0 +1,90 @@
+services:
+  # API Gateway
+  - type: web
+    name: api-gateway
+    env: docker
+    dockerContext: .
+    dockerfilePath: apps/api-gateway/Dockerfile
+    plan: starter
+    region: ohio
+    healthCheckPath: /health/live
+    envVars:
+      - key: PORT
+        value: 3000
+      - key: NODE_ENV
+        value: production
+      - key: ALLOWED_ORIGINS
+        sync: false # Set to your Vercel production URL
+      - key: USER_SERVICE_URL
+        fromService:
+          name: user-service
+          type: web
+          property: host
+      - key: PRODUCT_SERVICE_URL
+        fromService:
+          name: catalog-order-service
+          type: web
+          property: host
+      - key: ORDER_SERVICE_URL
+        fromService:
+          name: catalog-order-service
+          type: web
+          property: host
+      - key: PAYMENT_SERVICE_URL
+        fromService:
+          name: catalog-order-service
+          type: web
+          property: host
+      - key: CART_SERVICE_URL
+        fromService:
+          name: catalog-order-service
+          type: web
+          property: host
+
+  # Catalog & Order Service
+  - type: web
+    name: catalog-order-service
+    env: docker
+    dockerContext: .
+    dockerfilePath: apps/catalog-order-service/Dockerfile
+    plan: starter
+    region: ohio
+    healthCheckPath: /health/live
+    envVars:
+      - key: PORT
+        value: 3000
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false # Set from Supabase
+      - key: RABBITMQ_URL
+        sync: false # Set your RabbitMQ connection string
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: CLERK_PUBLISHABLE_KEY
+        sync: false
+      - key: CLERK_SECRET_KEY
+        sync: false
+
+  # User Service
+  - type: web
+    name: user-service
+    env: docker
+    dockerContext: .
+    dockerfilePath: apps/user-service/Dockerfile
+    plan: starter
+    region: ohio
+    healthCheckPath: /health/live
+    envVars:
+      - key: PORT
+        value: 3000
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false # Set from Supabase
+      - key: CLERK_SECRET_KEY
+        sync: false
+      - key: CLERK_WEBHOOK_SECRET
+        sync: false

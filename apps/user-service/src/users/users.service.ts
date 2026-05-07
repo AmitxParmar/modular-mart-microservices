@@ -6,12 +6,7 @@ import { User } from './entities/user.entity';
 import { Role } from './entities/role.entity';
 import { InjectPinoLogger, PinoLogger } from '@repo/common';
 
-interface ClerkUserPayload {
-  id: string;
-  email_addresses: Array<{ email_address: string }>;
-  first_name?: string;
-  last_name?: string;
-}
+import type { UserJSON } from '@clerk/backend';
 
 @Injectable()
 export class UsersService {
@@ -32,11 +27,11 @@ export class UsersService {
 
   async getUserRoles(clerkId: string): Promise<string[]> {
     const user = await this.findByClerkId(clerkId);
-    if (!user || !user.roles) return [];
+    if (!user?.roles) return [];
     return user.roles.map((r) => r.name);
   }
 
-  async syncUserFromClerk(payload: ClerkUserPayload): Promise<void> {
+  async syncUserFromClerk(payload: UserJSON): Promise<void> {
     const { id, email_addresses, first_name, last_name } = payload;
     const email = email_addresses?.[0]?.email_address;
 
@@ -76,8 +71,8 @@ export class UsersService {
       user = this.userRepository.create({
         clerkId: id,
         email,
-        firstName: first_name,
-        lastName: last_name,
+        firstName: first_name || undefined,
+        lastName: last_name || undefined,
       });
 
       const customerRole = await this.roleRepository.findOne({
