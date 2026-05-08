@@ -18,7 +18,7 @@ async function bootstrap() {
   app.use(helmet());
 
   // Global route prefix — gateway forwards /api/* paths as-is
-  app.setGlobalPrefix('api');
+  app.setGlobalPrefix('api', { exclude: ['health/(.*)'] });
 
   // Enable CORS
   app.enableCors({
