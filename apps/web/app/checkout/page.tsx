@@ -1,9 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
-import { CheckoutFlow } from "@/features/checkout/checkout-flow";
-import { OrderSummary } from "@/features/checkout/order-summary";
-import { StripeProvider } from "@/features/checkout/stripe-provider";
+import { CheckoutFlow, OrderSummary, StripeProvider } from "@/features/checkout";
 
 export default function CheckoutPage() {
   return (

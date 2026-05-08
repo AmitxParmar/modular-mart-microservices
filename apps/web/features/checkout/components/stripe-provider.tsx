@@ -5,10 +5,12 @@ import { Elements } from "@stripe/react-stripe-js";
 import { useCart } from "@/hooks/use-cart";
 import { useMemo } from "react";
 
-// Standard Stripe test public key
-const stripePromise = loadStripe("pk_test_TYooMQauvdEDq54NiTphI7jx");
+// Load Stripe using the environment variable
+const stripePromise = loadStripe(
+  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "pk_test_TYooMQauvdEDq54NiTphI7jx"
+);
 
-export function StripeProvider({ children }: { children: React.ReactNode }) {
+export function StripeProvider({ children }: Readonly<{ children: React.ReactNode }>) {
   const { items } = useCart();
   
   // Calculate total for deferred mode
