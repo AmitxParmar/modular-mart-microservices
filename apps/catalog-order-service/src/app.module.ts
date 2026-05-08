@@ -25,7 +25,7 @@ import { AuthProxyModule } from './auth-proxy.module';
     LoggerModule.forRootAsync({
       useFactory: () => createLoggerConfig('catalog-order-service'),
     }),
-    DatabaseModule,
+    DatabaseModule.forRoot(),
     CatalogModule,
     OrdersModule,
     PaymentsModule,

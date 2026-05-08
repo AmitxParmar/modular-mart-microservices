@@ -26,7 +26,7 @@ RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store pnpm install
 
 # Copy source code and build
 COPY --from=pruner /app/out/full/ .
-RUN pnpm turbo run build --filter=api-gateway
+RUN pnpm turbo run build --filter=api-gateway...
 
 # ─────────────────────────────────────────────────
 # Stage 3: Production
@@ -45,6 +45,11 @@ RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store pnpm install
 
 # Copy compiled output from builder with chown
 COPY --chown=node:node --from=builder /app/apps/api-gateway/dist ./apps/api-gateway/dist
+
+COPY --chown=node:node --from=builder /app/packages/database/dist ./packages/database/dist
+COPY --chown=node:node --from=builder /app/packages/common/dist ./packages/common/dist
+COPY --chown=node:node --from=builder /app/packages/auth/dist ./packages/auth/dist
+COPY --chown=node:node --from=builder /app/packages/contracts/dist ./packages/contracts/dist
 
 # Security: use non-root user
 USER node

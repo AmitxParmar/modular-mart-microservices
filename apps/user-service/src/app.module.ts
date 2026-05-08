@@ -9,9 +9,10 @@ import {
   HealthModule,
   HttpExceptionFilter,
   CorrelationMiddleware,
+  createLoggerConfig 
 } from '@repo/common';
 import { LoggerModule } from 'nestjs-pino';
-import { createLoggerConfig } from '@repo/common';
+
 
 @Module({
   imports: [
@@ -19,7 +20,7 @@ import { createLoggerConfig } from '@repo/common';
     LoggerModule.forRootAsync({
       useFactory: () => createLoggerConfig('user-service'),
     }),
-    DatabaseModule,
+    DatabaseModule.forRoot(),
     UsersModule,
     HealthModule,
   ],

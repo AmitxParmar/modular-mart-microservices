@@ -6,7 +6,11 @@ envVarGroups:
       - key: LOG_LEVEL
         value: info
       - key: RABBITMQ_URL
-        sync: false # Set to your CloudAMQP URL (e.g., amqps://...)
+        sync: false
+      - key: CLERK_PUBLISHABLE_KEY   # ADD
+        sync: false
+      - key: CLERK_SECRET_KEY        # ADD (shared across services)
+        sync: false
 
 services:
   # API Gateway
@@ -53,6 +57,12 @@ services:
           name: catalog-order-service
           type: web
           property: host
+      - key: CLERK_PUBLISHABLE_KEY
+        fromGroup: shared-infra
+      - key: CLERK_SECRET_KEY
+        fromGroup: shared-infra
+      - key: CLERK_WEBHOOK_SECRET
+        sync: false    
 
   # Catalog & Order Service
   - type: web
@@ -73,11 +83,7 @@ services:
         sync: false
       - key: STRIPE_WEBHOOK_SECRET
         sync: false
-      - key: CLERK_PUBLISHABLE_KEY
-        sync: false
-      - key: CLERK_SECRET_KEY
-        sync: false
-
+    
   # User Service
   - type: web
     name: user-service
