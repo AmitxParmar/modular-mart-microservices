@@ -10,6 +10,7 @@ export enum OrderStatus {
   CANCELLED = 'CANCELLED',
 }
 
+// Mapping updated to snake_case
 @Entity('orders')
 export class Order extends BaseEntity {
   @Column({ name: 'user_id' })

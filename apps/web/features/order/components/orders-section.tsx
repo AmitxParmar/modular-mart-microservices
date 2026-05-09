@@ -4,17 +4,9 @@ import { useOrders } from '../api/order.queries';
 import { OrderCard } from './order-card';
 
 export function OrdersSection() {
-  const { data: orders = [], isLoading, isError } = useOrders();
+  const { data: orders = [], isError } = useOrders();
 
-  if (isLoading) {
-    return (
-      <div className="space-y-3">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="h-16 bg-muted animate-pulse rounded" />
-        ))}
-      </div>
-    );
-  }
+
 
   if (isError) {
     return (
@@ -37,7 +29,7 @@ export function OrdersSection() {
       <div className="mb-6">
         <h2 className="text-2xl font-bold tracking-tight">Your Orders</h2>
         <p className="text-sm text-muted-foreground mt-1">
-          {orders.length} order{orders.length !== 1 ? 's' : ''} placed so far.
+          {orders.length} order{orders.length === 1 ? '' : 's'} placed so far.
         </p>
       </div>
       <div className="space-y-6">

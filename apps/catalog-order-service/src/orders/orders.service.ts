@@ -13,6 +13,7 @@ import { CreateOrderDto } from './dto/create-order.dto';
 
 @Injectable()
 export class OrdersService {
+  // Service logic for managing orders
   constructor(
     private readonly logger: PinoLogger,
     @InjectRepository(Order) private readonly orderRepo: Repository<Order>,

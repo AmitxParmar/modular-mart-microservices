@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { useAuth } from '@clerk/nextjs';
 import { fetchOrders, fetchOrder } from '../services/api';
 import { orderKeys } from './keys';
@@ -15,6 +15,18 @@ export function useOrders() {
     queryFn: fetchOrders,
     enabled: isSignedIn === true, // stable: only true/false, never undefined after mount
     staleTime: 1000 * 60 * 2, // 2 min
+  });
+}
+
+/**
+ * Suspense-enabled version of useOrders.
+ * To be used with React Suspense and error boundaries.
+ */
+export function useSuspenseOrders() {
+  return useSuspenseQuery({
+    queryKey: orderKeys.lists(),
+    queryFn: fetchOrders,
+    staleTime: 1000 * 60 * 2,
   });
 }
 
