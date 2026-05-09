@@ -43,11 +43,22 @@ export enum OrderStatus {
   CANCELLED = 'CANCELLED',
 }
 
+export interface ShippingAddressSnapshot {
+  firstName: string;
+  lastName: string;
+  address: string;
+  city: string;
+  state: string;
+  zip: string;
+  country?: string;
+}
+
 export interface OrderItem {
   id: string;
   productId: string;
   quantity: number;
   unitPrice: number;
+  product?: Product;
 }
 
 export interface Order {
@@ -56,6 +67,8 @@ export interface Order {
   status: OrderStatus;
   totalAmount: number;
   shippingAddressId: string | null;
+  shippingAddressSnapshot: ShippingAddressSnapshot | null;
+  customerEmailSnapshot: string | null;
   items: OrderItem[];
   createdAt: string;
   updatedAt: string;

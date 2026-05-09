@@ -8,6 +8,7 @@ import {
   HttpCode,
   NotFoundException,
   UseGuards,
+  Param,
 } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { UsersService } from './users.service';
@@ -50,6 +51,15 @@ export class UsersController {
       );
     }
     return user;
+  }
+
+  @Get('addresses/:id')
+  async getAddress(@Param('id') id: string) {
+    try {
+      return await this.usersService.getAddressById(id);
+    } catch (error) {
+      throw new NotFoundException(error.message);
+    }
   }
 
   @Post('webhooks/clerk')

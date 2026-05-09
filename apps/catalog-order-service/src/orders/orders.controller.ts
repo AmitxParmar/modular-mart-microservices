@@ -29,18 +29,18 @@ export class OrdersController {
     @CurrentUser() user: ClerkUser,
     @Body() createOrderDto: CreateOrderDto,
   ) {
-    return this.ordersService.createOrder(user.userId, createOrderDto);
+    return this.ordersService.createOrder(user, createOrderDto);
   }
 
   @Get()
   @UseGuards(ClerkAuthGuard)
   getUserOrders(@CurrentUser() user: ClerkUser) {
-    return this.ordersService.getUserOrders(user.userId);
+    return this.ordersService.getUserOrders(user.internalId);
   }
 
   @Get(':id')
   @UseGuards(ClerkAuthGuard)
   getOrder(@CurrentUser() user: ClerkUser, @Param('id') id: string) {
-    return this.ordersService.getOrderById(user.userId, id);
+    return this.ordersService.getOrderById(user.internalId, id);
   }
 }

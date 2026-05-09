@@ -1,6 +1,7 @@
 import { Entity, Column, Index, ManyToOne, JoinColumn } from 'typeorm';
 import { BaseEntity } from '@repo/database';
 import { Order } from './order.entity';
+import { Product } from '../../catalog/entities/product.entity';
 
 @Entity('order_items')
 export class OrderItem extends BaseEntity {
@@ -10,7 +11,11 @@ export class OrderItem extends BaseEntity {
   order: Order;
 
   @Column({ name: 'product_id', type: 'uuid' })
-  productId: string; // Logical FK pointing to Product
+  productId: string;
+
+  @ManyToOne(() => Product)
+  @JoinColumn({ name: 'product_id' })
+  product: Product;
 
   @Column({ type: 'int' })
   quantity: number;

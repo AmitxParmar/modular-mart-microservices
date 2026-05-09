@@ -37,8 +37,17 @@ export function OrderCard({ order }: OrderCardProps) {
         </div>
         <div className="hidden sm:block">
           <p className="text-muted-foreground uppercase font-bold tracking-wider mb-1">Ship To</p>
-          <p className="font-medium text-primary hover:underline cursor-pointer">
-            User Account
+          <p className="font-medium text-primary hover:underline cursor-pointer group relative">
+            {order.shippingAddressSnapshot 
+              ? `${order.shippingAddressSnapshot.firstName} ${order.shippingAddressSnapshot.lastName}`
+              : 'User Account'
+            }
+            {order.shippingAddressSnapshot && (
+              <span className="absolute left-0 top-full mt-2 w-48 p-2 bg-popover text-popover-foreground border border-border rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10 text-[10px] pointer-events-none">
+                {order.shippingAddressSnapshot.address}<br />
+                {order.shippingAddressSnapshot.city}, {order.shippingAddressSnapshot.state} {order.shippingAddressSnapshot.zip}
+              </span>
+            )}
           </p>
         </div>
         <div className="text-right ml-auto">
@@ -67,7 +76,7 @@ export function OrderCard({ order }: OrderCardProps) {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-primary hover:underline line-clamp-2 cursor-pointer">
-                    Product ID: {item.productId}
+                    {item.product?.name || `Product ID: ${item.productId}`}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
                     Qty: {item.quantity}

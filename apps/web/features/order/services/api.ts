@@ -1,10 +1,11 @@
 import { api } from '@/lib/api-client';
 import { ENDPOINTS } from '@/lib/endpoints';
-import type { Order } from '@/types/api';
+import type { Order, ShippingAddressSnapshot } from '@/types/api';
 
 export interface CreateOrderPayload {
   items: { productId: string; quantity: number }[];
   shippingAddressId?: string;
+  shippingAddressSnapshot?: ShippingAddressSnapshot;
 }
 
 export async function fetchOrders(): Promise<Order[]> {

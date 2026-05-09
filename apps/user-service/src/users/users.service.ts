@@ -1,21 +1,27 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 
 import { User } from './entities/user.entity';
 import { Role } from './entities/role.entity';
 import { InjectPinoLogger, PinoLogger } from '@repo/common';
+import { createClerkClient } from '@clerk/backend';
 
 import type { UserJSON } from '@clerk/backend';
 
 @Injectable()
 export class UsersService {
+  private clerkClient = createClerkClient({
+    secretKey: process.env.CLERK_SECRET_KEY,
+  });
+
   constructor(
     @InjectPinoLogger(UsersService.name) private readonly logger: PinoLogger,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     @InjectRepository(Role)
     private readonly roleRepository: Repository<Role>,
+    private readonly dataSource: DataSource,
   ) {}
 
   async findByClerkId(clerkId: string): Promise<User | null> {
@@ -64,26 +70,40 @@ export class UsersService {
         existingEmail.firstName = first_name || existingEmail.firstName;
         existingEmail.lastName = last_name || existingEmail.lastName;
         await this.userRepository.save(existingEmail);
-        return;
+        user = existingEmail;
+      } else {
+        // Create new user and fetch default CUSTOMER Role
+        user = this.userRepository.create({
+          clerkId: id,
+          email,
+          firstName: first_name || undefined,
+          lastName: last_name || undefined,
+        });
+
+        const customerRole = await this.roleRepository.findOne({
+          where: { name: 'CUSTOMER' },
+        });
+        if (customerRole) {
+          user.roles = [customerRole];
+        }
+
+        await this.userRepository.save(user);
+        this.logger.info(`Created new user ${user.id} from Clerk webhooks`);
       }
+    }
 
-      // Create new user and fetch default CUSTOMER Role
-      user = this.userRepository.create({
-        clerkId: id,
-        email,
-        firstName: first_name || undefined,
-        lastName: last_name || undefined,
+    // Crucial: Sync internal ID back to Clerk Metadata
+    try {
+      await this.clerkClient.users.updateUserMetadata(id, {
+        publicMetadata: {
+          internalId: user.id,
+        },
       });
-
-      const customerRole = await this.roleRepository.findOne({
-        where: { name: 'CUSTOMER' },
-      });
-      if (customerRole) {
-        user.roles = [customerRole];
-      }
-
-      await this.userRepository.save(user);
-      this.logger.info(`Created new user ${user.id} from Clerk webhooks`);
+      this.logger.info(`Synced internal ID ${user.id} to Clerk for user ${id}`);
+    } catch (error) {
+      this.logger.error(
+        `Failed to sync internal ID to Clerk for user ${id}: ${error.message}`,
+      );
     }
   }
 
@@ -95,5 +115,17 @@ export class UsersService {
       await this.userRepository.remove(user);
       this.logger.info(`Deleted user ${user.id} from Clerk webhooks`);
     }
+  }
+
+  async getAddressById(addressId: string): Promise<any> {
+    // This will be called internally by other services to snapshot addresses
+    const address = await this.dataSource
+      .getRepository('addresses')
+      .findOne({ where: { id: addressId } });
+    
+    if (!address) {
+      throw new Error('Address not found');
+    }
+    return address;
   }
 }

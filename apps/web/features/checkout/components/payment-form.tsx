@@ -10,13 +10,20 @@ import { Button } from "@/components/ui/button";
 import { useCart } from "@/hooks/use-cart";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import Link from "next/link";
-
+import type { ShippingAddressSnapshot } from "@/types/api";
 import { useCreateOrder, useCreatePaymentIntent } from "../api/checkout.mutations";
+import { useUser } from "@clerk/nextjs";
 
-export function PaymentForm() {
+interface PaymentFormProps {
+  /** Shipping address snapshot collected from the checkout form */
+  shippingAddressSnapshot?: ShippingAddressSnapshot;
+}
+
+export function PaymentForm({ shippingAddressSnapshot }: PaymentFormProps) {
   const stripe = useStripe();
   const elements = useElements();
   const { items, clearCart } = useCart();
+  const { user: clerkUser } = useUser();
 
   const createOrder = useCreateOrder();
   const createPaymentIntent = useCreatePaymentIntent();
@@ -34,7 +41,7 @@ export function PaymentForm() {
     setErrorMessage(null);
 
     try {
-      // 1. Validate the form and collect payment details
+      // 1. Validate payment form before touching the backend
       const { error: submitError } = await elements.submit();
       if (submitError) {
         setErrorMessage(submitError.message ?? "An unexpected error occurred.");
@@ -42,25 +49,28 @@ export function PaymentForm() {
         return;
       }
 
-      // 2. Create the Order on the backend
+      // 2. Create order — shipping snapshot is included directly in the payload,
+      //    no cross-service HTTP calls needed on the backend side.
       const order = await createOrder.mutateAsync({
         items: items.map((item) => ({
           productId: item.product.id,
           quantity: item.quantity,
         })),
+        shippingAddressSnapshot,
+        userId: clerkUser?.publicMetadata?.internalId as string,
       });
 
-      // 3. Create the PaymentIntent on the backend
+      // 3. Create PaymentIntent tied to the new order
       const { clientSecret } = await createPaymentIntent.mutateAsync(order.id);
 
-      // 4. Confirm the payment with Stripe
+      // 4. Confirm payment with Stripe
       const { error: confirmError } = await stripe.confirmPayment({
         elements,
         clientSecret,
         confirmParams: {
           return_url: `${globalThis.location.origin}/checkout/success`,
         },
-        redirect: "if_required", // Handle success in-place if no redirect needed
+        redirect: "if_required",
       });
 
       if (confirmError) {
@@ -69,11 +79,13 @@ export function PaymentForm() {
         setIsSuccess(true);
         clearCart();
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Checkout error:", err);
-      setErrorMessage(
-        err.response?.data?.message || err.message || "Something went wrong during checkout."
-      );
+      const message =
+        err instanceof Error
+          ? (err as { response?: { data?: { message?: string } } }).response?.data?.message ?? err.message
+          : "Something went wrong during checkout.";
+      setErrorMessage(message);
     } finally {
       setIsLoading(false);
     }

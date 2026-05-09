@@ -41,13 +41,34 @@ export class ClerkAuthGuard implements CanActivate {
       });
 
       const userId = payload.sub;
+      // Clerk JWT stores custom metadata under publicMetadata (camelCase)
+      // Note: top-level `internalId` check kept as a fallback for dev tokens
+      const meta = (payload as any).publicMetadata ?? (payload as any).public_metadata;
+      const internalId: string | undefined =
+        (payload as any).internalId ?? meta?.internalId;
+
+      if (!internalId) {
+        this.logger.warn(
+          `ClerkAuthGuard: internalId missing from JWT for user ${userId}. ` +
+          'User may not have been synced via webhook yet.',
+        );
+      }
 
       // 2. Attach to request so @CurrentUser() can read it
+      // Note: Clerk templates might return the literal string "null" if mapping fails
+      const verifiedInternalId = 
+        internalId && internalId !== "null" && internalId !== "undefined" 
+          ? internalId 
+          : "";
+
       (request as Request & { auth: ClerkUser }).auth = {
         userId,
+        internalId: verifiedInternalId,
         sessionId: payload.sid,
-        // Role is now resolved statelessly by RolesGuard via MessagePattern
+        email: (payload as any).email || (payload as any).email_address,
       };
+
+      this.logger.debug(`ClerkAuthGuard: User ${userId} authenticated with internalId: ${verifiedInternalId || 'MISSING'}`);
 
       return true;
     } catch (err) {

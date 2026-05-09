@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PaymentForm } from "./payment-form";
+import type { ShippingAddressSnapshot } from "@/types/api";
+import { addressSchema } from "../schema/address.schema";
 
 type Step = "contact" | "shipping" | "payment";
 
@@ -14,9 +16,11 @@ export function CheckoutFlow() {
   const { user } = useUser();
   const [activeStep, setActiveStep] = useState<Step>("contact");
   const [completedSteps, setCompletedSteps] = useState<Step[]>([]);
-  
-  const [email, setEmail] = useState(user?.primaryEmailAddress?.emailAddress || "");
-  const [shippingData, setShippingData] = useState({
+
+  const [email, setEmail] = useState(
+    user?.primaryEmailAddress?.emailAddress || ""
+  );
+  const [shippingData, setShippingData] = useState<ShippingAddressSnapshot>({
     firstName: user?.firstName || "",
     lastName: user?.lastName || "",
     address: "",
@@ -31,6 +35,8 @@ export function CheckoutFlow() {
     }
     setActiveStep(nextStep);
   };
+
+  const isShippingValid = addressSchema.safeParse(shippingData).success;
 
   return (
     <div className="space-y-6">
@@ -53,7 +59,7 @@ export function CheckoutFlow() {
               className="rounded-xl h-12 bg-background border-border/60"
             />
           </div>
-          <Button 
+          <Button
             onClick={() => handleCompleteStep("contact", "shipping")}
             className="rounded-full px-8 h-12 font-semibold"
           >
@@ -71,58 +77,59 @@ export function CheckoutFlow() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground block">First Name</label>
-            <Input 
+            <Input
               value={shippingData.firstName}
-              onChange={(e) => setShippingData({...shippingData, firstName: e.target.value})}
-              className="rounded-xl h-12 bg-background border-border/60" 
+              onChange={(e) => setShippingData({ ...shippingData, firstName: e.target.value })}
+              className="rounded-xl h-12 bg-background border-border/60"
             />
           </div>
           <div className="space-y-2">
             <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground block">Last Name</label>
-            <Input 
+            <Input
               value={shippingData.lastName}
-              onChange={(e) => setShippingData({...shippingData, lastName: e.target.value})}
-              className="rounded-xl h-12 bg-background border-border/60" 
+              onChange={(e) => setShippingData({ ...shippingData, lastName: e.target.value })}
+              className="rounded-xl h-12 bg-background border-border/60"
             />
           </div>
           <div className="md:col-span-2 space-y-2">
             <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground block">Address</label>
-            <Input 
+            <Input
               value={shippingData.address}
-              onChange={(e) => setShippingData({...shippingData, address: e.target.value})}
-              className="rounded-xl h-12 bg-background border-border/60" 
+              onChange={(e) => setShippingData({ ...shippingData, address: e.target.value })}
+              className="rounded-xl h-12 bg-background border-border/60"
             />
           </div>
           <div className="space-y-2">
             <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground block">City</label>
-            <Input 
+            <Input
               value={shippingData.city}
-              onChange={(e) => setShippingData({...shippingData, city: e.target.value})}
-              className="rounded-xl h-12 bg-background border-border/60" 
+              onChange={(e) => setShippingData({ ...shippingData, city: e.target.value })}
+              className="rounded-xl h-12 bg-background border-border/60"
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground block">State</label>
-              <Input 
+              <Input
                 value={shippingData.state}
-                onChange={(e) => setShippingData({...shippingData, state: e.target.value})}
-                className="rounded-xl h-12 bg-background border-border/60" 
+                onChange={(e) => setShippingData({ ...shippingData, state: e.target.value })}
+                className="rounded-xl h-12 bg-background border-border/60"
               />
             </div>
             <div className="space-y-2">
               <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground block">ZIP</label>
-              <Input 
+              <Input
                 value={shippingData.zip}
-                onChange={(e) => setShippingData({...shippingData, zip: e.target.value})}
-                className="rounded-xl h-12 bg-background border-border/60" 
+                onChange={(e) => setShippingData({ ...shippingData, zip: e.target.value })}
+                className="rounded-xl h-12 bg-background border-border/60"
               />
             </div>
           </div>
           <div className="md:col-span-2 pt-4">
-            <Button 
+            <Button
               onClick={() => handleCompleteStep("shipping", "payment")}
-              className="rounded-full px-8 h-12 font-semibold"
+              disabled={!isShippingValid}
+              className="rounded-full px-8 h-12 font-semibold disabled:opacity-50"
             >
               Continue to Payment
             </Button>
@@ -140,8 +147,8 @@ export function CheckoutFlow() {
           <p className="text-sm text-muted-foreground">
             All transactions are secure and encrypted.
           </p>
-          
-          <PaymentForm />
+          {/* Pass the collected shipping snapshot to PaymentForm */}
+          <PaymentForm shippingAddressSnapshot={shippingData} />
         </div>
       </StepContainer>
     </div>
@@ -169,9 +176,9 @@ function StepContainer({ title, status, onEdit, children }: StepContainerProps) 
         )}>
           {title}
         </h3>
-        
+
         {status === "completed" && (
-          <button 
+          <button
             onClick={onEdit}
             className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-primary hover:text-primary/80 transition-colors"
           >
@@ -179,7 +186,7 @@ function StepContainer({ title, status, onEdit, children }: StepContainerProps) 
           </button>
         )}
       </div>
-      
+
       {status === "active" && (
         <div className="px-8 pb-8 animate-in fade-in slide-in-from-top-2 duration-300">
           {children}

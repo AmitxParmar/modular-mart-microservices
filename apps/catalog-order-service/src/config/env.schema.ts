@@ -16,6 +16,7 @@ export const envSchema = z.object({
   STRIPE_WEBHOOK_SECRET: z.string().min(1),
   CLERK_PUBLISHABLE_KEY: z.string().min(1),
   CLERK_SECRET_KEY: z.string().min(1),
+  USER_SERVICE_URL: z.url().default('http://localhost:3001'),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;

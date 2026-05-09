@@ -27,13 +27,13 @@ export class PaymentsController {
     @Body() body: CreateIntentDto,
   ) {
     const order = await this.ordersService.getOrderById(
-      user.userId,
+      user.internalId,
       body.orderId,
     );
     return this.paymentsService.createPaymentIntent(
       Number(order.totalAmount),
       body.orderId,
-      user.userId,
+      user.internalId,
     );
   }
 
