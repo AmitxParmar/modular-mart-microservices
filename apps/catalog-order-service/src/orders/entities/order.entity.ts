@@ -12,17 +12,17 @@ export enum OrderStatus {
 
 @Entity('orders')
 export class Order extends BaseEntity {
-  @Column()
+  @Column({ name: 'user_id' })
   @Index()
   userId: string; // Logical foreign key pointing to the Clerk ID
 
-  @Column({ type: 'enum', enum: OrderStatus, default: OrderStatus.PENDING })
+  @Column({ type: 'enum', enum: OrderStatus, default: OrderStatus.PENDING, enumName: 'order_status' })
   status: OrderStatus;
 
-  @Column('decimal', { precision: 10, scale: 2 })
+  @Column({ name: 'total_amount', type: 'decimal', precision: 10, scale: 2 })
   totalAmount: number;
 
-  @Column('uuid', { nullable: true })
+  @Column({ name: 'shipping_address_id', type: 'uuid', nullable: true })
   shippingAddressId: string; // Logical foreign key
 
   @OneToMany(() => OrderItem, (item) => item.order, { cascade: true })

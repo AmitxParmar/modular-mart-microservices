@@ -1,4 +1,4 @@
-import { Entity, Column, Index, ManyToOne } from 'typeorm';
+import { Entity, Column, Index, ManyToOne, JoinColumn } from 'typeorm';
 import { BaseEntity } from '@repo/database';
 import { Category } from './category.entity';
 
@@ -9,6 +9,7 @@ export class Product extends BaseEntity {
     nullable: true,
   })
   @Index()
+  @JoinColumn({ name: 'category_id' })
   category: Category;
 
   @Column()
@@ -23,6 +24,6 @@ export class Product extends BaseEntity {
   @Column('decimal', { precision: 10, scale: 2 })
   price: number;
 
-  @Column({ type: 'int', default: 0 })
+  @Column({ name: 'stock_quantity', type: 'int', default: 0 })
   stockQuantity: number;
 }

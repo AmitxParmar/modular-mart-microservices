@@ -10,16 +10,16 @@ export enum PaymentStatus {
 
 @Entity('payments')
 export class Payment extends BaseEntity {
-  @Column('uuid')
+  @Column({ name: 'order_id', type: 'uuid' })
   @Index()
   orderId: string; // Logical foreign key pointing to Order
 
   @Column('decimal', { precision: 10, scale: 2 })
   amount: number;
 
-  @Column({ type: 'enum', enum: PaymentStatus, default: PaymentStatus.PENDING })
+  @Column({ type: 'enum', enum: PaymentStatus, default: PaymentStatus.PENDING, enumName: 'payment_status' })
   status: PaymentStatus;
 
-  @Column({ nullable: true })
+  @Column({ name: 'stripe_payment_intent_id', nullable: true })
   stripePaymentIntentId: string; // For syncing with Stripe
 }
