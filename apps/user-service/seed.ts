@@ -2,6 +2,7 @@ import { DataSource } from 'typeorm';
 import { User } from './src/users/entities/user.entity';
 import { Address } from './src/users/entities/address.entity';
 import { Role } from './src/users/entities/role.entity';
+import { Seller } from './src/users/entities/seller.entity';
 import * as dotenv from 'dotenv';
 import * as dns from 'node:dns';
 
@@ -11,7 +12,7 @@ dotenv.config();
 const AppDataSource = new DataSource({
   type: 'postgres',
   url: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/user_service_db',
-  entities: [User, Address, Role],
+  entities: [User, Address, Role, Seller],
   synchronize: false,
   ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false,
 });
@@ -23,6 +24,7 @@ async function runSeed() {
   const userRepository = AppDataSource.getRepository(User);
   const addressRepository = AppDataSource.getRepository(Address);
   const roleRepository = AppDataSource.getRepository(Role);
+  const sellerRepository = AppDataSource.getRepository(Seller);
 
   // 1. Seed Roles
   const rolesToSeed = [
@@ -53,14 +55,8 @@ async function runSeed() {
   });
 
   if (!user) {
-    // If not found by ID, try finding by clerkId to avoid unique constraint violations
     user = await userRepository.findOne({ where: { clerkId: targetClerkId }, relations: ['roles'] });
-    
-    if (user) {
-      console.log(`Found user by clerkId ${targetClerkId}, updating ID to ${targetUserId}`);
-      // TypeORM doesn't like updating primary keys easily, but we'll try to update the fields
-      user.id = targetUserId;
-    } else {
+    if (!user) {
       user = userRepository.create({
         id: targetUserId,
         clerkId: targetClerkId,
@@ -76,11 +72,24 @@ async function runSeed() {
   await userRepository.save(user);
   console.log(`User ${targetUserId} verified and linked to all roles.`);
 
-  // 3. Seed Multiple Dummy Addresses
+  // 3. Seed Seller Profile
+  let seller = await sellerRepository.findOne({ where: { userId: targetUserId } });
+  if (!seller) {
+    seller = sellerRepository.create({
+      userId: targetUserId,
+      businessName: 'Modular Solutions Ltd',
+      businessEmail: 'amitparmar901@gmail.com',
+      taxId: 'TX-9988-77',
+      status: 'APPROVED',
+      commissionRate: 5.00
+    });
+    await sellerRepository.save(seller);
+    console.log(`Seller profile for user ${targetUserId} seeded.`);
+  }
+
+  // 4. Seed Multiple Dummy Addresses
   const addresses = [
     { street: '123 Tech Lane', city: 'Silicon Valley', state: 'CA', postalCode: '94025', country: 'USA', isDefault: true },
-    { street: '456 Innovation Way', city: 'San Francisco', state: 'CA', postalCode: '94105', country: 'USA', isDefault: false },
-    { street: '789 Developer Road', city: 'Austin', state: 'TX', postalCode: '73301', country: 'USA', isDefault: false }
   ];
 
   for (const addrData of addresses) {
@@ -100,3 +109,4 @@ runSeed().catch((error) => {
   console.error('Error during seeding:', error);
   process.exit(1);
 });
+

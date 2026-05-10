@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { ShoppingBag } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export function OrdersEmpty() {
   return (
@@ -15,11 +16,12 @@ export function OrdersEmpty() {
         It looks like you haven't placed any orders yet. Start exploring our
         catalog!
       </p>
-      <Button
-        render={<Link href="/">Start Shopping</Link>}
-        size="lg"
-        className="px-8"
-      />
+      <Link
+        href="/"
+        className={cn(buttonVariants({ size: "lg" }), "px-8")}
+      >
+        Start Shopping
+      </Link>
     </div>
   );
 }

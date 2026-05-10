@@ -9,7 +9,9 @@ export const envSchema = z.object({
     .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace'])
     .default('info'),
   DATABASE_URL: z.url(),
+  DATABASE_SSL: z.coerce.boolean().default(false),
   CLERK_SECRET_KEY: z.string().min(1),
+
   CLERK_WEBHOOK_SECRET: z.string().min(1).optional(),
 });
 

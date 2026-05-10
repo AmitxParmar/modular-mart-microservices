@@ -8,9 +8,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { CatalogService } from './catalog.service';
-import { ClerkAuthGuard, CurrentUser } from '@repo/auth';
+import { ClerkAuthGuard, CurrentUser, Roles, RolesGuard } from '@repo/auth';
 import type { ClerkUser } from '@repo/auth';
-import { AdminGuard } from './admin.guard';
 import { Product } from './entities/product.entity';
 
 @Controller('catalog')
@@ -33,11 +32,14 @@ export class CatalogController {
   }
 
   @Post('products')
-  @UseGuards(ClerkAuthGuard, AdminGuard)
+  @Roles('ADMIN', 'SELLER')
+  @UseGuards(ClerkAuthGuard, RolesGuard)
   createProduct(
     @CurrentUser() user: ClerkUser,
     @Body() productData: Partial<Product>,
   ) {
+    // In a real scenario, we would attach user.internalId as seller_id here
     return this.catalogService.createProduct(productData);
   }
 }
+

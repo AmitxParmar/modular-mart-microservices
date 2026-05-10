@@ -97,6 +97,7 @@ export class UsersService {
       await this.clerkClient.users.updateUserMetadata(id, {
         publicMetadata: {
           internalId: user.id,
+          roles: user.roles?.map((r) => r.name) || [],
         },
       });
       this.logger.info(`Synced internal ID ${user.id} to Clerk for user ${id}`);

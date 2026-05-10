@@ -4,6 +4,7 @@ import { Product } from './src/catalog/entities/product.entity';
 import { Order, OrderStatus } from './src/orders/entities/order.entity';
 import { OrderItem } from './src/orders/entities/order-item.entity';
 import { Payment, PaymentStatus } from './src/payments/entities/payment.entity';
+import { ServiceHealthLog } from './src/admin/entities/service-health-log.entity';
 import * as dotenv from 'dotenv';
 import * as dns from 'node:dns';
 
@@ -13,7 +14,7 @@ dotenv.config();
 const AppDataSource = new DataSource({
   type: 'postgres',
   url: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/catalog_order_db',
-  entities: [Category, Product, Order, OrderItem, Payment],
+  entities: [Category, Product, Order, OrderItem, Payment, ServiceHealthLog],
   synchronize: false,
   ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false,
 });
@@ -26,6 +27,9 @@ async function main() {
   const productRepo = AppDataSource.getRepository(Product);
   const orderRepo = AppDataSource.getRepository(Order);
   const paymentRepo = AppDataSource.getRepository(Payment);
+  const healthRepo = AppDataSource.getRepository(ServiceHealthLog);
+
+  const targetClerkId = 'user_3BCsgam3vcHeYJhbLmw6271I4xT';
 
   // 1. Ensure Categories and Products exist
   let electronics = await categoryRepo.findOne({ where: { slug: 'electronics' } });
@@ -37,11 +41,34 @@ async function main() {
   if (!laptop) {
     laptop = await productRepo.save(productRepo.create({ 
       name: 'Laptop Pro', slug: 'laptop-pro', description: 'High performance laptop', 
-      price: 1299.99, stockQuantity: 50, category: electronics 
+      price: 1299.99, stockQuantity: 50, category: electronics,
+      sellerId: targetClerkId,
+      status: 'APPROVED',
+      isActive: true
     }));
+    console.log('✅ Laptop Pro product seeded with seller ownership');
+  } else {
+    // Update existing product to be owned by the target user
+    laptop.sellerId = targetClerkId;
+    laptop.status = 'APPROVED';
+    await productRepo.save(laptop);
+    console.log('✅ Laptop Pro ownership updated');
   }
 
-  // 2. Seed Orders for the target user
+  // 2. Seed Health Logs
+  const services = ['api-gateway', 'user-service', 'catalog-order-service', 'payment-service'];
+  for (const svc of services) {
+    const log = healthRepo.create({
+      serviceName: svc,
+      status: svc === 'payment-service' ? 'degraded' : 'healthy',
+      latencyMs: svc === 'payment-service' ? 850 : 45 + Math.floor(Math.random() * 100),
+      errorDetails: svc === 'payment-service' ? 'Stripe API latency spike' : undefined
+    });
+    await healthRepo.save(log);
+  }
+  console.log('✅ Service health logs seeded');
+
+  // 3. Seed Orders for the target user
   const targetUserId = '019d0b6a-b3e4-70d6-a168-89e80598c929';
   
   const existingOrder = await orderRepo.findOne({ where: { userId: targetUserId } });

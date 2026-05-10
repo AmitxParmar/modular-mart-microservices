@@ -17,7 +17,11 @@ async function bootstrap() {
   // Security HTTP Headers
   app.use(helmet());
 
+  // Global route prefix — gateway forwards /api/* paths as-is
+  app.setGlobalPrefix('api');
+
   // Enable CORS
+
   app.enableCors({
     origin: '*', // API Gateway will usually call this internally, but useful for dev
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',

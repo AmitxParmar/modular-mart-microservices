@@ -12,6 +12,7 @@ import {
 
 import { Show, UserButton } from "@clerk/nextjs";
 import { useAuthDialog } from "@/features/auth/auth-dialog-context";
+import { RoleSwitcher } from "@/features/auth/components/role-switcher";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "./theme-button";
 import { Input } from "@/components/ui/input";
@@ -114,8 +115,9 @@ export default function Header() {
           <div className="h-4 w-px bg-border/60 mx-1" />
 
           {/* Auth Status Routing */}
-          <div className="flex items-center">
+          <div className="flex items-center gap-4">
             <Show when="signed-in">
+              <RoleSwitcher />
               <UserButton />
             </Show>
 
@@ -135,3 +137,4 @@ export default function Header() {
     </header>
   );
 }
+

@@ -4,6 +4,7 @@ import { Product } from './src/catalog/entities/product.entity';
 import { Order } from './src/orders/entities/order.entity';
 import { OrderItem } from './src/orders/entities/order-item.entity';
 import { Payment } from './src/payments/entities/payment.entity';
+import { ServiceHealthLog } from './src/admin/entities/service-health-log.entity';
 import { config } from 'dotenv';
 
 config({ path: '.env' });
@@ -13,6 +14,7 @@ export default new DataSource({
   url:
     process.env.DATABASE_URL ||
     'postgresql://postgres:postgres@localhost:5432/catalog_order_db',
-  entities: [Category, Product, Order, OrderItem, Payment],
+  entities: [Category, Product, Order, OrderItem, Payment, ServiceHealthLog],
   migrations: ['src/migrations/*.ts'],
 });
+

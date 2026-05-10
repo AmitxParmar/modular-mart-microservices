@@ -26,4 +26,19 @@ export class Product extends BaseEntity {
 
   @Column({ name: 'stock_quantity', type: 'int', default: 0 })
   stockQuantity: number;
+
+  @Column({ name: 'seller_id', nullable: true })
+  @Index()
+  sellerId: string; // References Clerk User ID
+
+  @Column({
+    type: 'enum',
+    enum: ['PENDING', 'APPROVED', 'REJECTED', 'SUSPENDED'],
+    default: 'PENDING',
+  })
+  status: string;
+
+  @Column({ name: 'is_active', default: true })
+  isActive: boolean;
 }
+

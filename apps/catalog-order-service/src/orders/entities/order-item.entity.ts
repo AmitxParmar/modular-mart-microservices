@@ -17,8 +17,13 @@ export class OrderItem extends BaseEntity {
   @JoinColumn({ name: 'product_id' })
   product: Product;
 
+  @Column({ name: 'seller_id', nullable: true })
+  @Index()
+  sellerId: string; // References Clerk User ID
+
   @Column({ type: 'int' })
   quantity: number;
+
 
   @Column({ name: 'unit_price', type: 'decimal', precision: 10, scale: 2 })
   unitPrice: number;

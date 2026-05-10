@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Lock } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useAuthDialog } from "@/features/auth/auth-dialog-context";
 
 export function OrdersAuthRequired() {
@@ -24,12 +25,12 @@ export function OrdersAuthRequired() {
         <Button size="lg" onClick={() => openDialog("signIn")} className="px-8">
           Sign In
         </Button>
-        <Button
-          variant="outline"
-          size="lg"
-          render={<Link href="/">Back to Home</Link>}
-          className="px-8"
-        />
+        <Link
+          href="/"
+          className={cn(buttonVariants({ variant: "outline", size: "lg" }), "px-8")}
+        >
+          Back to Home
+        </Link>
       </div>
     </div>
   );
