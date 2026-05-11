@@ -4,4 +4,5 @@ export const adminKeys = {
   health: () => [...adminKeys.all, 'health'] as const,
   users: () => [...adminKeys.all, 'users'] as const,
   products: () => [...adminKeys.all, 'products'] as const,
+  analytics: () => [...adminKeys.all, 'analytics'] as const,
 } as const;

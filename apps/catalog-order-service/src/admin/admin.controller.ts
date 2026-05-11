@@ -54,6 +54,51 @@ export class AdminController {
     });
   }
 
+  @Get('analytics')
+  async getAnalytics() {
+    return {
+      revenue: {
+        total: 125400,
+        growth: 15.4,
+        data: [
+          { date: '2026-05-01', amount: 4200 },
+          { date: '2026-05-02', amount: 3800 },
+          { date: '2026-05-03', amount: 5100 },
+          { date: '2026-05-04', amount: 4900 },
+          { date: '2026-05-05', amount: 6200 },
+          { date: '2026-05-06', amount: 5800 },
+          { date: '2026-05-07', amount: 7100 },
+        ]
+      },
+      users: {
+        active: 842,
+        growth: 8.2,
+        data: [
+          { date: '2026-05-01', count: 720 },
+          { date: '2026-05-02', count: 735 },
+          { date: '2026-05-03', count: 750 },
+          { date: '2026-05-04', count: 780 },
+          { date: '2026-05-05', count: 810 },
+          { date: '2026-05-06', count: 825 },
+          { date: '2026-05-07', count: 842 },
+        ]
+      },
+      orders: {
+        total: 1542,
+        growth: -2.1,
+        data: [
+          { date: '2026-05-01', count: 52 },
+          { date: '2026-05-02', count: 48 },
+          { date: '2026-05-03', count: 61 },
+          { date: '2026-05-04', count: 55 },
+          { date: '2026-05-05', count: 42 },
+          { date: '2026-05-06', count: 49 },
+          { date: '2026-05-07', count: 58 },
+        ]
+      }
+    };
+  }
+
   @Get('products')
   async getAllProducts() {
     return this.productRepo.find({

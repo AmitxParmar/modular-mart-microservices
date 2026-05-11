@@ -1,6 +1,6 @@
 import { api } from '@/lib/api-client';
 import { ENDPOINTS } from '@/lib/endpoints';
-import type { AdminStats, ServiceHealthLog, UserManagementItem, Product } from '@/types/api';
+import type { AdminStats, ServiceHealthLog, UserManagementItem, Product, PlatformAnalytics } from '@/types/api';
 
 export async function fetchAdminStats(): Promise<AdminStats> {
   const { data } = await api.get<AdminStats>(ENDPOINTS.ADMIN_STATS);
@@ -9,6 +9,11 @@ export async function fetchAdminStats(): Promise<AdminStats> {
 
 export async function fetchServiceHealth(): Promise<ServiceHealthLog[]> {
   const { data } = await api.get<ServiceHealthLog[]>(ENDPOINTS.ADMIN_HEALTH);
+  return data;
+}
+
+export async function fetchAdminAnalytics(): Promise<PlatformAnalytics> {
+  const { data } = await api.get<PlatformAnalytics>(ENDPOINTS.ADMIN_ANALYTICS);
   return data;
 }
 

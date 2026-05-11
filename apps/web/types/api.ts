@@ -140,3 +140,21 @@ export interface UserManagementItem {
   createdAt: string;
 }
 
+export interface PlatformAnalytics {
+  revenue: {
+    total: number;
+    growth: number;
+    data: { date: string; amount: number }[];
+  };
+  users: {
+    active: number;
+    growth: number;
+    data: { date: string; count: number }[];
+  };
+  orders: {
+    total: number;
+    growth: number;
+    data: { date: string; count: number }[];
+  };
+}
+

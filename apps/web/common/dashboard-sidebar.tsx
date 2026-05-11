@@ -29,7 +29,6 @@ const DASHBOARD_LINKS: Record<UserRole, SidebarItem[]> = {
     { title: "Products Approval", href: "/dashboard/admin/products", icon: <Package className="w-4 h-4" /> },
     { title: "Service Health", href: "/dashboard/admin/health", icon: <Activity className="w-4 h-4" /> },
     { title: "Platform Stats", href: "/dashboard/admin/analytics", icon: <BarChart3 className="w-4 h-4" /> },
-    { title: "Global Settings", href: "/dashboard/admin/settings", icon: <Settings className="w-4 h-4" /> },
   ],
   SELLER: [
     { title: "Dashboard", href: "/dashboard/seller", icon: <LayoutDashboard className="w-4 h-4" /> },

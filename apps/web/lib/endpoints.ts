@@ -28,6 +28,7 @@ export const ENDPOINTS = {
   // Admin Platform Management
   ADMIN_STATS: '/catalog/admin/stats',
   ADMIN_HEALTH: '/catalog/admin/health',
+  ADMIN_ANALYTICS: '/catalog/admin/analytics',
   ADMIN_USERS: '/users/admin/users',
 
 

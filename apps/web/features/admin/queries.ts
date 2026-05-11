@@ -4,6 +4,7 @@ import {
   fetchServiceHealth, 
   fetchAdminUsers, 
   fetchAdminProducts,
+  fetchAdminAnalytics,
   approveProduct,
   rejectProduct
 } from './api';
@@ -22,6 +23,14 @@ export function useServiceHealth() {
     queryKey: adminKeys.health(),
     queryFn: fetchServiceHealth,
     refetchInterval: 1000 * 30, // Every 30 seconds
+  });
+}
+
+export function useAdminAnalytics() {
+  return useQuery({
+    queryKey: adminKeys.analytics(),
+    queryFn: fetchAdminAnalytics,
+    staleTime: 1000 * 60 * 10, // 10 minutes
   });
 }
 

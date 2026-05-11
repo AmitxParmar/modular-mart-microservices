@@ -152,7 +152,7 @@ export default function CustomerDashboard() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-bold mb-1">${order.totalAmount.toFixed(2)}</p>
+                      <p className="text-sm font-bold mb-1">${Number(order.totalAmount).toFixed(2)}</p>
                       <OrderStatusBadge status={order.status} />
                     </div>
                   </div>
