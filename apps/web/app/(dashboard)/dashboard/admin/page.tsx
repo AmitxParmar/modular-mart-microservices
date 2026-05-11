@@ -5,20 +5,25 @@ import { Suspense } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Package, ShoppingCart, Activity, ArrowUpRight, ArrowDownRight } from "lucide-react";
 
+import { useAdminStats } from "@/features/admin/queries";
+import { Skeleton } from "@/components/ui/skeleton";
+
 // Lazy load the health component as it might involve complex status checks
 const ServiceHealth = dynamic(() => import("./_components/service-health"), {
   loading: () => <div className="h-48 w-full animate-pulse bg-muted rounded-xl" />,
   ssr: false
 });
 
-const STATS = [
-  { title: "Total Users", value: "1,284", change: "+12%", trend: "up", icon: <Users className="w-4 h-4" /> },
-  { title: "Active Products", value: "452", change: "+5%", trend: "up", icon: <Package className="w-4 h-4" /> },
-  { title: "Total Orders", value: "892", change: "-2%", trend: "down", icon: <ShoppingCart className="w-4 h-4" /> },
-  { title: "System Uptime", value: "99.9%", change: "Stable", trend: "neutral", icon: <Activity className="w-4 h-4" /> },
-];
-
 export default function AdminDashboard() {
+  const { data: stats, isLoading } = useAdminStats();
+
+  const dashboardStats = [
+    { title: "Total Users", value: stats?.totalUsers?.toLocaleString() || "0", change: `${stats?.trends.users}%`, trend: (stats?.trends.users || 0) >= 0 ? "up" : "down", icon: <Users className="w-4 h-4" /> },
+    { title: "Active Products", value: stats?.activeProducts?.toLocaleString() || "0", change: `${stats?.trends.products}%`, trend: (stats?.trends.products || 0) >= 0 ? "up" : "down", icon: <Package className="w-4 h-4" /> },
+    { title: "Total Orders", value: stats?.totalOrders?.toLocaleString() || "0", change: `${stats?.trends.orders}%`, trend: (stats?.trends.orders || 0) >= 0 ? "up" : "down", icon: <ShoppingCart className="w-4 h-4" /> },
+    { title: "System Uptime", value: stats?.uptime || "99.9%", change: "Stable", trend: "neutral", icon: <Activity className="w-4 h-4" /> },
+  ];
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
@@ -27,7 +32,7 @@ export default function AdminDashboard() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {STATS.map((stat) => (
+        {dashboardStats.map((stat) => (
           <Card key={stat.title} className="border-border/40 shadow-sm hover:shadow-md transition-all">
             <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
               <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
@@ -38,7 +43,11 @@ export default function AdminDashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
+              {isLoading ? (
+                <Skeleton className="h-8 w-24 mb-1" />
+              ) : (
+                <div className="text-2xl font-bold">{stat.value}</div>
+              )}
               <div className="flex items-center gap-1 mt-1 text-xs">
                 {stat.trend === "up" && <ArrowUpRight className="w-3 h-3 text-emerald-500" />}
                 {stat.trend === "down" && <ArrowDownRight className="w-3 h-3 text-destructive" />}
@@ -54,7 +63,8 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
         ))}
-      </div>  
+      </div>
+  
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">

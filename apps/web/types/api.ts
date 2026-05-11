@@ -5,8 +5,31 @@
  * Re-exports relevant event types from @repo/contracts where useful.
  */
 
-// Re-export event-level types from the shared contracts package
-export type { OrderItem as OrderEventItem } from '@repo/contracts';
+// ─── Shared Enums ─────────────────────────────────────────────────────────────
+
+export type UserRole = 'CUSTOMER' | 'SELLER' | 'ADMIN';
+
+export enum ProductStatus {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+  SUSPENDED = 'SUSPENDED',
+}
+
+export enum OrderStatus {
+  PENDING = 'PENDING',
+  PAID = 'PAID',
+  SHIPPED = 'SHIPPED',
+  DELIVERED = 'DELIVERED',
+  CANCELLED = 'CANCELLED',
+}
+
+export enum ServiceHealthStatus {
+  HEALTHY = 'healthy',
+  DEGRADED = 'degraded',
+  DOWN = 'down',
+}
+
 
 // ─── Category ──────────────────────────────────────────────────────────────────
 
@@ -29,19 +52,29 @@ export interface Product {
   price: number;
   stockQuantity: number;
   category?: Category | null;
+  sellerId: string;
+  status: ProductStatus;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ─── Address ───────────────────────────────────────────────────────────────────
+
+export interface Address {
+  id: string;
+  userId: string;
+  street: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+  isDefault: boolean;
   createdAt: string;
   updatedAt: string;
 }
 
 // ─── Order ─────────────────────────────────────────────────────────────────────
-
-export enum OrderStatus {
-  PENDING = 'PENDING',
-  PAID = 'PAID',
-  SHIPPED = 'SHIPPED',
-  DELIVERED = 'DELIVERED',
-  CANCELLED = 'CANCELLED',
-}
 
 export interface ShippingAddressSnapshot {
   firstName: string;
@@ -56,6 +89,7 @@ export interface ShippingAddressSnapshot {
 export interface OrderItem {
   id: string;
   productId: string;
+  sellerId?: string;
   quantity: number;
   unitPrice: number;
   product?: Product;
@@ -73,3 +107,36 @@ export interface Order {
   createdAt: string;
   updatedAt: string;
 }
+
+// ─── Admin & System ────────────────────────────────────────────────────────────
+
+export interface AdminStats {
+  totalUsers: number;
+  activeProducts: number;
+  totalOrders: number;
+  uptime: string;
+  trends: {
+    users: number;
+    products: number;
+    orders: number;
+  };
+}
+
+export interface ServiceHealthLog {
+  id: string;
+  serviceName: string;
+  status: ServiceHealthStatus;
+  latencyMs: number;
+  errorDetails?: string;
+  createdAt: string;
+}
+
+export interface UserManagementItem {
+  id: string;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  roles: UserRole[];
+  createdAt: string;
+}
+

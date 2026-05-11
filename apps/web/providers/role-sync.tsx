@@ -3,18 +3,16 @@
 import { useEffect, useMemo } from 'react';
 import { useAuthStore, UserRole } from '@/hooks/use-auth-store';
 import { useUser } from '@clerk/nextjs';
-import { useMe } from '@/features/auth/queries';
 
 const EMPTY_ROLES: UserRole[] = [];
 
 /**
  * RoleSync component ensures that our local state (Zustand) is kept in sync
- * with the roles defined in Clerk's publicMetadata and our PostgreSQL database.
+ * with the roles defined in Clerk's publicMetadata.
  */
 export function RoleSync() {
   // Use a single hook for all Clerk state to ensure consistency
   const { isSignedIn, user, isLoaded } = useUser();
-  const { data: profile } = useMe();
   
   // Use granular selectors to avoid unnecessary re-renders
   const currentStoreRoles = useAuthStore((state) => state.roles);
@@ -23,20 +21,18 @@ export function RoleSync() {
   const setActiveRole = useAuthStore((state) => state.setActiveRole);
   const clearAuth = useAuthStore((state) => state.clearAuth);
 
-  // Memoize combined roles to prevent unnecessary effect triggers
+  // Memoize roles from Clerk metadata, normalized to uppercase
   const combinedRoles = useMemo(() => {
     if (!isLoaded || !user) return EMPTY_ROLES;
     
-    // 1. Get roles from Clerk Metadata
-    const clerkRoles = (user.publicMetadata?.roles as UserRole[]) || [];
+    // 1. Get roles from Clerk Metadata and normalize to UPPERCASE
+    const rawRoles = (user.publicMetadata?.roles as string[]) || [];
+    const clerkRoles = rawRoles.map(r => r.toUpperCase() as UserRole);
     
-    // 2. Get roles from DB Profile (if available)
-    const dbRoles = profile?.roles?.map((r) => r.name as UserRole) || [];
-    
-    // 3. Merge roles
-    const merged = Array.from(new Set([...clerkRoles, ...dbRoles]));
+    // 2. Remove duplicates (if any)
+    const merged = Array.from(new Set(clerkRoles));
     return merged.length === 0 ? EMPTY_ROLES : merged;
-  }, [isLoaded, user, profile]);
+  }, [isLoaded, user]);
 
   useEffect(() => {
     // Only proceed if Clerk has fully loaded the session state

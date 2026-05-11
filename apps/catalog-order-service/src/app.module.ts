@@ -15,6 +15,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { CatalogModule } from './catalog/catalog.module';
 import { OrdersModule } from './orders/orders.module';
 import { PaymentsModule } from './payments/payments.module';
+import { AdminModule } from './admin/admin.module';
 import { Payment } from './payments/entities/payment.entity';
 import { AuthProxyModule } from './auth-proxy.module';
 
@@ -29,9 +30,11 @@ import { AuthProxyModule } from './auth-proxy.module';
     CatalogModule,
     OrdersModule,
     PaymentsModule,
+    AdminModule,
     TypeOrmModule.forFeature([Payment]),
     HealthModule,
   ],
+
   controllers: [AppController],
   providers: [
     AppService,

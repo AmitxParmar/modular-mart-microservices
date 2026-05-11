@@ -102,13 +102,14 @@ export default function Header() {
           
           <Show when="signed-in">
             <Link 
-              href="/orders" 
+              href="/customer/orders" 
               className="hidden sm:flex flex-col items-start justify-center px-3 py-1 rounded-md hover:bg-accent/50 transition-colors group"
             >
               <span className="text-[10px] text-muted-foreground font-medium leading-none">Returns</span>
               <span className="text-sm font-bold leading-none mt-0.5 group-hover:text-primary">& Orders</span>
             </Link>
           </Show>
+
 
           <Cart />
 

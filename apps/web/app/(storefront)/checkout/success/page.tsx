@@ -20,7 +20,7 @@ export default function CheckoutSuccessPage() {
 
         <div className="pt-8 space-y-4">
           <Link
-            href="/orders"
+            href="/customer/orders"
             className="flex items-center justify-center w-full h-14 rounded-full bg-primary text-primary-foreground font-bold text-lg hover:shadow-lg transition-all"
           >
             View My Orders <ArrowRight className="ml-2 w-5 h-5" />

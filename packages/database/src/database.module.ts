@@ -40,7 +40,8 @@ export class DatabaseModule {
           useFactory: (config: ConfigService): TypeOrmModuleOptions => {
             const url = options?.url ?? config.get<string>('DATABASE_URL');
             const nodeEnv = config.get<string>('NODE_ENV');
-            const sslEnabled = config.get<string>('DATABASE_SSL') === 'true';
+            const sslConfig = config.get<string | boolean>('DATABASE_SSL');
+            const sslEnabled = sslConfig === true || sslConfig === 'true';
 
             return {
               type: 'postgres',

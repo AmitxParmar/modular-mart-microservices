@@ -4,6 +4,7 @@ import { Logger } from 'nestjs-pino';
 import helmet from 'helmet';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { Transport, MicroserviceOptions } from '@nestjs/microservices';
+import { ConfigService } from '@nestjs/config';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
@@ -45,11 +46,14 @@ async function bootstrap() {
 
   await app.startAllMicroservices();
 
-  // Use configured PORT or fallback
-  const port = process.env.PORT ?? 3001;
+  // Use configured PORT or fallback from ConfigService
+  const configService = app.get(ConfigService);
+  const port = configService.get<number>('PORT', 3001);
   await app.listen(port);
-  console.log(
+  const logger = app.get(Logger);
+  logger.log(
     `User Service listening on HTTP port ${port} and TCP port ${process.env.TCP_PORT || 3011}`,
+    'Bootstrap',
   );
 }
 void bootstrap();
