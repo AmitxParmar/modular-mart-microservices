@@ -1,14 +1,25 @@
 'use client';
 import type { Product } from '@/types/api';
 import { ProductCard } from './product-card';
+import { Button } from '@/components/ui/button';
+import { Loader2 } from 'lucide-react';
 
 interface ProductGridProps {
   products: Product[];
   onAddToCart?: (product: Product) => void;
+  hasNextPage?: boolean;
+  isFetchingNextPage?: boolean;
+  onLoadMore?: () => void;
 }
 
-export function ProductGrid({ products, onAddToCart }: ProductGridProps) {
-  if (products.length === 0) {
+export function ProductGrid({ 
+  products, 
+  onAddToCart,
+  hasNextPage,
+  isFetchingNextPage,
+  onLoadMore
+}: ProductGridProps) {
+  if (products.length === 0 && !isFetchingNextPage) {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-center">
         <div className="w-16 h-16 mb-4 text-muted-foreground/30">
@@ -23,14 +34,37 @@ export function ProductGrid({ products, onAddToCart }: ProductGridProps) {
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-      {products.map((product) => (
-        <ProductCard
-          key={product.id}
-          product={product}
-          onAddToCart={onAddToCart}
-        />
-      ))}
+    <div className="space-y-12">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {products.map((product) => (
+          <ProductCard
+            key={product.id}
+            product={product}
+            onAddToCart={onAddToCart}
+          />
+        ))}
+      </div>
+
+      {hasNextPage && (
+        <div className="flex justify-center pt-8">
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={onLoadMore}
+            disabled={isFetchingNextPage}
+            className="min-w-[200px]"
+          >
+            {isFetchingNextPage ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Loading more...
+              </>
+            ) : (
+              'Load More Products'
+            )}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

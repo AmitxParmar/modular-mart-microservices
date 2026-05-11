@@ -17,8 +17,22 @@ export class CatalogController {
   constructor(private readonly catalogService: CatalogService) {}
 
   @Get('products')
-  getProducts(@Query('categoryId') categoryId?: string) {
-    return this.catalogService.getProducts(categoryId);
+  getProducts(
+    @Query('categoryId') categoryId?: string,
+    @Query('minPrice') minPrice?: string,
+    @Query('maxPrice') maxPrice?: string,
+    @Query('search') search?: string,
+    @Query('cursor') cursor?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.catalogService.getProducts({
+      categoryId,
+      minPrice: minPrice ? Number.parseFloat(minPrice) : undefined,
+      maxPrice: maxPrice ? Number.parseFloat(maxPrice) : undefined,
+      search,
+      cursor,
+      limit: limit ? Number.parseInt(limit, 10) : undefined,
+    });
   }
 
   @Get('products/:slug')

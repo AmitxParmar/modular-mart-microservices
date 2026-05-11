@@ -1,9 +1,9 @@
 import { api } from '@/lib/api-client';
 import { ENDPOINTS } from '@/lib/endpoints';
-import type { Product, Category } from '@/types/api';
+import type { Product, Category, PaginatedResponse, ProductFilters } from '@/types/api';
 
-export async function fetchProducts(filters?: { categoryId?: string }): Promise<Product[]> {
-  const { data } = await api.get<Product[]>(ENDPOINTS.PRODUCTS, { params: filters });
+export async function fetchProducts(filters?: ProductFilters): Promise<PaginatedResponse<Product>> {
+  const { data } = await api.get<PaginatedResponse<Product>>(ENDPOINTS.PRODUCTS, { params: filters });
   return data;
 }
 

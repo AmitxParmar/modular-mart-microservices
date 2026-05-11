@@ -13,16 +13,62 @@ export class CatalogService {
     private readonly categoryRepo: Repository<Category>,
   ) {}
 
-  async getProducts(categoryId?: string) {
+  async getProducts(filters: {
+    categoryId?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    search?: string;
+    cursor?: string;
+    limit?: number;
+  }) {
+    const { categoryId, minPrice, maxPrice, search, cursor, limit = 10 } = filters;
+
     const query = this.productRepo
       .createQueryBuilder('product')
-      .leftJoinAndSelect('product.category', 'category');
+      .leftJoinAndSelect('product.category', 'category')
+      .where('product.status = :status', { status: 'APPROVED' })
+      .andWhere('product.isActive = :isActive', { isActive: true });
 
     if (categoryId) {
-      query.where('category.id = :categoryId', { categoryId });
+      query.andWhere('category.id = :categoryId', { categoryId });
     }
 
-    return query.getMany();
+    if (minPrice !== undefined) {
+      query.andWhere('product.price >= :minPrice', { minPrice });
+    }
+
+    if (maxPrice !== undefined) {
+      query.andWhere('product.price <= :maxPrice', { maxPrice });
+    }
+
+    if (search) {
+      query.andWhere(
+        '(product.name ILIKE :search OR product.description ILIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    if (cursor) {
+      // UUIDv7 is time-sorted, so we can use it directly as a cursor for stable pagination
+      query.andWhere('product.id < :cursor', { cursor });
+    }
+
+    // Sort by ID descending (newest first)
+    query.orderBy('product.id', 'DESC');
+
+    // Take limit + 1 to determine if there is a next page
+    query.take(limit + 1);
+
+    const products = await query.getMany();
+    const hasNextPage = products.length > limit;
+    const items = hasNextPage ? products.slice(0, limit) : products;
+    const nextCursor = hasNextPage ? items[items.length - 1].id : null;
+
+    return {
+      items,
+      nextCursor,
+      hasNextPage,
+    };
   }
 
   async getProductBySlug(slug: string) {

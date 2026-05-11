@@ -1,13 +1,15 @@
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { fetchProducts, fetchProduct, fetchCategories } from './api';
 import { productKeys } from './keys';
+import type { ProductFilters } from '@/types/api';
 
-export function useProducts(filters?: { categoryId?: string }) {
-  return useQuery({
+export function useProducts(filters?: ProductFilters) {
+  return useInfiniteQuery({
     queryKey: productKeys.list(filters),
-    queryFn: () => fetchProducts(filters),
-    staleTime: 1000 * 60 * 5, // 5 min — public data, no need to refetch often
-    // Products are public; no auth required
+    queryFn: ({ pageParam }) => fetchProducts({ ...filters, cursor: pageParam }),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+    staleTime: 1000 * 60 * 5,
   });
 }
 

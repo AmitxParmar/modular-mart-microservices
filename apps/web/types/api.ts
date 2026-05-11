@@ -5,7 +5,22 @@
  * Re-exports relevant event types from @repo/contracts where useful.
  */
 
-// ─── Shared Enums ─────────────────────────────────────────────────────────────
+// ─── Shared Types ─────────────────────────────────────────────────────────────
+
+export interface PaginatedResponse<T> {
+  items: T[];
+  nextCursor: string | null;
+  hasNextPage: boolean;
+}
+
+export interface ProductFilters {
+  categoryId?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  search?: string;
+  limit?: number;
+  cursor?: string;
+}
 
 export type UserRole = 'CUSTOMER' | 'SELLER' | 'ADMIN';
 
