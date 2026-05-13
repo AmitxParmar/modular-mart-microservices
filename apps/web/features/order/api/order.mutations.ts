@@ -1,5 +1,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { createOrder, type CreateOrderPayload } from '../services/api';
+import {
+  createOrder,
+  updateOrderStatus,
+  type CreateOrderPayload,
+} from '../services/api';
 import { orderKeys } from './keys';
 
 /**
@@ -16,6 +20,34 @@ export function useCreateOrder() {
     onSuccess: () => {
       // Invalidate the list so the user sees the new order immediately
       queryClient.invalidateQueries({ queryKey: orderKeys.lists() });
+    },
+  });
+}
+
+/**
+ * Update an order status (Seller action).
+ */
+export function useUpdateOrderStatus() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      status,
+      reason,
+    }: {
+      id: string;
+      status: string;
+      reason?: string;
+    }) => updateOrderStatus(id, status, reason),
+
+    onSuccess: (_, variables) => {
+      // Invalidate both lists and specific detail
+      queryClient.invalidateQueries({ queryKey: orderKeys.sellerLists() });
+      queryClient.invalidateQueries({ queryKey: orderKeys.detail(variables.id) });
+      queryClient.invalidateQueries({
+        queryKey: orderKeys.tracking(variables.id),
+      });
     },
   });
 }

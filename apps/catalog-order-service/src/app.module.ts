@@ -18,11 +18,13 @@ import { PaymentsModule } from './payments/payments.module';
 import { AdminModule } from './admin/admin.module';
 import { Payment } from './payments/entities/payment.entity';
 import { AuthProxyModule } from './auth-proxy.module';
+import { MessagingModule } from './messaging.module';
 
 @Module({
   imports: [
     ConfigModule,
     AuthProxyModule,
+    MessagingModule,
     LoggerModule.forRootAsync({
       useFactory: () => createLoggerConfig('catalog-order-service'),
     }),

@@ -4,6 +4,7 @@ import { Logger } from 'nestjs-pino';
 import helmet from 'helmet';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { Transport, MicroserviceOptions } from '@nestjs/microservices';
+import { ConfigService } from '@nestjs/config';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
@@ -30,14 +31,15 @@ async function bootstrap() {
   // Trust proxy
   app.set('trust proxy', 1);
 
+  const configService = app.get(ConfigService);
+  const rabbitmqUrl = configService.get<string>('RABBITMQ_URL');
+
   // Optional: Connect to RabbitMQ to listen for Saga Events (e.g. PAYMENT_SUCCEEDED)
-  // We only connect if explicitly enabled in development, to prevent the HTTP server
-  // from hanging indefinitely while trying to reconnect.
-  if (process.env.RABBITMQ_URL && process.env.RABBITMQ_URL !== 'false') {
+  if (rabbitmqUrl && rabbitmqUrl !== 'false') {
     app.connectMicroservice<MicroserviceOptions>({
       transport: Transport.RMQ,
       options: {
-        urls: [process.env.RABBITMQ_URL],
+        urls: [rabbitmqUrl],
         queue: 'catalog_orders_queue',
         queueOptions: {
           durable: true,
@@ -63,7 +65,7 @@ async function bootstrap() {
     );
   }
 
-  const port = process.env.PORT ?? 3002;
+  const port = configService.get<number>('PORT', 3002);
   await app.listen(port);
   console.log(`Catalog & Order Service listening on port ${port}`);
 }

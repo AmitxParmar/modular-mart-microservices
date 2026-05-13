@@ -15,7 +15,10 @@ export const EVENT_PATTERNS = {
   USER_DELETED: 'user.deleted',
   GET_USER_ROLE: 'user.get_role',
   ORDER_CREATED: 'order.created',
+  ORDER_APPROVED: 'order.approved',
+  ORDER_REJECTED: 'order.rejected',
   ORDER_STATUS_UPDATED: 'order.status_updated',
+  ORDER_DELIVERED: 'order.delivered',
   ORDER_CANCELLED: 'order.cancelled',
   STOCK_RESERVED: 'stock.reserved',
   STOCK_RELEASED: 'stock.released',
@@ -25,6 +28,17 @@ export const EVENT_PATTERNS = {
 } as const;
 
 export type EventPattern = (typeof EVENT_PATTERNS)[keyof typeof EVENT_PATTERNS];
+
+export enum OrderStatus {
+  PENDING = 'PENDING',
+  PAID = 'PAID',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+  PROCESSING = 'PROCESSING',
+  SHIPPED = 'SHIPPED',
+  DELIVERED = 'DELIVERED',
+  CANCELLED = 'CANCELLED',
+}
 
 export interface GetUserRolePayload {
   userId: string;
@@ -78,9 +92,31 @@ export interface OrderCreatedEvent {
 export interface OrderStatusUpdatedEvent {
   orderId: string;
   userId: string;
-  previousStatus: string;
-  newStatus: string;
+  previousStatus: OrderStatus;
+  newStatus: OrderStatus;
+  reason?: string;
   updatedAt: string;
+}
+
+export interface OrderApprovedEvent {
+  orderId: string;
+  userId: string;
+  sellerId: string;
+  approvedAt: string;
+}
+
+export interface OrderRejectedEvent {
+  orderId: string;
+  userId: string;
+  sellerId: string;
+  reason: string;
+  rejectedAt: string;
+}
+
+export interface OrderDeliveredEvent {
+  orderId: string;
+  userId: string;
+  deliveredAt: string;
 }
 
 export interface OrderCancelledEvent {

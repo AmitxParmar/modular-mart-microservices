@@ -23,7 +23,10 @@ export const ENDPOINTS = {
   ORDERS: '/orders',
   CREATE_ORDER: '/orders',
   ORDER: (id: string) => `/orders/${id}`,
-  USER_ORDERS: '/users/me/orders',
+  USER_ORDERS: '/orders', // Note: This matches the GET /orders in the service
+  ORDER_TRACKING: (id: string) => `/orders/${id}/tracking`,
+  SELLER_ORDERS: '/orders/seller',
+  SELLER_ORDER_STATUS: (id: string) => `/orders/seller/${id}/status`,
 
   // Admin Platform Management
   ADMIN_STATS: '/catalog/admin/stats',

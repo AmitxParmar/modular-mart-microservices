@@ -1,6 +1,11 @@
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { useAuth } from '@clerk/nextjs';
-import { fetchOrders, fetchOrder } from '../services/api';
+import {
+  fetchOrders,
+  fetchOrder,
+  fetchSellerOrders,
+  fetchOrderTracking,
+} from '../services/api';
 import { orderKeys } from './keys';
 
 /**
@@ -15,6 +20,18 @@ export function useOrders() {
     queryFn: fetchOrders,
     enabled: isSignedIn === true, // stable: only true/false, never undefined after mount
     staleTime: 1000 * 60 * 2, // 2 min
+  });
+}
+
+/** Fetch all orders for the current seller. */
+export function useSellerOrders() {
+  const { isSignedIn } = useAuth();
+
+  return useQuery({
+    queryKey: orderKeys.sellerLists(),
+    queryFn: fetchSellerOrders,
+    enabled: isSignedIn === true,
+    staleTime: 1000 * 60 * 2,
   });
 }
 
@@ -39,5 +56,17 @@ export function useOrder(id: string) {
     queryFn: () => fetchOrder(id),
     enabled: isSignedIn === true && Boolean(id),
     staleTime: 1000 * 60 * 2,
+  });
+}
+
+/** Fetch order tracking information with history. */
+export function useOrderTracking(id: string) {
+  const { isSignedIn } = useAuth();
+
+  return useQuery({
+    queryKey: orderKeys.tracking(id),
+    queryFn: () => fetchOrderTracking(id),
+    enabled: isSignedIn === true && Boolean(id),
+    staleTime: 1000 * 60 * 1, // 1 min for tracking
   });
 }

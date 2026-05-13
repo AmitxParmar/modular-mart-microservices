@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { AuthDialogProvider } from "@/features/auth/auth-dialog-context";
 import { AuthDialog } from "@/features/auth/auth-dialog";
 import { AppProviders } from "@/providers/app-providers";
+import { Toaster } from "@/components/ui/sonner";
 
 const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono' });
 
@@ -46,6 +47,7 @@ export default function RootLayout({
                 {children}
 
                 <AuthDialog />
+                <Toaster />
 
               </AuthDialogProvider>
             </AppProviders>

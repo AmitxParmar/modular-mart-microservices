@@ -34,6 +34,9 @@ export enum ProductStatus {
 export enum OrderStatus {
   PENDING = 'PENDING',
   PAID = 'PAID',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+  PROCESSING = 'PROCESSING',
   SHIPPED = 'SHIPPED',
   DELIVERED = 'DELIVERED',
   CANCELLED = 'CANCELLED',
@@ -92,13 +95,13 @@ export interface Address {
 // ─── Order ─────────────────────────────────────────────────────────────────────
 
 export interface ShippingAddressSnapshot {
-  firstName: string;
-  lastName: string;
-  address: string;
+  fullName: string;
+  addressLine1: string;
+  addressLine2?: string;
   city: string;
   state: string;
-  zip: string;
-  country?: string;
+  postalCode: string;
+  country: string;
 }
 
 export interface OrderItem {
@@ -113,6 +116,7 @@ export interface OrderItem {
 export interface Order {
   id: string;
   userId: string;
+  sellerId: string;
   status: OrderStatus;
   totalAmount: number;
   shippingAddressId: string | null;

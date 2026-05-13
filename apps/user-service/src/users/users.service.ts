@@ -1,19 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
-
+import { ConfigService } from '@nestjs/config';
 import { User } from './entities/user.entity';
 import { Role } from './entities/role.entity';
 import { InjectPinoLogger, PinoLogger } from '@repo/common';
-import { createClerkClient } from '@clerk/backend';
+import { createClerkClient, type ClerkClient, type UserJSON } from '@clerk/backend';
 
-import type { UserJSON } from '@clerk/backend';
 
 @Injectable()
 export class UsersService {
-  private clerkClient = createClerkClient({
-    secretKey: process.env.CLERK_SECRET_KEY,
-  });
+  private readonly clerkClient: ClerkClient;
 
   constructor(
     @InjectPinoLogger(UsersService.name) private readonly logger: PinoLogger,
@@ -22,7 +19,12 @@ export class UsersService {
     @InjectRepository(Role)
     private readonly roleRepository: Repository<Role>,
     private readonly dataSource: DataSource,
-  ) {}
+    private readonly configService: ConfigService,
+  ) {
+    this.clerkClient = createClerkClient({
+      secretKey: this.configService.get<string>('CLERK_SECRET_KEY'),
+    });
+  }
 
   async findByClerkId(clerkId: string): Promise<User | null> {
     return this.userRepository.findOne({

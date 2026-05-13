@@ -1,21 +1,18 @@
 import { Entity, Column, Index, OneToMany } from 'typeorm';
 import { BaseEntity } from '@repo/database';
+import { OrderStatus } from '@repo/contracts';
 import { OrderItem } from './order-item.entity';
 import { ShippingAddressSnapshot } from '../dto/create-order.dto';
-
-export enum OrderStatus {
-  PENDING = 'PENDING',
-  PAID = 'PAID',
-  SHIPPED = 'SHIPPED',
-  DELIVERED = 'DELIVERED',
-  CANCELLED = 'CANCELLED',
-}
 
 @Entity('orders')
 export class Order extends BaseEntity {
   @Column({ name: 'user_id', type: 'uuid' })
   @Index()
   userId: string;
+
+  @Column({ name: 'seller_id', type: 'uuid' })
+  @Index()
+  sellerId: string;
 
   @Column({
     name: 'shipping_address_snapshot',
@@ -40,6 +37,12 @@ export class Order extends BaseEntity {
 
   @Column({ name: 'shipping_address_id', type: 'uuid', nullable: true })
   shippingAddressId: string | null;
+
+  @Column({ name: 'seller_note', type: 'text', nullable: true })
+  sellerNote: string | null;
+
+  @Column({ name: 'reject_reason', type: 'text', nullable: true })
+  rejectReason: string | null;
 
   @OneToMany(() => OrderItem, (item) => item.order, { cascade: true })
   items: OrderItem[];

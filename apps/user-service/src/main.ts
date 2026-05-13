@@ -19,7 +19,7 @@ async function bootstrap() {
   app.use(helmet());
 
   // Global route prefix — gateway forwards /api/* paths as-is
-  app.setGlobalPrefix('api');
+  app.setGlobalPrefix('api', { exclude: ['health/(.*)'] });
 
   // Enable CORS
 
@@ -32,11 +32,14 @@ async function bootstrap() {
   // Trust proxy for correct client IP detection (behind API Gateway)
   app.set('trust proxy', 1);
 
+  const configService = app.get(ConfigService);
+  const rabbitmqUrl = configService.get<string>('RABBITMQ_URL') || 'amqp://localhost:5672';
+
   // Configure RabbitMQ Microservice for internal RBAC calls (from catalog-order-service, etc.)
   app.connectMicroservice<MicroserviceOptions>({
     transport: Transport.RMQ,
     options: {
-      urls: [process.env.RABBITMQ_URL || 'amqp://localhost:5672'],
+      urls: [rabbitmqUrl],
       queue: 'auth_queue',
       queueOptions: {
         durable: true,
@@ -47,12 +50,13 @@ async function bootstrap() {
   await app.startAllMicroservices();
 
   // Use configured PORT or fallback from ConfigService
-  const configService = app.get(ConfigService);
   const port = configService.get<number>('PORT', 3001);
+  const tcpPort = configService.get<number>('TCP_PORT', 3011);
+
   await app.listen(port);
   const logger = app.get(Logger);
   logger.log(
-    `User Service listening on HTTP port ${port} and TCP port ${process.env.TCP_PORT || 3011}`,
+    `User Service listening on HTTP port ${port} and TCP port ${tcpPort}`,
     'Bootstrap',
   );
 }
