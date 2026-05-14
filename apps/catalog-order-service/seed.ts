@@ -1,7 +1,8 @@
 import { DataSource } from 'typeorm';
 import { Category } from './src/catalog/entities/category.entity';
 import { Product } from './src/catalog/entities/product.entity';
-import { Order, OrderStatus } from './src/orders/entities/order.entity';
+import { Order } from './src/orders/entities/order.entity';
+import { OrderStatus } from '@repo/contracts';
 import { OrderItem } from './src/orders/entities/order-item.entity';
 import { Payment, PaymentStatus } from './src/payments/entities/payment.entity';
 import { ServiceHealthLog } from './src/admin/entities/service-health-log.entity';
@@ -33,12 +34,16 @@ async function main() {
 
   // 1. Ensure Categories and Products exist
   let electronics = await categoryRepo.findOne({ where: { slug: 'electronics' } });
-  if (!electronics) {
-    electronics = await categoryRepo.save(categoryRepo.create({ name: 'Electronics', slug: 'electronics', description: 'Gadgets' }));
-  }
+  electronics ??= await categoryRepo.save(categoryRepo.create({ name: 'Electronics', slug: 'electronics', description: 'Gadgets' }));
 
   let laptop = await productRepo.findOne({ where: { slug: 'laptop-pro' } });
-  if (!laptop) {
+  if (laptop) {
+    // Update existing product to be owned by the target user
+    laptop.sellerId = targetClerkId;
+    laptop.status = 'APPROVED';
+    await productRepo.save(laptop);
+    console.log('✅ Laptop Pro ownership updated');
+  } else {
     laptop = await productRepo.save(productRepo.create({ 
       name: 'Laptop Pro', slug: 'laptop-pro', description: 'High performance laptop', 
       price: 1299.99, stockQuantity: 50, category: electronics,
@@ -47,12 +52,6 @@ async function main() {
       isActive: true
     }));
     console.log('✅ Laptop Pro product seeded with seller ownership');
-  } else {
-    // Update existing product to be owned by the target user
-    laptop.sellerId = targetClerkId;
-    laptop.status = 'APPROVED';
-    await productRepo.save(laptop);
-    console.log('✅ Laptop Pro ownership updated');
   }
 
   // 2. Seed Health Logs
@@ -72,7 +71,9 @@ async function main() {
   const targetUserId = '019d0b6a-b3e4-70d6-a168-89e80598c929';
   
   const existingOrder = await orderRepo.findOne({ where: { userId: targetUserId } });
-  if (!existingOrder) {
+  if (existingOrder) {
+    console.log(`ℹ️ Orders already exist for user ${targetUserId}`);
+  } else {
     const order = orderRepo.create({
       userId: targetUserId,
       status: OrderStatus.DELIVERED,
@@ -93,8 +94,6 @@ async function main() {
     });
     await paymentRepo.save(payment);
     console.log('✅ Payment created for order');
-  } else {
-    console.log(`ℹ️ Orders already exist for user ${targetUserId}`);
   }
 
   await AppDataSource.destroy();

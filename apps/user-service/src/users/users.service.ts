@@ -5,8 +5,11 @@ import { ConfigService } from '@nestjs/config';
 import { User } from './entities/user.entity';
 import { Role } from './entities/role.entity';
 import { InjectPinoLogger, PinoLogger } from '@repo/common';
-import { createClerkClient, type ClerkClient, type UserJSON } from '@clerk/backend';
-
+import {
+  createClerkClient,
+  type ClerkClient,
+  type UserJSON,
+} from '@clerk/backend';
 
 @Injectable()
 export class UsersService {
@@ -31,6 +34,10 @@ export class UsersService {
       where: { clerkId },
       relations: ['addresses', 'roles'],
     });
+  }
+
+  async countAll(): Promise<number> {
+    return this.userRepository.count();
   }
 
   async getUserRoles(clerkId: string): Promise<string[]> {
@@ -125,7 +132,7 @@ export class UsersService {
     const address = await this.dataSource
       .getRepository('addresses')
       .findOne({ where: { id: addressId } });
-    
+
     if (!address) {
       throw new Error('Address not found');
     }

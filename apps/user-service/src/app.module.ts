@@ -10,7 +10,7 @@ import {
   HealthModule,
   HttpExceptionFilter,
   CorrelationMiddleware,
-  createLoggerConfig 
+  createLoggerConfig,
 } from '@repo/common';
 import { LoggerModule } from 'nestjs-pino';
 

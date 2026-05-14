@@ -27,6 +27,6 @@ export class Seller extends BaseEntity {
   })
   status: string;
 
-  @Column('decimal', { precision: 5, scale: 2, default: 10.00 })
+  @Column('decimal', { precision: 5, scale: 2, default: 10.0 })
   commissionRate: number;
 }

@@ -56,4 +56,3 @@ export class CatalogController {
     return this.catalogService.createProduct(productData);
   }
 }
-

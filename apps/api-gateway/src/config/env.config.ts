@@ -10,14 +10,14 @@ import { registerAs } from '@nestjs/config';
  * so parseInt / string fallbacks here are just TypeScript safety nets.
  */
 export const appConfig = registerAs('app', () => ({
-  port: parseInt(process.env.PORT ?? '8000', 10),
+  port: Number.parseInt(process.env.PORT ?? '8000', 10),
   nodeEnv: process.env.NODE_ENV ?? 'development',
   logLevel: process.env.LOG_LEVEL ?? 'info',
 }));
 
 export const rateLimitConfig = registerAs('rateLimit', () => ({
-  ttl: parseInt(process.env.RATE_LIMIT_TTL ?? '60000', 10),
-  limit: parseInt(process.env.RATE_LIMIT_MAX ?? '100', 10),
+  ttl: Number.parseInt(process.env.RATE_LIMIT_TTL ?? '60000', 10),
+  limit: Number.parseInt(process.env.RATE_LIMIT_MAX ?? '100', 10),
 }));
 
 export const servicesConfig = registerAs('services', () => ({

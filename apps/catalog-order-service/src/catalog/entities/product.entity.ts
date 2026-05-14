@@ -41,4 +41,3 @@ export class Product extends BaseEntity {
   @Column({ name: 'is_active', default: true })
   isActive: boolean;
 }
-

@@ -8,6 +8,7 @@ import {
   fetchUserOrders 
 } from './api';
 import { userKeys } from './keys';
+import { Address } from '@/types/api';
 
 export function useAddresses() {
   return useQuery({
@@ -29,7 +30,7 @@ export function useCreateAddress() {
 export function useUpdateAddress() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, address }: { id: string; address: any }) => updateAddress(id, address),
+    mutationFn: ({ id, address }: { id: string; address:Partial<Address> }) => updateAddress(id, address),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: userKeys.addresses() });
     },

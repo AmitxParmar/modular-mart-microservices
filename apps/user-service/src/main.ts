@@ -33,7 +33,8 @@ async function bootstrap() {
   app.set('trust proxy', 1);
 
   const configService = app.get(ConfigService);
-  const rabbitmqUrl = configService.get<string>('RABBITMQ_URL') || 'amqp://localhost:5672';
+  const rabbitmqUrl =
+    configService.get<string>('RABBITMQ_URL') || 'amqp://localhost:5672';
 
   // Configure RabbitMQ Microservice for internal RBAC calls (from catalog-order-service, etc.)
   app.connectMicroservice<MicroserviceOptions>({

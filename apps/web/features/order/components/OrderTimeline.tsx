@@ -22,7 +22,7 @@ const statusConfig: Record<string, { icon: React.ReactNode; color: string; label
 export function OrderTimeline({ history }: Readonly<OrderTimelineProps>) {
   return (
     <div className="space-y-8 relative before:absolute before:inset-0 before:left-2.5 before:h-full before:w-0.5 before:bg-slate-200 before:content-[''] ml-4">
-      {history.map((item, _) => {
+      {history.map((item) => {
         const config = statusConfig[item.status] || {
           icon: <Circle className="w-5 h-5" />,
           color: 'text-slate-400',

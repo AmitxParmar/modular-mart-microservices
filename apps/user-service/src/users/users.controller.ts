@@ -38,6 +38,11 @@ export class UsersController {
     return this.usersService.getUserRoles(data.userId);
   }
 
+  @MessagePattern('users.count')
+  async countUsers(): Promise<number> {
+    return this.usersService.countAll();
+  }
+
   @Get('me')
   @UseGuards(ClerkAuthGuard)
   async getProfile(@CurrentUser() clerkUser: ClerkUser) {

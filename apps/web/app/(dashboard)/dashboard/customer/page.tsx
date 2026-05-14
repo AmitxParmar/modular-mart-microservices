@@ -5,12 +5,11 @@ import {
   Package,
   MapPin,
   Settings,
-  Heart,
   ArrowRight,
   User,
   ShoppingCart,
 } from "lucide-react";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useUser } from "@clerk/nextjs";
@@ -19,6 +18,7 @@ import { useUserOrders, useAddresses } from "@/features/user/queries";
 import { Skeleton } from "@/components/ui/skeleton";
 import { OrderStatusBadge } from "@/features/order/components/order-status-badge";
 import { format } from "date-fns";
+import Image from "next/image";
 
 export default function CustomerDashboard() {
   const { user } = useUser();
@@ -32,7 +32,7 @@ export default function CustomerDashboard() {
       <div className="flex flex-col sm:flex-row items-center gap-6 p-6 rounded-2xl border border-border/40 bg-muted/20">
         <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center border-4 border-background shadow-xl overflow-hidden">
           {user?.imageUrl ? (
-            <img
+            <Image
               src={user.imageUrl}
               alt={user.fullName || "User"}
               className="w-full h-full object-cover"

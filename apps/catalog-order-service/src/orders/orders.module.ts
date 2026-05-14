@@ -8,7 +8,9 @@ import { OrderStatusHistory } from './entities/order-status-history.entity';
 import { Product } from '../catalog/entities/product.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Order, OrderItem, OrderStatusHistory, Product])],
+  imports: [
+    TypeOrmModule.forFeature([Order, OrderItem, OrderStatusHistory, Product]),
+  ],
   controllers: [OrdersController],
   providers: [OrdersService],
   exports: [OrdersService],

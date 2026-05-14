@@ -17,4 +17,3 @@ import { ClerkAuthGuard, RolesGuard } from '@repo/auth';
   exports: [TypeOrmModule, UsersService],
 })
 export class UsersModule {}
-

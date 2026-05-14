@@ -1,8 +1,4 @@
-import {
-  Controller,
-  Get,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, UseGuards } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
@@ -22,17 +18,17 @@ export class AdminUsersController {
     // Basic implementation for management UI
     const users = await this.userRepo.find({
       relations: ['roles'],
-      order: { createdAt: 'DESC' }
+      order: { createdAt: 'DESC' },
     });
-    
-    return users.map(u => ({
+
+    return users.map((u) => ({
       id: u.id,
       clerkId: u.clerkId,
       email: u.email,
       firstName: u.firstName,
       lastName: u.lastName,
-      roles: u.roles.map(r => r.name),
-      createdAt: u.createdAt
+      roles: u.roles.map((r) => r.name),
+      createdAt: u.createdAt,
     }));
   }
 }

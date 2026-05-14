@@ -17,7 +17,12 @@ export class Payment extends BaseEntity {
   @Column('decimal', { precision: 10, scale: 2 })
   amount: number;
 
-  @Column({ type: 'enum', enum: PaymentStatus, default: PaymentStatus.PENDING, enumName: 'payment_status' })
+  @Column({
+    type: 'enum',
+    enum: PaymentStatus,
+    default: PaymentStatus.PENDING,
+    enumName: 'payment_status',
+  })
   status: PaymentStatus;
 
   @Column({ name: 'stripe_payment_intent_id', nullable: true })

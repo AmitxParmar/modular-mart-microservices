@@ -56,15 +56,13 @@ async function runSeed() {
 
   if (!user) {
     user = await userRepository.findOne({ where: { clerkId: targetClerkId }, relations: ['roles'] });
-    if (!user) {
-      user = userRepository.create({
+    user ??= userRepository.create({
         id: targetUserId,
         clerkId: targetClerkId,
         email: 'amitparmar901@gmail.com',
         firstName: 'Amit',
         lastName: 'Parmar',
       });
-    }
   }
 
   // Assign all roles for testing purposes

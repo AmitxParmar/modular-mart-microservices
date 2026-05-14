@@ -29,6 +29,7 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import axios from "axios";
 
 export default function SellerOrderDetailPage() {
   const { id } = useParams() as { id: string };
@@ -78,10 +79,17 @@ export default function SellerOrderDetailPage() {
           setShowRejectInput(false);
           setRejectReason("");
         },
-        onError: (err: any) => {
+        onError: (err) => {
+          let message = "Failed to update status.";
+
+          if (axios.isAxiosError(err)) {
+            message = err.response?.data?.message || message;
+          } else if (err instanceof Error) {
+            message = err.message;
+          }
+
           toast.error("Update Failed", {
-            description:
-              err.response?.data?.message || "Failed to update status.",
+            description: message,
           });
         },
       },
@@ -181,7 +189,9 @@ export default function SellerOrderDetailPage() {
                       <Package className="w-6 h-6 text-slate-400" />
                     </div>
                     <div>
-                      <p className="font-medium text-sm">{item?.product?.name}</p>
+                      <p className="font-medium text-sm">
+                        {item?.product?.name}
+                      </p>
                       <p className="text-xs text-muted-foreground">
                         Qty: {item.quantity}
                       </p>

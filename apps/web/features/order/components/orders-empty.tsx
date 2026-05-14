@@ -13,7 +13,7 @@ export function OrdersEmpty() {
       </div>
       <h2 className="text-xl font-bold tracking-tight mb-2">No orders found</h2>
       <p className="text-muted-foreground max-w-sm mb-8">
-        It looks like you haven't placed any orders yet. Start exploring our
+        It looks like you haven&apos; --fit placed any orders yet. Start exploring our
         catalog!
       </p>
       <Link

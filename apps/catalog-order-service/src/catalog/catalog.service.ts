@@ -21,7 +21,14 @@ export class CatalogService {
     cursor?: string;
     limit?: number;
   }) {
-    const { categoryId, minPrice, maxPrice, search, cursor, limit = 10 } = filters;
+    const {
+      categoryId,
+      minPrice,
+      maxPrice,
+      search,
+      cursor,
+      limit = 10,
+    } = filters;
 
     const query = this.productRepo
       .createQueryBuilder('product')

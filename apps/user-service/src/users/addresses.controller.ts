@@ -40,7 +40,7 @@ export class AddressesController {
   ) {
     const dbUser = await this.usersService.findByClerkId(user.userId);
     if (!dbUser) throw new NotFoundException('User not found');
-    
+
     const address = this.addressRepo.create({
       ...data,
       user: dbUser,
