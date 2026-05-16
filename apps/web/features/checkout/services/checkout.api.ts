@@ -16,13 +16,13 @@ export interface CreateOrderRequest {
 }
 
 export const checkoutService = {
-  createOrder: async (data: CreateOrderRequest) => {
-    const response = await api.post(ENDPOINTS.CREATE_ORDER, data);
+  createOrder: async (data: CreateOrderRequest, options?: { skipTokenCache?: boolean }) => {
+    const response = await api.post(ENDPOINTS.CREATE_ORDER, data, options as any);
     return response.data;
   },
 
-  createPaymentIntent: async (orderId: string) => {
-    const response = await api.post(ENDPOINTS.CREATE_INTENT, { orderId });
+  createPaymentIntent: async (orderId: string, amount: number) => {
+    const response = await api.post(ENDPOINTS.CREATE_INTENT, { orderId, amount });
     return response.data;
   },
 };

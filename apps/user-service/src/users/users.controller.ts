@@ -16,7 +16,7 @@ import { Webhook } from 'svix';
 import { ConfigService } from '@nestjs/config';
 import { CurrentUser, ClerkAuthGuard } from '@repo/auth';
 import { EVENT_PATTERNS } from '@repo/contracts';
-import type { GetUserRolePayload, GetUserRoleResponse } from '@repo/contracts';
+import type { GetUserRolePayload, GetUserRoleResponse, GetUserIdPayload, GetUserIdResponse } from '@repo/contracts';
 import type { ClerkUser } from '@repo/auth';
 import { InjectPinoLogger, PinoLogger } from '@repo/common';
 
@@ -38,6 +38,29 @@ export class UsersController {
     return this.usersService.getUserRoles(data.userId);
   }
 
+  @MessagePattern(EVENT_PATTERNS.GET_USER_ID)
+  async getUserId(
+    @Payload() data: GetUserIdPayload,
+  ): Promise<GetUserIdResponse> {
+    this.logger.info(`[MSG] GET_USER_ID request received for Clerk ID: ${data.clerkId}`);
+    let user = await this.usersService.findByClerkId(data.clerkId);
+    
+    if (user) {
+      this.logger.debug(`[MSG] Found user ${user.id} for Clerk ID ${data.clerkId}`);
+    } else {
+      this.logger.info(`[MSG] User ${data.clerkId} not found in DB. Triggering JIT sync via messaging fallback.`);
+      try {
+        user = await this.usersService.syncClerkUser(data.clerkId);
+        this.logger.info(`[MSG] JIT sync successful for ${data.clerkId}. Internal ID: ${user.id}`);
+      } catch (error) {
+        this.logger.error(`[MSG] JIT sync failed for ${data.clerkId} during messaging fallback: ${error.message}`);
+        return { internalId: null };
+      }
+    }
+    
+    return { internalId: user?.id || null };
+  }
+
   @MessagePattern('users.count')
   async countUsers(): Promise<number> {
     return this.usersService.countAll();
@@ -46,15 +69,23 @@ export class UsersController {
   @Get('me')
   @UseGuards(ClerkAuthGuard)
   async getProfile(@CurrentUser() clerkUser: ClerkUser) {
-    const user = await this.usersService.findByClerkId(clerkUser.userId);
+    let user = await this.usersService.findByClerkId(clerkUser.userId);
+    
     if (!user) {
-      this.logger.warn(
-        `User ${clerkUser.userId} not found in DB but authenticated.`,
+      this.logger.info(
+        `User ${clerkUser.userId} authenticated but not in DB. Triggering JIT sync.`,
       );
-      throw new NotFoundException(
-        'User profile not found. It may take a moment to sync.',
-      );
+      
+      try {
+        user = await this.usersService.syncClerkUser(clerkUser.userId);
+      } catch (error) {
+        this.logger.error(`JIT sync failed for ${clerkUser.userId}: ${error.message}`);
+        throw new NotFoundException(
+          'User profile not found and auto-sync failed. Please contact support.',
+        );
+      }
     }
+    
     return user;
   }
 

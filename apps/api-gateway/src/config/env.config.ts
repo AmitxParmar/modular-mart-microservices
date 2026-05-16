@@ -25,6 +25,6 @@ export const servicesConfig = registerAs('services', () => ({
   catalogService: process.env.CATALOG_SERVICE_URL ?? 'http://localhost:3002',
   productService: process.env.PRODUCT_SERVICE_URL ?? 'http://localhost:3002',
   orderService: process.env.ORDER_SERVICE_URL ?? 'http://localhost:3002',
-  paymentService: process.env.PAYMENT_SERVICE_URL ?? 'http://localhost:3002',
+  paymentService: process.env.PAYMENT_SERVICE_URL ?? 'http://localhost:3004',
   cartService: process.env.CART_SERVICE_URL ?? 'http://localhost:3005',
 }));

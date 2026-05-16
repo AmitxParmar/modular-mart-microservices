@@ -5,7 +5,8 @@ import {
   UnauthorizedException,
 } from "@nestjs/common";
 
-import { createClerkClient, verifyToken } from "@clerk/backend";
+import { verifyToken } from "@clerk/backend";
+import { ConfigService } from "@nestjs/config";
 import type { Request } from "express";
 import type { ClerkUser } from "./types";
 import { PinoLogger } from "@repo/common";
@@ -18,11 +19,10 @@ import { PinoLogger } from "@repo/common";
  */
 @Injectable()
 export class ClerkAuthGuard implements CanActivate {
-  private readonly clerk = createClerkClient({
-    secretKey: process.env.CLERK_SECRET_KEY,
-  });
-
-  constructor(private readonly logger: PinoLogger) {}
+  constructor(
+    private readonly logger: PinoLogger,
+    private readonly configService: ConfigService,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
@@ -34,10 +34,25 @@ export class ClerkAuthGuard implements CanActivate {
       );
     }
 
+    const secretKey = this.configService.get<string>("CLERK_SECRET_KEY");
+
+    if (!secretKey) {
+      this.logger.error("ClerkAuthGuard: CLERK_SECRET_KEY is MISSING in environment variables.");
+      throw new UnauthorizedException("Internal authentication configuration error.");
+    }
+
+    if (secretKey.startsWith("sk_")) {
+      this.logger.debug(`ClerkAuthGuard: CLERK_SECRET_KEY is present and starts with 'sk_'. Length: ${secretKey.length}`);
+    } else {
+      this.logger.error(`ClerkAuthGuard: CLERK_SECRET_KEY does not start with 'sk_'. It might be a publishable key or malformed. Length: ${secretKey.length}`);
+    }
+
     try {
       // 1. Verify the JWT cryptographically locally without a network request
+      // We add clockSkewInMs to handle potential drift between server and Clerk's auth servers
       const payload = await verifyToken(token, {
-        secretKey: process.env.CLERK_SECRET_KEY,
+        secretKey,
+        clockSkewInMs: 10000, // 10 seconds of tolerance
       });
 
       const userId = payload.sub;
@@ -72,13 +87,15 @@ export class ClerkAuthGuard implements CanActivate {
 
       return true;
     } catch (err) {
-      if (err instanceof Error) {
-        this.logger.error(`Clerk auth verification failed: ${err.message}`);
-        throw new UnauthorizedException(
-          "Invalid or expired Clerk session token.",
-        );
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      this.logger.error(`Clerk auth verification failed: ${errorMessage}`);
+      
+      // If we're in development, providing a bit more detail in the log can help
+      if (process.env.NODE_ENV !== 'production') {
+        this.logger.debug(`Failed token (first 10 chars): ${token.substring(0, 10)}...`);
+        this.logger.debug(`Secret Key starts with: ${secretKey.substring(0, 7)}...`);
       }
-      this.logger.error(`Clerk auth verification failed: ${err}`);
+
       throw new UnauthorizedException(
         "Invalid or expired Clerk session token.",
       );

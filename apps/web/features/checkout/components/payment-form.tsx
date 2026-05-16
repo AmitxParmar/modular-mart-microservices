@@ -19,7 +19,7 @@ interface PaymentFormProps {
   shippingAddressSnapshot?: ShippingAddressSnapshot;
 }
 
-export function PaymentForm({ shippingAddressSnapshot }: PaymentFormProps) {
+export function PaymentForm({ shippingAddressSnapshot }: Readonly<PaymentFormProps>) {
   const stripe = useStripe();
   const elements = useElements();
   const { items, clearCart } = useCart();
@@ -51,17 +51,29 @@ export function PaymentForm({ shippingAddressSnapshot }: PaymentFormProps) {
 
       // 2. Create order — shipping snapshot is included directly in the payload,
       //    no cross-service HTTP calls needed on the backend side.
+      // If internalId is missing from the current local user object, we force a token refresh
+      // to ensure the backend sees the latest metadata synced from user-service.
+      const hasInternalId = !!clerkUser?.publicMetadata?.internalId;
+      
       const order = await createOrder.mutateAsync({
-        items: items.map((item) => ({
-          productId: item.product.id,
-          quantity: item.quantity,
-        })),
-        shippingAddressSnapshot,
-        userId: clerkUser?.publicMetadata?.internalId as string,
+        data: {
+          items: items.map((item) => ({
+            productId: item.product.id,
+            quantity: item.quantity,
+          })),
+          shippingAddressSnapshot,
+          userId: clerkUser?.publicMetadata?.internalId as string,
+        },
+        options: {
+          skipTokenCache: !hasInternalId
+        }
       });
 
       // 3. Create PaymentIntent tied to the new order
-      const { clientSecret } = await createPaymentIntent.mutateAsync(order.id);
+      const { clientSecret } = await createPaymentIntent.mutateAsync({
+        orderId: order.id,
+        amount: Number(order.totalAmount),
+      });
 
       // 4. Confirm payment with Stripe
       const { error: confirmError } = await stripe.confirmPayment({

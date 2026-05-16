@@ -29,7 +29,7 @@ const SERVICE_ROUTES: ServiceRouteConfig[] = [
   { pathPrefix: '/api/catalog', configKey: 'services.catalogService' },
   { pathPrefix: '/api/products', configKey: 'services.catalogService' },
   { pathPrefix: '/api/orders', configKey: 'services.catalogService' },
-  { pathPrefix: '/api/payments', configKey: 'services.catalogService' },
+  { pathPrefix: '/api/payments', configKey: 'services.paymentService' },
   { pathPrefix: '/api/cart', configKey: 'services.catalogService' },
 ];
 

@@ -1,7 +1,5 @@
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { DatabaseModule } from '@repo/database';
 import { ConfigModule } from './config/config.module';
 import {
@@ -11,31 +9,21 @@ import {
   createLoggerConfig,
 } from '@repo/common';
 import { LoggerModule } from 'nestjs-pino';
-// TypeOrmModule removed — no standalone forFeature registrations needed at root
-import { CatalogModule } from './catalog/catalog.module';
-import { OrdersModule } from './orders/orders.module';
-import { AdminModule } from './admin/admin.module';
-import { AuthProxyModule } from './auth-proxy.module';
+import { PaymentsModule } from './payments/payments.module';
 import { MessagingModule } from './messaging.module';
 
 @Module({
   imports: [
     ConfigModule,
-    AuthProxyModule,
     MessagingModule,
     LoggerModule.forRootAsync({
-      useFactory: () => createLoggerConfig('catalog-order-service'),
+      useFactory: () => createLoggerConfig('payment-service'),
     }),
     DatabaseModule.forRoot(),
-    CatalogModule,
-    OrdersModule,
-    AdminModule,
+    PaymentsModule,
     HealthModule,
   ],
-
-  controllers: [AppController],
   providers: [
-    AppService,
     {
       provide: APP_FILTER,
       useClass: HttpExceptionFilter,

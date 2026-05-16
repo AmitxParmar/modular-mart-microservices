@@ -40,12 +40,13 @@ type SessionClaimsWithRoles = {
  *
  * Examples:
  * - /dashboard
- * - /dashboard/admin
  * - /customer/orders
+ * - /checkout
  */
 const isProtectedRoute = createRouteMatcher([
   '/dashboard(.*)',
   '/customer(.*)',
+  '/checkout(.*)',
 ]);
 
 /**
@@ -56,6 +57,7 @@ const isProtectedRoute = createRouteMatcher([
 const isCustomerRoute = createRouteMatcher([
   '/customer(.*)',
   '/dashboard/customer(.*)',
+  '/checkout(.*)',
 ]);
 
 /**
@@ -87,9 +89,22 @@ export default clerkMiddleware(async (auth, req: NextRequest) => {
    * User must be authenticated.
    *
    * If not signed in,
-   * redirect them to Clerk sign-in page.
+   * handle based on route type.
    */
   if (!session.userId) {
+    /**
+     * For /checkout, we do NOT redirect to Clerk's sign-in page.
+     * This avoids redirect loops when using modal-based auth (AuthDialog).
+     * The page will load, and client-side logic will show the dialog.
+     */
+    if (req.nextUrl.pathname.startsWith('/checkout')) {
+      return;
+    }
+
+    /**
+     * For other protected routes (like /dashboard),
+     * redirect them to Clerk sign-in page.
+     */
     return session.redirectToSignIn();
   }
 
@@ -200,6 +215,7 @@ export default clerkMiddleware(async (auth, req: NextRequest) => {
    * Only CUSTOMER users can access:
    * - /customer/*
    * - /dashboard/customer/*
+   * - /checkout
    */
   if (
     isCustomerRoute(req) &&
@@ -218,7 +234,7 @@ export default clerkMiddleware(async (auth, req: NextRequest) => {
      */
     if (userRoles.length === 0) {
       console.warn(
-        `Middleware: No roles found in session claims for ${session.userId}. Allowing /customer as fallback.`
+        `Middleware: No roles found in session claims for ${session.userId}. Allowing access as fallback.`
       );
 
       return;

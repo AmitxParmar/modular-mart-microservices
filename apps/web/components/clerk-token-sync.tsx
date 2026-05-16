@@ -13,7 +13,8 @@ export function ClerkTokenSync() {
   const { getToken } = useAuth();
 
   useEffect(() => {
-    setTokenGetter(getToken);
+    // Pass a wrapper that forwards the skipCache option to Clerk's getToken
+    setTokenGetter((options) => getToken({ skipCache: options?.skipCache }));
   }, [getToken]);
 
   return null;

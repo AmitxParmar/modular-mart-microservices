@@ -17,6 +17,7 @@ import { CreateOrderDto } from './dto/create-order.dto';
 import { ClerkUser } from '@repo/auth';
 import { OrderStatus, EVENT_PATTERNS } from '@repo/contracts';
 import { ClientProxy } from '@nestjs/microservices';
+import { firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class OrdersService {
@@ -26,15 +27,37 @@ export class OrdersService {
     @InjectRepository(OrderStatusHistory)
     private readonly historyRepo: Repository<OrderStatusHistory>,
     @Inject('RABBITMQ_SERVICE') private readonly rabbitClient: ClientProxy,
+    @Inject('AUTH_SERVICE') private readonly authClient: ClientProxy,
     private readonly dataSource: DataSource,
   ) {}
 
   async createOrder(user: ClerkUser, createOrderDto: CreateOrderDto) {
-    const internalId = user.internalId || createOrderDto.userId;
+    let internalId = user.internalId || createOrderDto.userId;
+
+    if (!internalId) {
+      this.logger.info(
+        `createOrder: Missing internalId for Clerk User ${user.userId}. Attempting fallback via messaging.`,
+      );
+      try {
+        const response = await firstValueFrom(
+          this.authClient.send(
+            { cmd: EVENT_PATTERNS.GET_USER_ID },
+            { clerkId: user.userId },
+          ),
+        );
+        
+        if (response?.internalId) {
+          internalId = response.internalId;
+          this.logger.info(`createOrder: Successfully resolved internalId ${internalId} via fallback.`);
+        }
+      } catch (error) {
+        this.logger.error(`createOrder: Fallback internalId resolution failed: ${error.message}`);
+      }
+    }
 
     if (!internalId) {
       this.logger.warn(
-        `createOrder: No internalId found for Clerk User ${user.userId}`,
+        `createOrder: No internalId found for Clerk User ${user.userId} even after fallback.`,
       );
       throw new UnprocessableEntityException(
         'Your account has not finished setting up. Please try again in a moment or contact support.',
@@ -137,9 +160,13 @@ export class OrdersService {
       if (err instanceof Error && 'status' in err) throw err;
 
       const message = err instanceof Error ? err.message : String(err);
-      this.logger.error(`createOrder failed: ${message}`);
+      const stack = err instanceof Error ? err.stack : 'No stack trace';
+      
+      this.logger.error(`createOrder failed: ${message}`, stack);
+      
+      // Provide more context in the error message for better debugging
       throw new InternalServerErrorException(
-        'An unexpected error occurred while placing your order.',
+        `Order placement failed: ${message}`,
       );
     }
   }

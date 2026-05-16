@@ -14,6 +14,7 @@ export const EVENT_PATTERNS = {
   USER_UPDATED: 'user.updated',
   USER_DELETED: 'user.deleted',
   GET_USER_ROLE: 'user.get_role',
+  GET_USER_ID: 'user.get_id',
   ORDER_CREATED: 'order.created',
   ORDER_APPROVED: 'order.approved',
   ORDER_REJECTED: 'order.rejected',
@@ -45,6 +46,14 @@ export interface GetUserRolePayload {
 }
 
 export type GetUserRoleResponse = string[];
+
+export interface GetUserIdPayload {
+  clerkId: string;
+}
+
+export interface GetUserIdResponse {
+  internalId: string | null;
+}
 
 // ─── User Events ──────────────────────────────────────────────────────────────
 

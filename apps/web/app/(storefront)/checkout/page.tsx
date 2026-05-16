@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
-import { CheckoutFlow, OrderSummary, StripeProvider } from "@/features/checkout";
+import { CheckoutFlow, OrderSummary, StripeProvider, CheckoutAuthGuard } from "@/features/checkout";
 
 export default function CheckoutPage() {
   return (
@@ -31,7 +31,9 @@ export default function CheckoutPage() {
             <div className="lg:col-span-7 xl:col-span-8">
               <h1 className="text-3xl font-extrabold tracking-tight text-foreground mb-10">Checkout</h1>
               
-              <CheckoutFlow />
+              <CheckoutAuthGuard>
+                <CheckoutFlow />
+              </CheckoutAuthGuard>
             </div>
 
             {/* Order Summary (Right Column) */}

@@ -10,7 +10,7 @@ export class Order extends BaseEntity {
   @Index()
   userId: string;
 
-  @Column({ name: 'seller_id', type: 'uuid' })
+  @Column({ name: 'seller_id', type: 'text' })
   @Index()
   sellerId: string;
 

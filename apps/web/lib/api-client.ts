@@ -12,10 +12,10 @@
 
 import axios from "axios";
 
-let tokenGetter: (() => Promise<string | null>) | null = null;
+let tokenGetter: ((options?: { skipCache?: boolean }) => Promise<string | null>) | null = null;
 
 /** Called once from ClerkTokenSync component to wire up the token source. */
-export function setTokenGetter(fn: () => Promise<string | null>) {
+export function setTokenGetter(fn: (options?: { skipCache?: boolean }) => Promise<string | null>) {
   tokenGetter = fn;
 }
 
@@ -26,10 +26,31 @@ export const api = axios.create({
 
 api.interceptors.request.use(async (config) => {
   if (tokenGetter) {
-    const token = await tokenGetter();
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    try {
+      // If the request has a custom property 'skipTokenCache', use it
+      const skipCache = (config as any).skipTokenCache === true;
+      const token = await tokenGetter({ skipCache });
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+        
+        // Debugging JWT structure
+        if (process.env.NODE_ENV !== 'production') {
+          const parts = token.split('.');
+          console.debug(`[api-client] Attaching token to ${config.method?.toUpperCase()} ${config.url}`);
+          console.debug(`[api-client] Token structure: ${parts.length} parts (starts with: ${token.substring(0, 10)}...)`);
+          
+          if (parts.length !== 3) {
+            console.error("[api-client] Token does NOT look like a valid JWT (should have 3 parts).");
+          }
+        }
+      } else {
+        console.warn("[api-client] tokenGetter returned null token. Request will likely fail if it targets a protected endpoint.");
+      }
+    } catch (err) {
+      console.error("[api-client] Error calling tokenGetter:", err);
     }
+  } else {
+    console.warn("[api-client] tokenGetter is not set. Ensure <ClerkTokenSync /> is rendered.");
   }
   return config;
 });
@@ -42,6 +63,12 @@ api.interceptors.response.use(
       error.response?.data?.message ??
       error.message ??
       "An unexpected error occurred";
+
+    if (error.response?.status === 401) {
+      console.error("[api-client] 401 Unauthorized:", message);
+    }
+
     return Promise.reject(new Error(message));
   },
 );
+

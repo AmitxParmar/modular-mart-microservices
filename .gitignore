@@ -4,7 +4,7 @@
 node_modules
 .pnp
 .pnp.js
-graphify-out
+
 # Local env files
 .env
 .env.local
@@ -37,3 +37,5 @@ yarn-error.log*
 # Misc
 .DS_Store
 *.pem
+graphify-out
+.vscode
