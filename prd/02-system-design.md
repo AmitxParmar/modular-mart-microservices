@@ -255,12 +255,25 @@ sequenceDiagram
 5. **Acknowledgment**: Message acknowledged after processing
 6. **Retry**: Failed messages go to retry queue
 
-### Data Consistency
+### Data Consistency & Resiliency Patterns
 
-- **Strong Consistency**: Within service boundaries (ACID transactions)
-- **Eventual Consistency**: Across services (event-driven updates)
-- **Compensation**: Saga pattern for distributed transactions
-- **Idempotency**: Event handlers are idempotent
+To maintain robust state and reliable distributed transaction behaviors across our isolated services without risking data anomalies, the platform implements three core architectural patterns:
+
+#### 1. Database-per-Service (Domain Autonomy)
+- **Decision**: Each service owns its dedicated PostgreSQL schema; direct table cross-queries or shared database entities are strictly prohibited.
+- **Justification**: Eliminates tight coupling between databases, ensuring schema migrations in the catalog do not break billing or order tracking. All cross-domain operations happen strictly over clean RPC interfaces (using `@mart/contracts`) or event exchanges.
+
+#### 2. Synchronous RPC Stock Reservation
+- **Decision**: Stock locking is performed synchronously via a Request/Reply TCP queue in RabbitMQ rather than asynchronously.
+- **Justification**: Inventory availability is a critical consistent path. Eventual consistency here would cause duplicate reservations and oversold items in high-concurrency flashes. Synchronous TCP locking ensures atomic check-and-reserve capabilities before an order is committed.
+
+#### 3. Transactional Outbox Pattern (Reliable Choreography)
+- **Decision**: Rather than pushing events directly to RabbitMQ in the application logic (which creates the dual-write vulnerability where one write succeeds and the other fails), events are saved into a local `outbox_events` table within the active database transaction.
+- **Justification**: This guarantees atomic database commits. A separate decoupled `outbox-processor` background worker polls this table and publishes events to RabbitMQ with at-least-once delivery guarantees.
+
+#### 4. Idempotent Consumer Pattern (Exactly-Once Semantics)
+- **Decision**: A `processed_messages` deduplication table stores unique message tracking IDs within the transaction scope of consumer operations.
+- **Justification**: At-least-once message delivery means a payment notification (`PAYMENT_SUCCEEDED`) could be received multiple times due to transient network hops. By checking and inserting the unique `paymentId` into the idempotency table before completing state transitions, we guarantee that multiple event notifications never result in redundant order state changes or side effects.
 
 ## Deployment & Learning Environment
 
