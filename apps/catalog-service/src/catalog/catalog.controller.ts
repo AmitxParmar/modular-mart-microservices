@@ -11,10 +11,31 @@ import { CatalogService } from './catalog.service';
 import { ClerkAuthGuard, CurrentUser, Roles, RolesGuard } from '@repo/auth';
 import type { ClerkUser } from '@repo/auth';
 import { Product } from './entities/product.entity';
+import { MessagePattern } from '@nestjs/microservices';
 
 @Controller('catalog')
 export class CatalogController {
   constructor(private readonly catalogService: CatalogService) {}
+
+  @MessagePattern('products.count')
+  async getProductsCount() {
+    return this.catalogService.countActiveProducts();
+  }
+
+  @MessagePattern('products.stats')
+  async getCategoryStats() {
+    return this.catalogService.getCategoryStats();
+  }
+
+  @MessagePattern('products.get_batch')
+  async getProductsBatch(productIds: string[]) {
+    return this.catalogService.getProductsBatch(productIds);
+  }
+
+  @MessagePattern('products.reserve_stock')
+  async reserveStock(items: { productId: string; quantity: number }[]) {
+    return this.catalogService.reserveStock(items);
+  }
 
   @Get('products')
   getProducts(
@@ -54,5 +75,26 @@ export class CatalogController {
   ) {
     // In a real scenario, we would attach user.internalId as seller_id here
     return this.catalogService.createProduct(productData);
+  }
+
+  @Get('admin/products')
+  @Roles('ADMIN')
+  @UseGuards(ClerkAuthGuard, RolesGuard)
+  async getAllProducts() {
+    return this.catalogService.getAllProducts();
+  }
+
+  @Post('admin/products/:id/approve')
+  @Roles('ADMIN')
+  @UseGuards(ClerkAuthGuard, RolesGuard)
+  async approve(@Param('id') id: string) {
+    return this.catalogService.approveProduct(id);
+  }
+
+  @Post('admin/products/:id/reject')
+  @Roles('ADMIN')
+  @UseGuards(ClerkAuthGuard, RolesGuard)
+  async reject(@Param('id') id: string) {
+    return this.catalogService.rejectProduct(id);
   }
 }

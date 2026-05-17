@@ -31,11 +31,12 @@ export function PaymentForm({ shippingAddressSnapshot }: Readonly<PaymentFormPro
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [isPaymentComplete, setIsPaymentComplete] = useState(false);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 
-    if (!stripe || !elements || items.length === 0) return;
+    if (!stripe || !elements || items.length === 0 || !isPaymentComplete) return;
 
     setIsLoading(true);
     setErrorMessage(null);
@@ -128,7 +129,12 @@ export function PaymentForm({ shippingAddressSnapshot }: Readonly<PaymentFormPro
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
       <div className="bg-background rounded-2xl border border-border/40 p-1">
-        <PaymentElement options={{ layout: "tabs" }} />
+        <PaymentElement 
+          options={{ layout: "tabs" }} 
+          onChange={(event) => {
+            setIsPaymentComplete(event.complete);
+          }}
+        />
       </div>
 
       {errorMessage && (
@@ -139,7 +145,7 @@ export function PaymentForm({ shippingAddressSnapshot }: Readonly<PaymentFormPro
 
       <Button
         type="submit"
-        disabled={isLoading || !stripe || !elements || items.length === 0}
+        disabled={isLoading || !stripe || !elements || items.length === 0 || !isPaymentComplete}
         className="w-full h-14 rounded-full text-lg font-bold shadow-lg hover:shadow-xl transition-all disabled:opacity-50"
       >
         {isLoading ? (

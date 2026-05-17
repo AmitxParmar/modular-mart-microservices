@@ -12,12 +12,11 @@ import { PinoLogger } from '@repo/common';
 import { Order } from './entities/order.entity';
 import { OrderItem } from './entities/order-item.entity';
 import { OrderStatusHistory } from './entities/order-status-history.entity';
-import { Product } from '../catalog/entities/product.entity';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { ClerkUser } from '@repo/auth';
 import { OrderStatus, EVENT_PATTERNS } from '@repo/contracts';
 import { ClientProxy } from '@nestjs/microservices';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, timeout } from 'rxjs';
 
 @Injectable()
 export class OrdersService {
@@ -28,6 +27,7 @@ export class OrdersService {
     private readonly historyRepo: Repository<OrderStatusHistory>,
     @Inject('RABBITMQ_SERVICE') private readonly rabbitClient: ClientProxy,
     @Inject('AUTH_SERVICE') private readonly authClient: ClientProxy,
+    @Inject('CATALOG_SERVICE') private readonly catalogClient: ClientProxy,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -65,35 +65,47 @@ export class OrdersService {
     }
 
     try {
+      // Fetch product info from catalog-service
+      const productIds = createOrderDto.items.map((i) => i.productId);
+      const products: any[] = await firstValueFrom(
+        this.catalogClient.send<any[]>('products.get_batch', productIds).pipe(
+          timeout(5000),
+        )
+      );
+
+      // Reserve stock via RPC (Synchronous Request/Reply)
+      const reserveResult = await firstValueFrom(
+        this.catalogClient.send<{ success: boolean; error?: string }>(
+          'products.reserve_stock',
+          createOrderDto.items.map((i) => ({
+            productId: i.productId,
+            quantity: i.quantity,
+          })),
+        ).pipe(timeout(5000)),
+      );
+
+      if (!reserveResult.success) {
+        throw new BadRequestException(
+          reserveResult.error || 'Failed to reserve stock',
+        );
+      }
+
       return await this.dataSource.transaction(async (manager) => {
         // 1. Group requested items by seller
         const itemsBySeller: Record<
           string,
-          { product: Product; quantity: number }[]
+          { product: any; quantity: number }[]
         > = {};
 
         for (const item of createOrderDto.items) {
-          const product = await manager.findOne(Product, {
-            where: { id: item.productId },
-            lock: { mode: 'pessimistic_write' },
-          });
+          const product = products.find((p) => p.id === item.productId);
 
           if (!product) {
             throw new NotFoundException(
               `Product with ID ${item.productId} not found`,
             );
           }
-
-          if (product.stockQuantity < item.quantity) {
-            throw new BadRequestException(
-              `Insufficient stock for product ${product.name}`,
-            );
-          }
-
-          // Deduct stock
-          product.stockQuantity -= item.quantity;
-          await manager.save(product);
-
+          
           const sellerId = product.sellerId || 'PLATFORM'; // Fallback if sellerId is missing
           if (!itemsBySeller[sellerId]) {
             itemsBySeller[sellerId] = [];
@@ -144,13 +156,17 @@ export class OrdersService {
 
           createdOrders.push(savedOrder);
 
-          // 4. Publish Event
+          // 4. Publish Event - stock reservation saga will pick this up
           this.rabbitClient.emit(EVENT_PATTERNS.ORDER_CREATED, {
             orderId: savedOrder.id,
             userId: internalId,
             sellerId,
             totalAmount,
             createdAt: savedOrder.createdAt,
+            items: sellerItems.map((i) => ({
+              productId: i.product.id,
+              quantity: i.quantity,
+            })),
           });
         }
 
@@ -180,7 +196,7 @@ export class OrdersService {
     }
     return this.orderRepo.find({
       where: { userId },
-      relations: ['items', 'items.product'],
+      relations: ['items'],
       order: { createdAt: 'DESC' },
     });
   }
@@ -188,7 +204,7 @@ export class OrdersService {
   async getSellerOrders(sellerId: string) {
     return this.orderRepo.find({
       where: { sellerId },
-      relations: ['items', 'items.product'],
+      relations: ['items'],
       order: { createdAt: 'DESC' },
     });
   }
@@ -208,7 +224,7 @@ export class OrdersService {
 
     const order = await this.orderRepo.findOne({
       where: { id: orderId, userId },
-      relations: ['items', 'items.product'],
+      relations: ['items'],
     });
 
     if (!order) throw new NotFoundException('Order not found');
@@ -218,7 +234,7 @@ export class OrdersService {
   async getOrderTracking(orderId: string, userId: string) {
     const order = await this.orderRepo.findOne({
       where: { id: orderId, userId },
-      relations: ['items', 'items.product'],
+      relations: ['items'],
     });
 
     if (!order) throw new NotFoundException('Order not found');

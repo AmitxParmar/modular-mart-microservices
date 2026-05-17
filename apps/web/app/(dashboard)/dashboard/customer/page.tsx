@@ -33,6 +33,8 @@ export default function CustomerDashboard() {
         <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center border-4 border-background shadow-xl overflow-hidden">
           {user?.imageUrl ? (
             <Image
+              width={100}
+              height={100}
               src={user.imageUrl}
               alt={user.fullName || "User"}
               className="w-full h-full object-cover"
@@ -60,7 +62,11 @@ export default function CustomerDashboard() {
               </div>
               <CardTitle className="text-lg flex items-center justify-between">
                 My Orders
-                {orders && <span className="text-xs font-normal text-muted-foreground">{orders.length} total</span>}
+                {orders && (
+                  <span className="text-xs font-normal text-muted-foreground">
+                    {orders.length} total
+                  </span>
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -82,7 +88,11 @@ export default function CustomerDashboard() {
               </div>
               <CardTitle className="text-lg flex items-center justify-between">
                 Address Book
-                {addresses && <span className="text-xs font-normal text-muted-foreground">{addresses.length} saved</span>}
+                {addresses && (
+                  <span className="text-xs font-normal text-muted-foreground">
+                    {addresses.length} saved
+                  </span>
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -122,9 +132,12 @@ export default function CustomerDashboard() {
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-lg font-bold">Recent Orders</CardTitle>
             {orders && orders.length > 0 && (
-              <Link 
-                href="/customer/orders" 
-                className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "gap-1 text-primary")}
+              <Link
+                href="/customer/orders"
+                className={cn(
+                  buttonVariants({ variant: "ghost", size: "sm" }),
+                  "gap-1 text-primary",
+                )}
               >
                 View all <ArrowRight className="w-3 h-3" />
               </Link>
@@ -139,20 +152,28 @@ export default function CustomerDashboard() {
             ) : recentOrders.length > 0 ? (
               <div className="space-y-4">
                 {recentOrders.map((order) => (
-                  <div key={order.id} className="flex items-center justify-between p-4 rounded-xl border border-border/40 bg-muted/10">
+                  <div
+                    key={order.id}
+                    className="flex items-center justify-between p-4 rounded-xl border border-border/40 bg-muted/10"
+                  >
                     <div className="flex items-center gap-4">
                       <div className="w-10 h-10 bg-primary/5 rounded-lg flex items-center justify-center text-primary">
                         <ShoppingCart className="w-5 h-5" />
                       </div>
                       <div>
-                        <p className="text-sm font-bold uppercase tracking-tight">Order #{order.id.slice(-8)}</p>
+                        <p className="text-sm font-bold uppercase tracking-tight">
+                          Order #{order.id.slice(-8)}
+                        </p>
                         <p className="text-xs text-muted-foreground">
-                          {format(new Date(order.createdAt), 'MMM d, yyyy')} • {order.items.length} items
+                          {format(new Date(order.createdAt), "MMM d, yyyy")} •{" "}
+                          {order.items.length} items
                         </p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-bold mb-1">${Number(order.totalAmount).toFixed(2)}</p>
+                      <p className="text-sm font-bold mb-1">
+                        ${Number(order.totalAmount).toFixed(2)}
+                      </p>
                       <OrderStatusBadge status={order.status} />
                     </div>
                   </div>
@@ -169,7 +190,10 @@ export default function CustomerDashboard() {
                 </p>
                 <Link
                   href="/"
-                  className={cn(buttonVariants({ variant: "default" }), "rounded-full px-8")}
+                  className={cn(
+                    buttonVariants({ variant: "default" }),
+                    "rounded-full px-8",
+                  )}
                 >
                   Start Shopping
                 </Link>
@@ -180,9 +204,7 @@ export default function CustomerDashboard() {
 
         <Card className="border-border/40">
           <CardHeader>
-            <CardTitle className="text-lg font-bold">
-              Default Address
-            </CardTitle>
+            <CardTitle className="text-lg font-bold">Default Address</CardTitle>
           </CardHeader>
           <CardContent>
             {isLoadingAddresses ? (
@@ -200,22 +222,27 @@ export default function CustomerDashboard() {
                 <p className="text-sm text-muted-foreground">
                   {addresses.find((a) => a.isDefault)?.country}
                 </p>
-                <Link 
+                <Link
                   href="/dashboard/customer/addresses"
-                  className={cn(buttonVariants({ variant: "link", size: "sm" }), "px-0 text-primary h-auto mt-2")}
+                  className={cn(
+                    buttonVariants({ variant: "link", size: "sm" }),
+                    "px-0 text-primary h-auto mt-2",
+                  )}
                 >
                   Edit address
                 </Link>
               </div>
             ) : (
-
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">
                   No default address set.
                 </p>
-                <Link 
+                <Link
                   href="/dashboard/customer/addresses"
-                  className={cn(buttonVariants({ variant: "outline", size: "sm" }), "w-full rounded-full gap-2")}
+                  className={cn(
+                    buttonVariants({ variant: "outline", size: "sm" }),
+                    "w-full rounded-full gap-2",
+                  )}
                 >
                   <MapPin className="w-4 h-4" />
                   Add Address
@@ -228,4 +255,3 @@ export default function CustomerDashboard() {
     </div>
   );
 }
-

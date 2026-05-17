@@ -1,17 +1,13 @@
 import {
   Controller,
   Get,
-  Post,
-  Param,
   UseGuards,
-  NotFoundException,
   Inject,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom, timeout, catchError, of } from 'rxjs';
-import { Product } from '../catalog/entities/product.entity';
 import { Order } from '../orders/entities/order.entity';
 import { ServiceHealthLog } from './entities/service-health-log.entity';
 import { ClerkAuthGuard, Roles, RolesGuard } from '@repo/auth';
@@ -32,27 +28,30 @@ type CategoryStatRow = {
 @UseGuards(ClerkAuthGuard, RolesGuard)
 export class AdminController {
   constructor(
-    @InjectRepository(Product)
-    private readonly productRepo: Repository<Product>,
     @InjectRepository(Order)
     private readonly orderRepo: Repository<Order>,
     @InjectRepository(ServiceHealthLog)
     private readonly healthRepo: Repository<ServiceHealthLog>,
     @Inject('AUTH_SERVICE')
     private readonly authClient: ClientProxy,
+    @Inject('CATALOG_SERVICE')
+    private readonly catalogClient: ClientProxy,
   ) {}
 
   @Get('stats')
   async getStats() {
     const [totalOrders, activeProducts, totalUsers] = await Promise.all([
       this.orderRepo.count().catch(() => 0),
-      this.productRepo
-        .count({ where: { status: 'APPROVED', isActive: true } })
-        .catch(() => 0),
       firstValueFrom(
-        this.authClient.send('users.count', {}).pipe(
+        this.catalogClient.send<number>('products.count', {}).pipe(
           timeout(2000),
-          catchError(() => of(1284)), // Fallback to dummy data on timeout/error
+          catchError(() => of(0)),
+        ),
+      ),
+      firstValueFrom(
+        this.authClient.send<number>('users.count', {}).pipe(
+          timeout(2000),
+          catchError(() => of(1284)),
         ),
       ),
     ]);
@@ -95,15 +94,12 @@ export class AdminController {
         .then((rows) => rows as OrderTimelineRow[])
         .catch(() => [] as OrderTimelineRow[]),
 
-      this.productRepo
-        .createQueryBuilder('product')
-        .leftJoin('product.category', 'category')
-        .select('category.name', 'name')
-        .addSelect('COUNT(product.id)', 'count')
-        .groupBy('category.name')
-        .getRawMany()
-        .then((rows) => rows as CategoryStatRow[])
-        .catch(() => [] as CategoryStatRow[]),
+      firstValueFrom(
+        this.catalogClient.send<CategoryStatRow[]>('products.stats', {}).pipe(
+          timeout(2000),
+          catchError(() => []),
+        ),
+      ),
 
       firstValueFrom(
         this.authClient.send<number>('users.count', {}).pipe(
@@ -150,29 +146,5 @@ export class AdminController {
         value: Number(c.count ?? 0),
       })),
     };
-  }
-
-  @Get('products')
-  async getAllProducts() {
-    return this.productRepo.find({
-      relations: ['category'],
-      order: { createdAt: 'DESC' },
-    });
-  }
-
-  @Post('products/:id/approve')
-  async approve(@Param('id') id: string) {
-    const product = await this.productRepo.findOne({ where: { id } });
-    if (!product) throw new NotFoundException('Product not found');
-    product.status = 'APPROVED';
-    return this.productRepo.save(product);
-  }
-
-  @Post('products/:id/reject')
-  async reject(@Param('id') id: string) {
-    const product = await this.productRepo.findOne({ where: { id } });
-    if (!product) throw new NotFoundException('Product not found');
-    product.status = 'REJECTED';
-    return this.productRepo.save(product);
   }
 }

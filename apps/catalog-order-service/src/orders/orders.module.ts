@@ -5,11 +5,27 @@ import { OrdersService } from './orders.service';
 import { Order } from './entities/order.entity';
 import { OrderItem } from './entities/order-item.entity';
 import { OrderStatusHistory } from './entities/order-status-history.entity';
-import { Product } from '../catalog/entities/product.entity';
+import { ClientsModule, Transport } from '@nestjs/microservices';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Order, OrderItem, OrderStatusHistory, Product]),
+    TypeOrmModule.forFeature([Order, OrderItem, OrderStatusHistory]),
+    ClientsModule.registerAsync([
+      {
+        name: 'CATALOG_SERVICE',
+        imports: [ConfigModule],
+        inject: [ConfigService],
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.RMQ,
+          options: {
+            urls: [configService.get<string>('RABBITMQ_URL') || 'amqp://localhost:5672'],
+            queue: 'catalog_queue',
+            queueOptions: { durable: true },
+          },
+        }),
+      },
+    ]),
   ],
   controllers: [OrdersController],
   providers: [OrdersService],

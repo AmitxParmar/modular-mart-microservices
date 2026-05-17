@@ -28,7 +28,7 @@ const SERVICE_ROUTES: ServiceRouteConfig[] = [
   { pathPrefix: '/api/users', configKey: 'services.userService' },
   { pathPrefix: '/api/catalog', configKey: 'services.catalogService' },
   { pathPrefix: '/api/products', configKey: 'services.catalogService' },
-  { pathPrefix: '/api/orders', configKey: 'services.catalogService' },
+  { pathPrefix: '/api/orders', configKey: 'services.orderService' },
   { pathPrefix: '/api/payments', configKey: 'services.paymentService' },
   { pathPrefix: '/api/cart', configKey: 'services.catalogService' },
 ];
