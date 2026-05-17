@@ -33,7 +33,7 @@ export class OrdersController {
     this.logger.info(
       `Received PAYMENT_SUCCEEDED RMQ event for Order ${data.orderId}`,
     );
-    await this.ordersService.markOrderAsPaid(data.orderId);
+    await this.ordersService.markOrderAsPaid(data.orderId, data.paymentId);
   }
 
   @Post()

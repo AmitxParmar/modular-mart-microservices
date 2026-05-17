@@ -16,14 +16,16 @@ import { OrdersModule } from './orders/orders.module';
 import { AdminModule } from './admin/admin.module';
 import { AuthProxyModule } from './auth-proxy.module';
 import { MessagingModule } from './messaging.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
     ConfigModule,
     AuthProxyModule,
     MessagingModule,
+    ScheduleModule.forRoot(),
     LoggerModule.forRootAsync({
-      useFactory: () => createLoggerConfig('catalog-order-service'),
+      useFactory: () => createLoggerConfig('order-service'),
     }),
     DatabaseModule.forRoot(),
     OrdersModule,

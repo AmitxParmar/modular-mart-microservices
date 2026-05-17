@@ -39,22 +39,22 @@ services:
           property: host
       - key: PRODUCT_SERVICE_URL
         fromService:
-          name: catalog-order-service
+          name: catalog-service
           type: web
           property: host
       - key: ORDER_SERVICE_URL
         fromService:
-          name: catalog-order-service
+          name: order-service
           type: web
           property: host
       - key: PAYMENT_SERVICE_URL
         fromService:
-          name: catalog-order-service
+          name: payment-service
           type: web
           property: host
       - key: CART_SERVICE_URL
         fromService:
-          name: catalog-order-service
+          name: order-service
           type: web
           property: host
       - key: CLERK_PUBLISHABLE_KEY
@@ -64,12 +64,12 @@ services:
       - key: CLERK_WEBHOOK_SECRET
         sync: false    
 
-  # Catalog & Order Service
+  # Order Service
   - type: web
-    name: catalog-order-service
+    name: order-service
     env: docker
     dockerContext: .
-    dockerfilePath: apps/catalog-order-service/Dockerfile
+    dockerfilePath: apps/order-service/Dockerfile
     plan: free
     region: ohio
     healthCheckPath: /health/live
@@ -78,7 +78,39 @@ services:
       - key: PORT
         value: 3000
       - key: DATABASE_URL
-        sync: false # Set isolated Supabase URL for Catalog
+        sync: false 
+        
+  # Catalog Service
+  - type: web
+    name: catalog-service
+    env: docker
+    dockerContext: .
+    dockerfilePath: apps/catalog-service/Dockerfile
+    plan: free
+    region: ohio
+    healthCheckPath: /health/live
+    envVars:
+      - fromGroup: shared-infra
+      - key: PORT
+        value: 3000
+      - key: DATABASE_URL
+        sync: false 
+
+  # Payment Service
+  - type: web
+    name: payment-service
+    env: docker
+    dockerContext: .
+    dockerfilePath: apps/payment-service/Dockerfile
+    plan: free
+    region: ohio
+    healthCheckPath: /health/live
+    envVars:
+      - fromGroup: shared-infra
+      - key: PORT
+        value: 3000
+      - key: DATABASE_URL
+        sync: false 
       - key: STRIPE_SECRET_KEY
         sync: false
       - key: STRIPE_WEBHOOK_SECRET
@@ -98,7 +130,7 @@ services:
       - key: PORT
         value: 3000
       - key: DATABASE_URL
-        sync: false # Set isolated Supabase URL for Users
+        sync: false 
 
       - key: CLERK_SECRET_KEY
         sync: false

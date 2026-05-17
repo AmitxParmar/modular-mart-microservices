@@ -5,7 +5,9 @@ Modular Mart is a cloud-native, microservices-based e-commerce platform designed
 
 - **API Gateway**: The single entry point using NestJS, handling routing, rate limiting, and auth verification.
 - **User Service**: Manages identity and profiles, synced with **Clerk**.
-- **Catalog & Order Service**: The core domain managing inventory and the **Saga-based checkout process**.
+- **Catalog Service**: Manages product inventory and pricing.
+- **Order Service**: The core domain managing orders and the **Outbox-based checkout process**.
+- **Payment Service**: Handles Stripe payments and webhooks.
 - **Web Frontend**: A modern Next.js storefront using a shared headless UI system.
 - **Shared Chassis**: A set of internal packages (`@mart/auth`, `@mart/common`) providing consistent logging and tracing across all services.
 
@@ -27,12 +29,16 @@ graph TB
 
     subgraph Logic_Layer [Service Layer]
         UserSvc[User Service]
-        CatalogSvc[Catalog & Order Service]
+        CatalogSvc[Catalog Service]
+        OrderSvc[Order Service]
+        PaymentSvc[Payment Service]
     end
 
     subgraph Data_Layer [Isolated Data Layer]
         UserDB[(User PostgreSQL)]
         CatalogDB[(Catalog PostgreSQL)]
+        OrderDB[(Order PostgreSQL)]
+        PaymentDB[(Payment PostgreSQL)]
     end
 
     subgraph Event_Layer [Messaging & Integration]
@@ -49,15 +55,20 @@ graph TB
     Gateway --> Auth
     Gateway --> UserSvc
     Gateway --> CatalogSvc
+    Gateway --> OrderSvc
+    Gateway --> PaymentSvc
 
     UserSvc --> UserDB
     CatalogSvc --> CatalogDB
+    OrderSvc --> OrderDB
+    PaymentSvc --> PaymentDB
 
-    CatalogSvc -- Choreography --> RMQ
-    CatalogSvc <--> Stripe
+    OrderSvc -- Choreography --> RMQ
+    PaymentSvc -- Choreography --> RMQ
+    PaymentSvc <--> Stripe
 
     UserSvc -.-> Observability
-    CatalogSvc -.-> Observability
+    OrderSvc -.-> Observability
     Gateway -.-> Observability
 ```
 
@@ -65,26 +76,30 @@ graph TB
 
 ## 🔄 Core Architectural Patterns
 
-### 1. Saga Orchestration (Checkout)
-Checkout is handled as a distributed transaction. The `Catalog & Order Service` manages the state transition from `PENDING` to `PAID` via Stripe webhooks and RabbitMQ events.
+### 1. Synchronous Request/Reply & Outbox Pattern (Checkout)
+Checkout is handled through a mature, distributed workflow combining synchronous RPC and the Outbox Pattern to guarantee consistency without the chaos of eventual consistency:
 
 ```mermaid
 sequenceDiagram
     participant U as User
     participant Gateway as API Gateway
-    participant Order as Catalog/Order Service
-    participant Stripe as Stripe
+    participant Order as Order Service
+    participant Catalog as Catalog Service
+    participant DB as Order DB (Outbox)
     participant RMQ as RabbitMQ
 
     U->>Gateway: POST /orders
-    Gateway->>Order: Create Order (PENDING)
-    Order->>Order: Lock Stock (Pessimistic)
-    Order-->>U: Return Client Secret
+    Gateway->>Order: Create Order
+    Order->>Catalog: RPC: Reserve Stock (Pessimistic Lock)
+    Catalog-->>Order: Success
+    Order->>DB: Transaction: Save Order + Outbox Event
+    Order-->>U: Return Success
     
-    U->>Stripe: Confirm Payment
-    Stripe->>Order: Webhook: success
-    Order->>RMQ: Publish PAYMENT_SUCCEEDED
-    RMQ->>Order: Finalize Order (PAID)
+    loop Cron (Every 5s)
+        Order->>DB: Poll Outbox
+        Order->>RMQ: Publish ORDER_CREATED
+        Order->>DB: Mark Processed
+    end
 ```
 
 ### 2. Microservice Chassis
@@ -94,7 +109,7 @@ All services inherit standard behavior from the `packages/` directory:
 - **Health**: Standardized `/health` endpoints for liveness and readiness probes.
 
 ### 3. Database Isolation
-Each microservice owns its schema and database instance. No service can directly query another service's database, ensuring that schema changes in one domain do not break others.
+Each microservice owns its schema and database instance. No service can directly query another service's database, ensuring that schema changes in one domain do not break others. The `Order Service` now strictly manages only orders, items, and outbox events, without importing external catalog entities.
 
 ---
 
@@ -106,7 +121,9 @@ Managed via **Turborepo**, the codebase is optimized for sharing types and logic
 e-commerce-microservices/
 ├── apps/
 │   ├── api-gateway/            # Entry point & Proxy logic
-│   ├── catalog-order-service/  # Inventory, Order & Payment logic (Core Hub)
+│   ├── catalog-service/        # Inventory and products
+│   ├── order-service/          # Order management & checkout
+│   ├── payment-service/        # Stripe payments
 │   ├── user-service/           # Identity & Profile management
 │   └── web/                    # Storefront (Headless UI architecture)
 ├── packages/
@@ -132,5 +149,6 @@ e-commerce-microservices/
 
 ## 🎯 Design Decisions (Verified by Graphify)
 - **Atomic UI**: The frontend uses a `cn()` utility as a bridge node to maintain styling consistency across disparate UI components.
-- **Pessimistic Locking**: Crucial for the `Catalog & Order Service` to prevent overselling during high-concurrency checkout windows.
+- **Pessimistic Locking**: Crucial for the `Catalog Service` to prevent overselling during high-concurrency checkout windows.
 - **Environment Safety**: Centralized Zod-based validation for all environment variables at service bootstrap.
+

@@ -12,6 +12,8 @@ import { PinoLogger } from '@repo/common';
 import { Order } from './entities/order.entity';
 import { OrderItem } from './entities/order-item.entity';
 import { OrderStatusHistory } from './entities/order-status-history.entity';
+import { OutboxEvent } from './entities/outbox-event.entity';
+import { ProcessedMessage } from './entities/processed-message.entity';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { ClerkUser } from '@repo/auth';
 import { OrderStatus, EVENT_PATTERNS } from '@repo/contracts';
@@ -156,18 +158,22 @@ export class OrdersService {
 
           createdOrders.push(savedOrder);
 
-          // 4. Publish Event - stock reservation saga will pick this up
-          this.rabbitClient.emit(EVENT_PATTERNS.ORDER_CREATED, {
-            orderId: savedOrder.id,
-            userId: internalId,
-            sellerId,
-            totalAmount,
-            createdAt: savedOrder.createdAt,
-            items: sellerItems.map((i) => ({
-              productId: i.product.id,
-              quantity: i.quantity,
-            })),
+          // 4. Save Outbox Event instead of immediate publish
+          const outboxEvent = manager.create(OutboxEvent, {
+            eventType: EVENT_PATTERNS.ORDER_CREATED,
+            payload: {
+              orderId: savedOrder.id,
+              userId: internalId,
+              sellerId,
+              totalAmount,
+              createdAt: savedOrder.createdAt,
+              items: sellerItems.map((i) => ({
+                productId: i.product.id,
+                quantity: i.quantity,
+              })),
+            },
           });
+          await manager.save(outboxEvent);
         }
 
         return createdOrders;
@@ -282,41 +288,65 @@ export class OrdersService {
       });
       await manager.save(history);
 
-      // Publish RabbitMQ Event
-      this.rabbitClient.emit(EVENT_PATTERNS.ORDER_STATUS_UPDATED, {
-        orderId: savedOrder.id,
-        userId: savedOrder.userId,
-        previousStatus: currentStatus,
-        newStatus,
-        reason,
-        updatedAt: new Date().toISOString(),
+      // Save Outbox Event for status update
+      const updateOutbox = manager.create(OutboxEvent, {
+        eventType: EVENT_PATTERNS.ORDER_STATUS_UPDATED,
+        payload: {
+          orderId: savedOrder.id,
+          userId: savedOrder.userId,
+          previousStatus: currentStatus,
+          newStatus,
+          reason,
+          updatedAt: new Date().toISOString(),
+        },
       });
+      await manager.save(updateOutbox);
 
       if (newStatus === OrderStatus.APPROVED) {
-        this.rabbitClient.emit(EVENT_PATTERNS.ORDER_APPROVED, {
-          orderId: savedOrder.id,
-          userId: savedOrder.userId,
-          sellerId: savedOrder.sellerId,
-          approvedAt: new Date().toISOString(),
+        const approveOutbox = manager.create(OutboxEvent, {
+          eventType: EVENT_PATTERNS.ORDER_APPROVED,
+          payload: {
+            orderId: savedOrder.id,
+            userId: savedOrder.userId,
+            sellerId: savedOrder.sellerId,
+            approvedAt: new Date().toISOString(),
+          },
         });
+        await manager.save(approveOutbox);
       } else if (newStatus === OrderStatus.REJECTED) {
-        this.rabbitClient.emit(EVENT_PATTERNS.ORDER_REJECTED, {
-          orderId: savedOrder.id,
-          userId: savedOrder.userId,
-          sellerId: savedOrder.sellerId,
-          reason: reason || 'No reason provided',
-          rejectedAt: new Date().toISOString(),
+        const rejectOutbox = manager.create(OutboxEvent, {
+          eventType: EVENT_PATTERNS.ORDER_REJECTED,
+          payload: {
+            orderId: savedOrder.id,
+            userId: savedOrder.userId,
+            sellerId: savedOrder.sellerId,
+            reason: reason || 'No reason provided',
+            rejectedAt: new Date().toISOString(),
+          },
         });
+        await manager.save(rejectOutbox);
       }
 
       return savedOrder;
     });
   }
 
-  async markOrderAsPaid(orderId: string): Promise<void> {
-    const order = await this.orderRepo.findOne({ where: { id: orderId } });
-    if (order?.status === OrderStatus.PENDING) {
-      await this.dataSource.transaction(async (manager) => {
+  async markOrderAsPaid(orderId: string, paymentId: string): Promise<void> {
+    await this.dataSource.transaction(async (manager) => {
+      // Idempotency Check: Have we already processed this payment event?
+      const alreadyProcessed = await manager.findOne(ProcessedMessage, {
+        where: { id: paymentId },
+      });
+
+      if (alreadyProcessed) {
+        this.logger.info(
+          `Idempotency check: Payment event ${paymentId} already processed. Skipping.`,
+        );
+        return;
+      }
+
+      const order = await manager.findOne(Order, { where: { id: orderId } });
+      if (order?.status === OrderStatus.PENDING) {
         order.status = OrderStatus.PAID;
         await manager.save(order);
 
@@ -326,16 +356,23 @@ export class OrdersService {
           reason: 'Payment successful',
         });
         await manager.save(history);
-      });
 
-      this.logger.info(
-        `Saga Event Processed: Order ${orderId} successfully marked as PAID.`,
-      );
-    } else {
-      this.logger.warn(
-        `Saga Event Ignored: Order ${orderId} not found or not in PENDING status.`,
-      );
-    }
+        this.logger.info(
+          `Saga Event Processed: Order ${orderId} successfully marked as PAID.`,
+        );
+      } else {
+        this.logger.warn(
+          `Saga Event Ignored: Order ${orderId} not found or not in PENDING status.`,
+        );
+      }
+
+      // Mark the message as processed to ensure exactly-once semantics
+      const processed = manager.create(ProcessedMessage, {
+        id: paymentId,
+        eventType: EVENT_PATTERNS.PAYMENT_SUCCEEDED,
+      });
+      await manager.save(processed);
+    });
   }
 
   private isValidTransition(

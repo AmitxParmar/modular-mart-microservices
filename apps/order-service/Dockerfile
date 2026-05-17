@@ -7,7 +7,7 @@ RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
 WORKDIR /app
 RUN npm install -g turbo
 COPY . .
-RUN turbo prune --scope=catalog-order-service --docker
+RUN turbo prune --scope=order-service --docker
 
 # ─────────────────────────────────────────────────
 # Stage 2: Builder
@@ -26,7 +26,7 @@ RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store pnpm install
 
 # Copy source code and build
 COPY --from=pruner /app/out/full/ .
-RUN pnpm turbo run build --filter=catalog-order-service...
+RUN pnpm turbo run build --filter=order-service...
 
 # ─────────────────────────────────────────────────
 # Stage 3: Production
@@ -44,7 +44,7 @@ COPY --chown=node:node --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store pnpm install --frozen-lockfile --prod
 
 # Copy compiled output from builder with chown
-COPY --chown=node:node --from=builder /app/apps/catalog-order-service/dist ./apps/catalog-order-service/dist
+COPY --chown=node:node --from=builder /app/apps/order-service/dist ./apps/order-service/dist
 
 COPY --chown=node:node --from=builder /app/packages/database/dist ./packages/database/dist
 COPY --chown=node:node --from=builder /app/packages/common/dist ./packages/common/dist
@@ -54,7 +54,7 @@ COPY --chown=node:node --from=builder /app/packages/contracts/dist ./packages/co
 # Security: use non-root user
 USER node
 
-WORKDIR /app/apps/catalog-order-service
+WORKDIR /app/apps/order-service
 EXPOSE 3000
 
 CMD ["node", "dist/src/main.js"]

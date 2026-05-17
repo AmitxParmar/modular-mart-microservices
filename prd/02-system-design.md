@@ -99,16 +99,24 @@ graph TB
 - **Database**: Isolated PostgreSQL instance
 - **Events**: `USER_CREATED`, `USER_UPDATED`, `ADDRESS_ADDED`
 
-### 3. Catalog & Order Service
+### 3. Catalog Service
 
 - **Technology**: NestJS, TypeORM, PostgreSQL
 - **Responsibilities**:
   - Product catalog management
-  - Inventory tracking and locking
-  - Order creation and lifecycle management
-  - Checkout saga orchestration
+  - Inventory tracking and pessimistic locking
+  - Request/Reply RPC endpoints for stock reservation
 - **Database**: Isolated PostgreSQL instance
-- **Events**: `ORDER_CREATED`, `ORDER_UPDATED`, `PAYMENT_REQUIRED`, `INVENTORY_UPDATED`
+- **Events**: `INVENTORY_UPDATED`
+
+### 4. Order Service
+
+- **Technology**: NestJS, TypeORM, PostgreSQL
+- **Responsibilities**:
+  - Order creation and lifecycle management
+  - Managing Outbox Pattern for reliable event publishing
+- **Database**: Isolated PostgreSQL instance (Orders, OrderItems, OutboxEvents)
+- **Events**: `ORDER_CREATED`, `ORDER_UPDATED`, `PAYMENT_REQUIRED`
 
 ### 4. Cart Service (Future)
 
@@ -187,24 +195,25 @@ sequenceDiagram
     participant C as Client
     participant G as API Gateway
     participant O as Order Service
+    participant Cat as Catalog Service
+    participant DB as DB (Outbox)
     participant P as Payment Service
-    participant S as Shipping Service
-    participant N as Notification Service
     participant RMQ as RabbitMQ
 
     C->>G: POST /orders
     G->>O: Create Order
-    O->>O: Lock Inventory
-    O->>P: Create Payment Intent
-    P->>Stripe: Create Payment
-    P-->>C: Return Client Secret
+    O->>Cat: RPC: Reserve Stock
+    Cat-->>O: Success
+    O->>DB: Transaction: Save Order + Outbox Event
+    O-->>C: Return Success
+    
+    loop Cron (Every 5s)
+        O->>DB: Poll Outbox
+        O->>RMQ: Publish ORDER_CREATED
+    end
 
-    C->>Stripe: Confirm Payment
-    Stripe->>P: Webhook: payment_intent.succeeded
-    P->>RMQ: PAYMENT_SUCCEEDED
-    RMQ->>O: Update Order Status
-    RMQ->>S: Prepare Shipping
-    RMQ->>N: Send Confirmation Email
+    RMQ->>P: Handle ORDER_CREATED
+    P->>Stripe: Create Payment Intent
 ```
 
 #### User Registration Flow

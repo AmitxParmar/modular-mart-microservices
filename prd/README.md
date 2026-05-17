@@ -62,10 +62,16 @@ This directory contains comprehensive documentation for the **Modular Mart perso
 - **Contents**: PostgreSQL schema for user management, roles, addresses
 - **Status**: Current implementation
 
-### 2. [catalog-order-service-schema.sql](catalog-order-service-schema.sql)
+### 2. [catalog-service-schema.sql](catalog-service-schema.sql)
 
-- **Purpose**: Catalog and order service database schema
-- **Contents**: PostgreSQL schema for products, categories, orders, payments
+- **Purpose**: Catalog service database schema
+- **Contents**: PostgreSQL schema for products and categories
+- **Status**: Current implementation
+
+### 3. [order-service-schema.sql](order-service-schema.sql)
+
+- **Purpose**: Order service database schema
+- **Contents**: PostgreSQL schema for orders and items
 - **Status**: Current implementation
 
 ## Key Project Information

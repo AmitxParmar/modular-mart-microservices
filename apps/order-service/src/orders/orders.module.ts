@@ -5,12 +5,15 @@ import { OrdersService } from './orders.service';
 import { Order } from './entities/order.entity';
 import { OrderItem } from './entities/order-item.entity';
 import { OrderStatusHistory } from './entities/order-status-history.entity';
+import { OutboxEvent } from './entities/outbox-event.entity';
+import { ProcessedMessage } from './entities/processed-message.entity';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { OutboxProcessorService } from './outbox-processor.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Order, OrderItem, OrderStatusHistory]),
+    TypeOrmModule.forFeature([Order, OrderItem, OrderStatusHistory, OutboxEvent, ProcessedMessage]),
     ClientsModule.registerAsync([
       {
         name: 'CATALOG_SERVICE',
@@ -28,7 +31,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
     ]),
   ],
   controllers: [OrdersController],
-  providers: [OrdersService],
+  providers: [OrdersService, OutboxProcessorService],
   exports: [OrdersService],
 })
 export class OrdersModule {}

@@ -36,7 +36,7 @@ async function bootstrap() {
   const rabbitmqUrl =
     configService.get<string>('RABBITMQ_URL') || 'amqp://localhost:5672';
 
-  // Configure RabbitMQ Microservice for internal RBAC calls (from catalog-order-service, etc.)
+  // Configure RabbitMQ Microservice for internal RBAC calls (from order-service, etc.)
   app.connectMicroservice<MicroserviceOptions>({
     transport: Transport.RMQ,
     options: {
