@@ -143,157 +143,6 @@ importers:
         specifier: ^8.20.0
         version: 8.50.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.2)
 
-  apps/catalog-order-service:
-    dependencies:
-      '@nestjs/common':
-        specifier: ^11.0.1
-        version: 11.1.16(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)
-      '@nestjs/config':
-        specifier: ^4.0.3
-        version: 4.0.3(@nestjs/common@11.1.16(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(rxjs@7.8.2)
-      '@nestjs/core':
-        specifier: ^11.0.1
-        version: 11.1.16(@nestjs/common@11.1.16(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/microservices@11.1.17)(@nestjs/platform-express@11.1.16)(reflect-metadata@0.2.2)(rxjs@7.8.2)
-      '@nestjs/microservices':
-        specifier: ^11.1.17
-        version: 11.1.17(@nestjs/common@11.1.16(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.16)(amqp-connection-manager@5.0.0(amqplib@0.10.9))(amqplib@0.10.9)(ioredis@5.10.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)
-      '@nestjs/platform-express':
-        specifier: ^11.0.1
-        version: 11.1.16(@nestjs/common@11.1.16(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.16)
-      '@nestjs/schedule':
-        specifier: ^6.1.3
-        version: 6.1.3(@nestjs/common@11.1.16(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.16(@nestjs/common@11.1.16(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/microservices@11.1.17)(@nestjs/platform-express@11.1.16)(reflect-metadata@0.2.2)(rxjs@7.8.2))
-      '@nestjs/typeorm':
-        specifier: ^11.0.0
-        version: 11.0.0(@nestjs/common@11.1.16(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.16(@nestjs/common@11.1.16(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/microservices@11.1.17)(@nestjs/platform-express@11.1.16)(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)(rxjs@7.8.2)(typeorm@0.3.28(ioredis@5.10.1)(pg@8.20.0)(ts-node@10.9.2(@types/node@22.15.3)(typescript@5.9.2)))
-      '@repo/auth':
-        specifier: workspace:^
-        version: link:../../packages/auth
-      '@repo/common':
-        specifier: workspace:^
-        version: link:../../packages/common
-      '@repo/contracts':
-        specifier: workspace:*
-        version: link:../../packages/contracts
-      '@repo/database':
-        specifier: workspace:^
-        version: link:../../packages/database
-      '@types/dotenv':
-        specifier: ^8.2.3
-        version: 8.2.3
-      amqp-connection-manager:
-        specifier: ^5.0.0
-        version: 5.0.0(amqplib@0.10.9)
-      amqplib:
-        specifier: ^0.10.9
-        version: 0.10.9
-      dotenv:
-        specifier: ^17.3.1
-        version: 17.3.1
-      helmet:
-        specifier: ^8.1.0
-        version: 8.1.0
-      nestjs-pino:
-        specifier: ^4.6.1
-        version: 4.6.1(@nestjs/common@11.1.16(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(pino-http@11.0.0)(pino@10.3.1)(rxjs@7.8.2)
-      pg:
-        specifier: ^8.20.0
-        version: 8.20.0
-      pino:
-        specifier: ^10.3.1
-        version: 10.3.1
-      pino-pretty:
-        specifier: ^13.1.3
-        version: 13.1.3
-      reflect-metadata:
-        specifier: ^0.2.2
-        version: 0.2.2
-      rxjs:
-        specifier: ^7.8.1
-        version: 7.8.2
-      stripe:
-        specifier: ^22.1.1
-        version: 22.1.1(@types/node@22.15.3)
-      typeorm:
-        specifier: ^0.3.28
-        version: 0.3.28(ioredis@5.10.1)(pg@8.20.0)(ts-node@10.9.2(@types/node@22.15.3)(typescript@5.9.2))
-      zod:
-        specifier: ^4.3.6
-        version: 4.3.6
-    devDependencies:
-      '@eslint/eslintrc':
-        specifier: ^3.2.0
-        version: 3.3.1
-      '@eslint/js':
-        specifier: ^9.18.0
-        version: 9.39.1
-      '@nestjs/cli':
-        specifier: ^11.0.0
-        version: 11.0.16(@types/node@22.15.3)
-      '@nestjs/schematics':
-        specifier: ^11.0.0
-        version: 11.0.9(chokidar@4.0.3)(typescript@5.9.2)
-      '@nestjs/testing':
-        specifier: ^11.0.1
-        version: 11.1.16(@nestjs/common@11.1.16(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.16(@nestjs/common@11.1.16(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/microservices@11.1.17)(@nestjs/platform-express@11.1.16)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/microservices@11.1.17(@nestjs/common@11.1.16(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.16)(amqp-connection-manager@5.0.0(amqplib@0.10.9))(amqplib@0.10.9)(ioredis@5.10.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/platform-express@11.1.16(@nestjs/common@11.1.16(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.16))
-      '@types/express':
-        specifier: ^5.0.0
-        version: 5.0.6
-      '@types/jest':
-        specifier: ^30.0.0
-        version: 30.0.0
-      '@types/node':
-        specifier: ^22.10.7
-        version: 22.15.3
-      '@types/pino':
-        specifier: ^7.0.5
-        version: 7.0.5
-      '@types/supertest':
-        specifier: ^6.0.2
-        version: 6.0.3
-      eslint:
-        specifier: ^9.18.0
-        version: 9.39.1(jiti@2.6.1)
-      eslint-config-prettier:
-        specifier: ^10.0.1
-        version: 10.1.1(eslint@9.39.1(jiti@2.6.1))
-      eslint-plugin-prettier:
-        specifier: ^5.2.2
-        version: 5.5.5(@types/eslint@9.6.1)(eslint-config-prettier@10.1.1(eslint@9.39.1(jiti@2.6.1)))(eslint@9.39.1(jiti@2.6.1))(prettier@3.7.4)
-      globals:
-        specifier: ^16.0.0
-        version: 16.5.0
-      jest:
-        specifier: ^30.0.0
-        version: 30.3.0(@types/node@22.15.3)(ts-node@10.9.2(@types/node@22.15.3)(typescript@5.9.2))
-      prettier:
-        specifier: ^3.4.2
-        version: 3.7.4
-      source-map-support:
-        specifier: ^0.5.21
-        version: 0.5.21
-      supertest:
-        specifier: ^7.0.0
-        version: 7.2.2
-      ts-jest:
-        specifier: ^29.2.5
-        version: 29.4.6(@babel/core@7.29.0)(@jest/transform@30.3.0)(@jest/types@30.3.0)(babel-jest@30.3.0(@babel/core@7.29.0))(jest-util@30.3.0)(jest@30.3.0(@types/node@22.15.3)(ts-node@10.9.2(@types/node@22.15.3)(typescript@5.9.2)))(typescript@5.9.2)
-      ts-loader:
-        specifier: ^9.5.2
-        version: 9.5.4(typescript@5.9.2)(webpack@5.104.1)
-      ts-node:
-        specifier: ^10.9.2
-        version: 10.9.2(@types/node@22.15.3)(typescript@5.9.2)
-      tsconfig-paths:
-        specifier: ^4.2.0
-        version: 4.2.0
-      typescript:
-        specifier: ^5.7.3
-        version: 5.9.2
-      typescript-eslint:
-        specifier: ^8.20.0
-        version: 8.50.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.2)
-
   apps/catalog-service:
     dependencies:
       '@nestjs/common':
@@ -444,12 +293,15 @@ importers:
       '@tailwindcss/postcss':
         specifier: ^4.2.1
         version: 4.2.1
+      framer-motion:
+        specifier: ^11.2.10
+        version: 11.18.2(react-dom@19.2.2(react@19.2.0))(react@19.2.0)
       lucide-react:
         specifier: ^0.577.0
         version: 0.577.0(react@19.2.0)
       next:
         specifier: 16.1.5
-        version: 16.1.5(@babel/core@7.29.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+        version: 16.1.5(react-dom@19.2.2(react@19.2.0))(react@19.2.0)
       postcss:
         specifier: ^8.5.8
         version: 8.5.8
@@ -457,8 +309,8 @@ importers:
         specifier: ^19.2.0
         version: 19.2.0
       react-dom:
-        specifier: ^19.2.0
-        version: 19.2.0(react@19.2.0)
+        specifier: 19.2.2
+        version: 19.2.2(react@19.2.0)
       tailwindcss:
         specifier: ^4.2.1
         version: 4.2.1
@@ -484,6 +336,157 @@ importers:
       typescript:
         specifier: 5.9.2
         version: 5.9.2
+
+  apps/order-service:
+    dependencies:
+      '@nestjs/common':
+        specifier: ^11.0.1
+        version: 11.1.16(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/config':
+        specifier: ^4.0.3
+        version: 4.0.3(@nestjs/common@11.1.16(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(rxjs@7.8.2)
+      '@nestjs/core':
+        specifier: ^11.0.1
+        version: 11.1.16(@nestjs/common@11.1.16(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/microservices@11.1.17)(@nestjs/platform-express@11.1.16)(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/microservices':
+        specifier: ^11.1.17
+        version: 11.1.17(@nestjs/common@11.1.16(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.16)(amqp-connection-manager@5.0.0(amqplib@0.10.9))(amqplib@0.10.9)(ioredis@5.10.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/platform-express':
+        specifier: ^11.0.1
+        version: 11.1.16(@nestjs/common@11.1.16(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.16)
+      '@nestjs/schedule':
+        specifier: ^6.1.3
+        version: 6.1.3(@nestjs/common@11.1.16(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.16(@nestjs/common@11.1.16(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/microservices@11.1.17)(@nestjs/platform-express@11.1.16)(reflect-metadata@0.2.2)(rxjs@7.8.2))
+      '@nestjs/typeorm':
+        specifier: ^11.0.0
+        version: 11.0.0(@nestjs/common@11.1.16(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.16(@nestjs/common@11.1.16(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/microservices@11.1.17)(@nestjs/platform-express@11.1.16)(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)(rxjs@7.8.2)(typeorm@0.3.28(ioredis@5.10.1)(pg@8.20.0)(ts-node@10.9.2(@types/node@22.15.3)(typescript@5.9.2)))
+      '@repo/auth':
+        specifier: workspace:^
+        version: link:../../packages/auth
+      '@repo/common':
+        specifier: workspace:^
+        version: link:../../packages/common
+      '@repo/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+      '@repo/database':
+        specifier: workspace:^
+        version: link:../../packages/database
+      '@types/dotenv':
+        specifier: ^8.2.3
+        version: 8.2.3
+      amqp-connection-manager:
+        specifier: ^5.0.0
+        version: 5.0.0(amqplib@0.10.9)
+      amqplib:
+        specifier: ^0.10.9
+        version: 0.10.9
+      dotenv:
+        specifier: ^17.3.1
+        version: 17.3.1
+      helmet:
+        specifier: ^8.1.0
+        version: 8.1.0
+      nestjs-pino:
+        specifier: ^4.6.1
+        version: 4.6.1(@nestjs/common@11.1.16(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(pino-http@11.0.0)(pino@10.3.1)(rxjs@7.8.2)
+      pg:
+        specifier: ^8.20.0
+        version: 8.20.0
+      pino:
+        specifier: ^10.3.1
+        version: 10.3.1
+      pino-pretty:
+        specifier: ^13.1.3
+        version: 13.1.3
+      reflect-metadata:
+        specifier: ^0.2.2
+        version: 0.2.2
+      rxjs:
+        specifier: ^7.8.1
+        version: 7.8.2
+      stripe:
+        specifier: ^22.1.1
+        version: 22.1.1(@types/node@22.15.3)
+      typeorm:
+        specifier: ^0.3.28
+        version: 0.3.28(ioredis@5.10.1)(pg@8.20.0)(ts-node@10.9.2(@types/node@22.15.3)(typescript@5.9.2))
+      zod:
+        specifier: ^4.3.6
+        version: 4.3.6
+    devDependencies:
+      '@eslint/eslintrc':
+        specifier: ^3.2.0
+        version: 3.3.1
+      '@eslint/js':
+        specifier: ^9.18.0
+        version: 9.39.1
+      '@nestjs/cli':
+        specifier: ^11.0.0
+        version: 11.0.16(@types/node@22.15.3)
+      '@nestjs/schematics':
+        specifier: ^11.0.0
+        version: 11.0.9(chokidar@4.0.3)(typescript@5.9.2)
+      '@nestjs/testing':
+        specifier: ^11.0.1
+        version: 11.1.16(@nestjs/common@11.1.16(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.16(@nestjs/common@11.1.16(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/microservices@11.1.17)(@nestjs/platform-express@11.1.16)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/microservices@11.1.17(@nestjs/common@11.1.16(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.16)(amqp-connection-manager@5.0.0(amqplib@0.10.9))(amqplib@0.10.9)(ioredis@5.10.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/platform-express@11.1.16(@nestjs/common@11.1.16(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.16))
+      '@types/express':
+        specifier: ^5.0.0
+        version: 5.0.6
+      '@types/jest':
+        specifier: ^30.0.0
+        version: 30.0.0
+      '@types/node':
+        specifier: ^22.10.7
+        version: 22.15.3
+      '@types/pino':
+        specifier: ^7.0.5
+        version: 7.0.5
+      '@types/supertest':
+        specifier: ^6.0.2
+        version: 6.0.3
+      eslint:
+        specifier: ^9.18.0
+        version: 9.39.1(jiti@2.6.1)
+      eslint-config-prettier:
+        specifier: ^10.0.1
+        version: 10.1.1(eslint@9.39.1(jiti@2.6.1))
+      eslint-plugin-prettier:
+        specifier: ^5.2.2
+        version: 5.5.5(@types/eslint@9.6.1)(eslint-config-prettier@10.1.1(eslint@9.39.1(jiti@2.6.1)))(eslint@9.39.1(jiti@2.6.1))(prettier@3.7.4)
+      globals:
+        specifier: ^16.0.0
+        version: 16.5.0
+      jest:
+        specifier: ^30.0.0
+        version: 30.3.0(@types/node@22.15.3)(ts-node@10.9.2(@types/node@22.15.3)(typescript@5.9.2))
+      prettier:
+        specifier: ^3.4.2
+        version: 3.7.4
+      source-map-support:
+        specifier: ^0.5.21
+        version: 0.5.21
+      supertest:
+        specifier: ^7.0.0
+        version: 7.2.2
+      ts-jest:
+        specifier: ^29.2.5
+        version: 29.4.6(@babel/core@7.29.0)(@jest/transform@30.3.0)(@jest/types@30.3.0)(babel-jest@30.3.0(@babel/core@7.29.0))(jest-util@30.3.0)(jest@30.3.0(@types/node@22.15.3)(ts-node@10.9.2(@types/node@22.15.3)(typescript@5.9.2)))(typescript@5.9.2)
+      ts-loader:
+        specifier: ^9.5.2
+        version: 9.5.4(typescript@5.9.2)(webpack@5.104.1)
+      ts-node:
+        specifier: ^10.9.2
+        version: 10.9.2(@types/node@22.15.3)(typescript@5.9.2)
+      tsconfig-paths:
+        specifier: ^4.2.0
+        version: 4.2.0
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.2
+      typescript-eslint:
+        specifier: ^8.20.0
+        version: 8.50.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.2)
 
   apps/payment-service:
     dependencies:
@@ -634,7 +637,7 @@ importers:
     dependencies:
       '@clerk/backend':
         specifier: ^1.34.0
-        version: 1.34.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(svix@1.89.0)
+        version: 1.34.0(react-dom@19.2.2(react@19.2.0))(react@19.2.0)(svix@1.89.0)
       '@nestjs/common':
         specifier: ^11.0.1
         version: 11.1.16(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)
@@ -885,7 +888,7 @@ importers:
     dependencies:
       '@clerk/backend':
         specifier: ^1.34.0
-        version: 1.34.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(svix@1.89.0)
+        version: 1.34.0(react-dom@19.2.2(react@19.2.0))(react@19.2.0)(svix@1.89.0)
       '@nestjs/common':
         specifier: ^11.0.0
         version: 11.1.16(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)
@@ -3704,6 +3707,20 @@ packages:
     resolution: {integrity: sha512-buRG0fpBtRHSTCOASe6hD258tEubFoRLb4ZNA6NxMVHNw2gOcwHo9wyablzMzOA5z9xA9L1KNjk/Nt6MT9aYow==}
     engines: {node: '>= 0.6'}
 
+  framer-motion@11.18.2:
+    resolution: {integrity: sha512-5F5Och7wrvtLVElIpclDT0CBzMVg3dL22B64aZwHtsIY8RB4mXICLrkajK4G9R+ieSAGcgrLeae2SeUTg2pr6w==}
+    peerDependencies:
+      '@emotion/is-prop-valid': '*'
+      react: ^18.0.0 || ^19.0.0
+      react-dom: ^18.0.0 || ^19.0.0
+    peerDependenciesMeta:
+      '@emotion/is-prop-valid':
+        optional: true
+      react:
+        optional: true
+      react-dom:
+        optional: true
+
   fresh@2.0.0:
     resolution: {integrity: sha512-Rx/WycZ60HOaqLKAi6cHRKKI7zxWbJ31MhntmtwMoaTeF7XFH9hhBp8vITaMidfljRQ6eYWCKkaTK+ykVJHP2A==}
     engines: {node: '>= 0.8'}
@@ -4629,6 +4646,12 @@ packages:
     resolution: {integrity: sha512-tEBHqDnIoM/1rXME1zgka9g6Q2lcoCkxHLuc7ODJ5BxbP5d4c2Z5cGgtXAku59200Cx7diuHTOYfSBD8n6mm8A==}
     engines: {node: '>=16 || 14 >=14.17'}
 
+  motion-dom@11.18.1:
+    resolution: {integrity: sha512-g76KvA001z+atjfxczdRtw/RXOM3OMSdd1f4DL77qCTF/+avrRJiawSG4yDibEQ215sr9kpinSlX2pCTJ9zbhw==}
+
+  motion-utils@11.18.1:
+    resolution: {integrity: sha512-49Kt+HKjtbJKLtgO/LKj9Ld+6vw9BjH5d9sc40R/kVyH8GLAXgT42M2NnuPcJNuA3s9ZfZBUcwIgpmZWGEE+hA==}
+
   ms@2.1.3:
     resolution: {integrity: sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==}
 
@@ -5089,6 +5112,11 @@ packages:
     resolution: {integrity: sha512-UlbRu4cAiGaIewkPyiRGJk0imDN2T3JjieT6spoL2UeSf5od4n5LB/mQ4ejmxhCFT1tYe8IvaFulzynWovsEFQ==}
     peerDependencies:
       react: ^19.2.0
+
+  react-dom@19.2.2:
+    resolution: {integrity: sha512-fhyD2BLrew6qYf4NNtHff1rLXvzR25rq49p+FeqByOazc6TcSi2n8EYulo5C1PbH+1uBW++5S1SG7FcUU6mlDg==}
+    peerDependencies:
+      react: ^19.2.2
 
   react-is@16.13.1:
     resolution: {integrity: sha512-24e6ynE2H+OKt4kqsOvNd8kBpV65zoxbA4BVsEOB3ARVWQki/DHzaUoC5KuON/BiccDaCCTZBuOcfZs70kR8bQ==}
@@ -6395,10 +6423,10 @@ snapshots:
 
   '@borewit/text-codec@0.2.2': {}
 
-  '@clerk/backend@1.34.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(svix@1.89.0)':
+  '@clerk/backend@1.34.0(react-dom@19.2.2(react@19.2.0))(react@19.2.0)(svix@1.89.0)':
     dependencies:
-      '@clerk/shared': 3.47.2(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      '@clerk/types': 4.101.20(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+      '@clerk/shared': 3.47.2(react-dom@19.2.2(react@19.2.0))(react@19.2.0)
+      '@clerk/types': 4.101.20(react-dom@19.2.2(react@19.2.0))(react@19.2.0)
       cookie: 1.0.2
       snakecase-keys: 8.0.1
       tslib: 2.8.1
@@ -6435,7 +6463,7 @@ snapshots:
       react-dom: 19.2.0(react@19.2.0)
       tslib: 2.8.1
 
-  '@clerk/shared@3.47.2(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
+  '@clerk/shared@3.47.2(react-dom@19.2.2(react@19.2.0))(react@19.2.0)':
     dependencies:
       csstype: 3.1.3
       dequal: 2.0.3
@@ -6445,7 +6473,7 @@ snapshots:
       swr: 2.3.4(react@19.2.0)
     optionalDependencies:
       react: 19.2.0
-      react-dom: 19.2.0(react@19.2.0)
+      react-dom: 19.2.2(react@19.2.0)
 
   '@clerk/shared@4.3.2(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
     dependencies:
@@ -6458,9 +6486,9 @@ snapshots:
       react: 19.2.0
       react-dom: 19.2.0(react@19.2.0)
 
-  '@clerk/types@4.101.20(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
+  '@clerk/types@4.101.20(react-dom@19.2.2(react@19.2.0))(react@19.2.0)':
     dependencies:
-      '@clerk/shared': 3.47.2(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+      '@clerk/shared': 3.47.2(react-dom@19.2.2(react@19.2.0))(react@19.2.0)
     transitivePeerDependencies:
       - react
       - react-dom
@@ -8980,6 +9008,15 @@ snapshots:
 
   forwarded@0.2.0: {}
 
+  framer-motion@11.18.2(react-dom@19.2.2(react@19.2.0))(react@19.2.0):
+    dependencies:
+      motion-dom: 11.18.1
+      motion-utils: 11.18.1
+      tslib: 2.8.1
+    optionalDependencies:
+      react: 19.2.0
+      react-dom: 19.2.2(react@19.2.0)
+
   fresh@2.0.0: {}
 
   fs-extra@10.1.0:
@@ -10012,6 +10049,12 @@ snapshots:
 
   minipass@7.1.3: {}
 
+  motion-dom@11.18.1:
+    dependencies:
+      motion-utils: 11.18.1
+
+  motion-utils@11.18.1: {}
+
   ms@2.1.3: {}
 
   msw@2.12.13(@types/node@22.15.3)(typescript@5.9.2):
@@ -10080,6 +10123,30 @@ snapshots:
       react: 19.2.0
       react-dom: 19.2.0(react@19.2.0)
       styled-jsx: 5.1.6(@babel/core@7.29.0)(react@19.2.0)
+    optionalDependencies:
+      '@next/swc-darwin-arm64': 16.1.5
+      '@next/swc-darwin-x64': 16.1.5
+      '@next/swc-linux-arm64-gnu': 16.1.5
+      '@next/swc-linux-arm64-musl': 16.1.5
+      '@next/swc-linux-x64-gnu': 16.1.5
+      '@next/swc-linux-x64-musl': 16.1.5
+      '@next/swc-win32-arm64-msvc': 16.1.5
+      '@next/swc-win32-x64-msvc': 16.1.5
+      sharp: 0.34.5
+    transitivePeerDependencies:
+      - '@babel/core'
+      - babel-plugin-macros
+
+  next@16.1.5(react-dom@19.2.2(react@19.2.0))(react@19.2.0):
+    dependencies:
+      '@next/env': 16.1.5
+      '@swc/helpers': 0.5.15
+      baseline-browser-mapping: 2.9.11
+      caniuse-lite: 1.0.30001761
+      postcss: 8.4.31
+      react: 19.2.0
+      react-dom: 19.2.2(react@19.2.0)
+      styled-jsx: 5.1.6(react@19.2.0)
     optionalDependencies:
       '@next/swc-darwin-arm64': 16.1.5
       '@next/swc-darwin-x64': 16.1.5
@@ -10493,6 +10560,11 @@ snapshots:
       unpipe: 1.0.0
 
   react-dom@19.2.0(react@19.2.0):
+    dependencies:
+      react: 19.2.0
+      scheduler: 0.27.0
+
+  react-dom@19.2.2(react@19.2.0):
     dependencies:
       react: 19.2.0
       scheduler: 0.27.0
@@ -11013,6 +11085,11 @@ snapshots:
       react: 19.2.0
     optionalDependencies:
       '@babel/core': 7.29.0
+
+  styled-jsx@5.1.6(react@19.2.0):
+    dependencies:
+      client-only: 0.0.1
+      react: 19.2.0
 
   superagent@10.3.0:
     dependencies:

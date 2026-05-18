@@ -27,6 +27,11 @@ export function Sidebar() {
                   API Reference
                 </Link>
               </li>
+              <li>
+                <Link href="/data-flow" className="text-sm font-medium text-slate-700 hover:text-blue-600 flex items-center gap-2 px-2 py-1 hover:bg-slate-100 rounded">
+                  Data Flow
+                </Link>
+              </li>
             </ul>
           </div>
 
