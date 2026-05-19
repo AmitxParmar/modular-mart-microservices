@@ -11,11 +11,39 @@ import { CatalogService } from './catalog.service';
 import { ClerkAuthGuard, CurrentUser, Roles, RolesGuard } from '@repo/auth';
 import type { ClerkUser } from '@repo/auth';
 import { Product } from './entities/product.entity';
-import { MessagePattern } from '@nestjs/microservices';
+import { MessagePattern, EventPattern, Payload } from '@nestjs/microservices';
+import { EVENT_PATTERNS } from '@repo/contracts';
 
 @Controller('catalog')
 export class CatalogController {
   constructor(private readonly catalogService: CatalogService) {}
+
+  @EventPattern(EVENT_PATTERNS.STOCK_RESERVE_REQUESTED)
+  async handleStockReserveRequested(
+    @Payload() data: { orderId: string; items: { productId: string; quantity: number }[] },
+  ) {
+    await this.catalogService.handleStockReserveRequest(data.orderId, data.items);
+  }
+
+  @EventPattern(EVENT_PATTERNS.ORDER_CANCELLED)
+  async handleOrderCancelled(
+    @Payload() data: { orderId: string; items: { productId: string; quantity: number }[] },
+  ) {
+    this.catalogService.getLogger().info(
+      `Received ORDER_CANCELLED event for Order ${data.orderId}. Releasing stock.`,
+    );
+    await this.catalogService.releaseStock(data.items);
+  }
+
+  @EventPattern(EVENT_PATTERNS.ORDER_REJECTED)
+  async handleOrderRejected(
+    @Payload() data: { orderId: string; items: { productId: string; quantity: number }[] },
+  ) {
+    this.catalogService.getLogger().info(
+      `Received ORDER_REJECTED event for Order ${data.orderId}. Releasing stock.`,
+    );
+    await this.catalogService.releaseStock(data.items);
+  }
 
   @MessagePattern('products.count')
   async getProductsCount() {

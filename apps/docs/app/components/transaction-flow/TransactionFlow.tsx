@@ -5,7 +5,7 @@ import { TransactionStepCard } from './TransactionStepCard';
 import { transactionScenarios } from './scenarios';
 
 export function TransactionFlow() {
-  const [currentScenario, setCurrentScenario] = useState('success');
+  const [currentScenario, setCurrentScenario] = useState<keyof typeof transactionScenarios>('success');
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
 
   const scenario = transactionScenarios[currentScenario];
@@ -27,8 +27,8 @@ export function TransactionFlow() {
     setCurrentStepIndex(0);
   };
 
-  const handleScenarioChange = (e) => {
-    setCurrentScenario(e.target.value);
+  const handleScenarioChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setCurrentScenario(e.target.value as keyof typeof transactionScenarios);
     resetFlow();
   };
 
@@ -46,7 +46,7 @@ export function TransactionFlow() {
           >
             {Object.keys(transactionScenarios).map((key) => (
               <option key={key} value={key}>
-                {transactionScenarios[key].name}
+                {transactionScenarios[key as keyof typeof transactionScenarios].name}
               </option>
             ))}
           </select>

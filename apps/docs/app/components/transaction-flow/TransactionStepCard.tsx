@@ -1,12 +1,24 @@
 import React, { useState } from 'react';
 import { ChevronDown, ChevronUp, Database, MessageSquare, Code, AlertTriangle } from 'lucide-react';
 
-export function TransactionStepCard({ step, isActive }) {
+export interface TransactionStep {
+  title: string;
+  description: string;
+  type: string;
+  details?: Record<string, any>;
+}
+
+interface TransactionStepCardProps {
+  step: TransactionStep;
+  isActive: boolean;
+}
+
+export function TransactionStepCard({ step, isActive }: Readonly<TransactionStepCardProps>) {
   const [isExpanded, setIsExpanded] = useState(isActive);
 
   const toggleExpanded = () => setIsExpanded(!isExpanded);
 
-  const getIcon = (type) => {
+  const getIcon = (type: string) => {
     switch (type) {
       case 'database':
         return <Database size={16} className="text-cyan-400" />;
@@ -25,7 +37,7 @@ export function TransactionStepCard({ step, isActive }) {
     <div className={`relative mb-8 ${isActive ? 'bg-slate-800 border-blue-500' : 'bg-slate-800/50 border-slate-700'} p-4 rounded-lg shadow-lg transition-all duration-300 ease-in-out`}>
       <div className={`absolute -left-3 top-0 bottom-0 w-1 ${isActive ? 'bg-blue-500' : 'bg-slate-500'} rounded-full`} />
       <div className="flex items-start gap-3 cursor-pointer" onClick={toggleExpanded}>
-        <div className={`flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full ${isActive ? 'bg-blue-600' : 'bg-slate-600'}`}>
+        <div className={`shrink-0 w-6 h-6 flex items-center justify-center rounded-full ${isActive ? 'bg-blue-600' : 'bg-slate-600'}`}>
           {getIcon(step.type)}
         </div>
         <div className="flex-grow">

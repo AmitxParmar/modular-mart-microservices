@@ -11,6 +11,22 @@ const statusConfig: Record<OrderStatus, { label: string; className: string }> = 
     label: 'Pending',
     className: 'bg-yellow-100 text-yellow-800 border-yellow-200',
   },
+  [OrderStatus.PENDING_STOCK]: {
+    label: 'Pending Stock',
+    className: 'bg-amber-100 text-amber-800 border-amber-200',
+  },
+  [OrderStatus.STOCK_CONFIRMED]: {
+    label: 'Stock Confirmed',
+    className: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+  },
+  [OrderStatus.STOCK_FAILED]: {
+    label: 'Stock Failed',
+    className: 'bg-rose-100 text-rose-800 border-rose-200',
+  },
+  [OrderStatus.PAYMENT_PENDING]: {
+    label: 'Payment Pending',
+    className: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+  },
   [OrderStatus.PAID]: {
     label: 'Paid',
     className: 'bg-blue-100 text-blue-800 border-blue-200',

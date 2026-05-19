@@ -29,6 +29,21 @@ export const transactionScenarios = {
         },
       },
       {
+        title: 'Order Service: Reserve Stock (RPC)',
+        description: 'Synchronously calls Catalog Service via RabbitMQ RPC to reserve stock using a pessimistic lock.',
+        type: 'code',
+        details: {
+          rpcCall: {
+            service: 'Catalog',
+            action: 'reserve_stock',
+            payload: {
+              items: [{ sku: 'SKU-1', qty: 2 }],
+            },
+            result: 'SUCCESS',
+          },
+        },
+      },
+      {
         title: 'Order Service: Transaction begins',
         description: 'Starts a database transaction for order creation and outbox entry.',
         type: 'database',
@@ -249,6 +264,21 @@ export const transactionScenarios = {
           processed: {
             jwtVerified: true,
             correlationId: 'ord_92A1',
+          },
+        },
+      },
+      {
+        title: 'Order Service: Reserve Stock (RPC)',
+        description: 'Synchronously calls Catalog Service via RabbitMQ RPC to reserve stock using a pessimistic lock.',
+        type: 'code',
+        details: {
+          rpcCall: {
+            service: 'Catalog',
+            action: 'reserve_stock',
+            payload: {
+              items: [{ sku: 'SKU-1', qty: 2 }],
+            },
+            result: 'SUCCESS',
           },
         },
       },

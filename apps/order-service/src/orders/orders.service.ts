@@ -75,23 +75,6 @@ export class OrdersService {
         )
       );
 
-      // Reserve stock via RPC (Synchronous Request/Reply)
-      const reserveResult = await firstValueFrom(
-        this.catalogClient.send<{ success: boolean; error?: string }>(
-          'products.reserve_stock',
-          createOrderDto.items.map((i) => ({
-            productId: i.productId,
-            quantity: i.quantity,
-          })),
-        ).pipe(timeout(5000)),
-      );
-
-      if (!reserveResult.success) {
-        throw new BadRequestException(
-          reserveResult.error || 'Failed to reserve stock',
-        );
-      }
-
       return await this.dataSource.transaction(async (manager) => {
         // 1. Group requested items by seller
         const itemsBySeller: Record<
@@ -138,7 +121,7 @@ export class OrdersService {
             userId: internalId,
             sellerId,
             customerEmailSnapshot: user.email ?? null,
-            status: OrderStatus.PENDING,
+            status: OrderStatus.PENDING_STOCK,
             totalAmount,
             shippingAddressId: createOrderDto.shippingAddressId ?? undefined,
             shippingAddressSnapshot:
@@ -151,8 +134,8 @@ export class OrdersService {
           // 3. Record initial status history
           const history = manager.create(OrderStatusHistory, {
             orderId: savedOrder.id,
-            status: OrderStatus.PENDING,
-            reason: 'Order created',
+            status: OrderStatus.PENDING_STOCK,
+            reason: 'Order created in pending stock state',
           });
           await manager.save(history);
 
@@ -160,13 +143,9 @@ export class OrdersService {
 
           // 4. Save Outbox Event instead of immediate publish
           const outboxEvent = manager.create(OutboxEvent, {
-            eventType: EVENT_PATTERNS.ORDER_CREATED,
+            eventType: EVENT_PATTERNS.STOCK_RESERVE_REQUESTED,
             payload: {
               orderId: savedOrder.id,
-              userId: internalId,
-              sellerId,
-              totalAmount,
-              createdAt: savedOrder.createdAt,
               items: sellerItems.map((i) => ({
                 productId: i.product.id,
                 quantity: i.quantity,
@@ -261,6 +240,7 @@ export class OrdersService {
   ) {
     const order = await this.orderRepo.findOne({
       where: { id: orderId, sellerId },
+      relations: ['items'],
     });
 
     if (!order) throw new NotFoundException('Order not found');
@@ -322,9 +302,29 @@ export class OrdersService {
             sellerId: savedOrder.sellerId,
             reason: reason || 'No reason provided',
             rejectedAt: new Date().toISOString(),
+            items: savedOrder.items.map((i) => ({
+              productId: i.productId,
+              quantity: i.quantity,
+            })),
           },
         });
         await manager.save(rejectOutbox);
+      } else if (newStatus === OrderStatus.CANCELLED) {
+        const cancelOutbox = manager.create(OutboxEvent, {
+          eventType: EVENT_PATTERNS.ORDER_CANCELLED,
+          payload: {
+            orderId: savedOrder.id,
+            userId: savedOrder.userId,
+            sellerId: savedOrder.sellerId,
+            reason: reason || 'No reason provided',
+            cancelledAt: new Date().toISOString(),
+            items: savedOrder.items.map((i) => ({
+              productId: i.productId,
+              quantity: i.quantity,
+            })),
+          },
+        });
+        await manager.save(cancelOutbox);
       }
 
       return savedOrder;
@@ -346,7 +346,7 @@ export class OrdersService {
       }
 
       const order = await manager.findOne(Order, { where: { id: orderId } });
-      if (order?.status === OrderStatus.PENDING) {
+      if (order?.status === OrderStatus.PAYMENT_PENDING || order?.status === OrderStatus.PENDING) {
         order.status = OrderStatus.PAID;
         await manager.save(order);
 
@@ -362,7 +362,7 @@ export class OrdersService {
         );
       } else {
         this.logger.warn(
-          `Saga Event Ignored: Order ${orderId} not found or not in PENDING status.`,
+          `Saga Event Ignored: Order ${orderId} not found or not in PENDING/PAYMENT_PENDING status (current: ${order?.status}).`,
         );
       }
 
@@ -375,12 +375,98 @@ export class OrdersService {
     });
   }
 
+  async handleStockReserved(orderId: string, items: { productId: string; quantity: number }[]): Promise<void> {
+    await this.dataSource.transaction(async (manager) => {
+      const order = await manager.findOne(Order, {
+        where: { id: orderId },
+        relations: ['items'],
+      });
+
+      if (!order) {
+        this.logger.warn(`handleStockReserved: Order ${orderId} not found`);
+        return;
+      }
+
+      if (order.status !== OrderStatus.PENDING_STOCK) {
+        this.logger.warn(
+          `handleStockReserved: Order ${orderId} is not in PENDING_STOCK state (current: ${order.status})`,
+        );
+        return;
+      }
+
+      // Transition Order status to PAYMENT_PENDING
+      order.status = OrderStatus.PAYMENT_PENDING;
+      const savedOrder = await manager.save(order);
+
+      const history = manager.create(OrderStatusHistory, {
+        orderId,
+        status: OrderStatus.PAYMENT_PENDING,
+        reason: 'Stock successfully reserved, awaiting payment.',
+      });
+      await manager.save(history);
+
+      // Now emit ORDER_CREATED event so other services (like notifications or payments) can react
+      const outboxEvent = manager.create(OutboxEvent, {
+        eventType: EVENT_PATTERNS.ORDER_CREATED,
+        payload: {
+          orderId: savedOrder.id,
+          userId: savedOrder.userId,
+          sellerId: savedOrder.sellerId,
+          totalAmount: savedOrder.totalAmount,
+          createdAt: savedOrder.createdAt,
+          items: items,
+        },
+      });
+      await manager.save(outboxEvent);
+
+      this.logger.info(`Stock reserved for Order ${orderId}. Transitioned to PAYMENT_PENDING.`);
+    });
+  }
+
+  async handleStockReserveFailed(orderId: string, reason: string): Promise<void> {
+    await this.dataSource.transaction(async (manager) => {
+      const order = await manager.findOne(Order, {
+        where: { id: orderId },
+      });
+
+      if (!order) {
+        this.logger.warn(`handleStockReserveFailed: Order ${orderId} not found`);
+        return;
+      }
+
+      if (order.status !== OrderStatus.PENDING_STOCK) {
+        this.logger.warn(
+          `handleStockReserveFailed: Order ${orderId} is not in PENDING_STOCK state (current: ${order.status})`,
+        );
+        return;
+      }
+
+      // Transition Order status to STOCK_FAILED
+      order.status = OrderStatus.STOCK_FAILED;
+      order.rejectReason = reason || 'Insufficient stock';
+      const savedOrder = await manager.save(order);
+
+      const history = manager.create(OrderStatusHistory, {
+        orderId,
+        status: OrderStatus.STOCK_FAILED,
+        reason: `Stock reservation failed: ${order.rejectReason}`,
+      });
+      await manager.save(history);
+
+      this.logger.info(`Stock reservation failed for Order ${orderId}. Transitioned to STOCK_FAILED.`);
+    });
+  }
+
   private isValidTransition(
     current: OrderStatus,
     target: OrderStatus,
   ): boolean {
     const allowed: Record<OrderStatus, OrderStatus[]> = {
+      [OrderStatus.PENDING_STOCK]: [OrderStatus.PAYMENT_PENDING, OrderStatus.STOCK_FAILED, OrderStatus.CANCELLED],
       [OrderStatus.PENDING]: [OrderStatus.PAID, OrderStatus.CANCELLED],
+      [OrderStatus.PAYMENT_PENDING]: [OrderStatus.PAID, OrderStatus.CANCELLED],
+      [OrderStatus.STOCK_CONFIRMED]: [OrderStatus.PAID, OrderStatus.CANCELLED],
+      [OrderStatus.STOCK_FAILED]: [],
       [OrderStatus.PAID]: [OrderStatus.APPROVED, OrderStatus.REJECTED],
       [OrderStatus.APPROVED]: [OrderStatus.PROCESSING],
       [OrderStatus.PROCESSING]: [OrderStatus.SHIPPED],

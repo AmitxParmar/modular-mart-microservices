@@ -36,13 +36,34 @@ export class OrdersController {
     await this.ordersService.markOrderAsPaid(data.orderId, data.paymentId);
   }
 
+  @EventPattern(EVENT_PATTERNS.STOCK_RESERVED)
+  async handleStockReserved(
+    @Payload() data: { orderId: string; items: { productId: string; quantity: number }[] },
+  ) {
+    this.logger.info(
+      `Received STOCK_RESERVED RMQ event for Order ${data.orderId}`,
+    );
+    await this.ordersService.handleStockReserved(data.orderId, data.items);
+  }
+
+  @EventPattern(EVENT_PATTERNS.STOCK_RESERVE_FAILED)
+  async handleStockReserveFailed(
+    @Payload() data: { orderId: string; reason: string },
+  ) {
+    this.logger.info(
+      `Received STOCK_RESERVE_FAILED RMQ event for Order ${data.orderId}`,
+    );
+    await this.ordersService.handleStockReserveFailed(data.orderId, data.reason);
+  }
+
   @Post()
   @UseGuards(ClerkAuthGuard)
-  createOrder(
+  async createOrder(
     @CurrentUser() user: ClerkUser,
     @Body() createOrderDto: CreateOrderDto,
   ) {
-    return this.ordersService.createOrder(user, createOrderDto);
+    const orders = await this.ordersService.createOrder(user, createOrderDto);
+    return Array.isArray(orders) ? orders[0] : orders;
   }
 
   @Get()

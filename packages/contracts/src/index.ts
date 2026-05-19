@@ -23,6 +23,8 @@ export const EVENT_PATTERNS = {
   ORDER_CANCELLED: 'order.cancelled',
   STOCK_RESERVED: 'stock.reserved',
   STOCK_RELEASED: 'stock.released',
+  STOCK_RESERVE_REQUESTED: 'stock.reserve.requested',
+  STOCK_RESERVE_FAILED: 'stock.reserve.failed',
   ORDER_PAID: 'order.paid',
   PAYMENT_SUCCEEDED: 'payment.succeeded',
   PAYMENT_FAILED: 'payment.failed',
@@ -32,6 +34,10 @@ export type EventPattern = (typeof EVENT_PATTERNS)[keyof typeof EVENT_PATTERNS];
 
 export enum OrderStatus {
   PENDING = 'PENDING',
+  PENDING_STOCK = 'PENDING_STOCK',
+  STOCK_CONFIRMED = 'STOCK_CONFIRMED',
+  STOCK_FAILED = 'STOCK_FAILED',
+  PAYMENT_PENDING = 'PAYMENT_PENDING',
   PAID = 'PAID',
   APPROVED = 'APPROVED',
   REJECTED = 'REJECTED',

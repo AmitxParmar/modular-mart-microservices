@@ -1,8 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { Product } from './entities/product.entity';
 import { Category } from './entities/category.entity';
+import { ClientProxy } from '@nestjs/microservices';
+import { InjectPinoLogger, PinoLogger } from '@repo/common';
+import { EVENT_PATTERNS } from '@repo/contracts';
 
 @Injectable()
 export class CatalogService {
@@ -11,6 +14,10 @@ export class CatalogService {
     private readonly productRepo: Repository<Product>,
     @InjectRepository(Category)
     private readonly categoryRepo: Repository<Category>,
+    @InjectPinoLogger(CatalogService.name)
+    private readonly logger: PinoLogger,
+    @Inject('RABBITMQ_SERVICE')
+    private readonly rabbitClient: ClientProxy,
   ) {}
 
   async getProducts(filters: {
@@ -168,5 +175,43 @@ export class CatalogService {
       }
       return { success: true };
     });
+  }
+
+  async releaseStock(items: { productId: string; quantity: number }[]) {
+    this.logger.info(`releasing stock for items: ${JSON.stringify(items)}`);
+    return this.productRepo.manager.transaction(async (manager) => {
+      for (const item of items) {
+        const product = await manager.findOne(Product, {
+          where: { id: item.productId },
+          lock: { mode: 'pessimistic_write' },
+        });
+
+        if (!product) {
+          this.logger.warn(`releaseStock: Product with ID ${item.productId} not found`);
+          continue;
+        }
+
+        product.stockQuantity += item.quantity;
+        await manager.save(product);
+        this.logger.info(`Released stock for product ${product.id}. New stock: ${product.stockQuantity}`);
+      }
+      return { success: true };
+    });
+  }
+
+  async handleStockReserveRequest(orderId: string, items: { productId: string; quantity: number }[]) {
+    this.logger.info(`Processing stock reserve request for Order ${orderId}`);
+    const result = await this.reserveStock(items);
+    if (result.success) {
+      this.logger.info(`Successfully reserved stock for Order ${orderId}. Emitting stock.reserved.`);
+      this.rabbitClient.emit(EVENT_PATTERNS.STOCK_RESERVED, { orderId, items });
+    } else {
+      this.logger.warn(`Failed to reserve stock for Order ${orderId}: ${result.error}. Emitting stock.reserve.failed.`);
+      this.rabbitClient.emit(EVENT_PATTERNS.STOCK_RESERVE_FAILED, { orderId, reason: result.error });
+    }
+  }
+
+  getLogger() {
+    return this.logger;
   }
 }

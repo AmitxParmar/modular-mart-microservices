@@ -7,8 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PaymentForm } from "./payment-form";
-import type { ShippingAddressSnapshot } from "@/types/api";
-import { addressSchema } from "../schema/address.schema";
+import { addressSchema, type AddressFormData } from "../schema/address.schema";
 
 type Step = "contact" | "shipping" | "payment";
 
@@ -20,13 +19,14 @@ export function CheckoutFlow() {
   const [email, setEmail] = useState(
     user?.primaryEmailAddress?.emailAddress || ""
   );
-  const [shippingData, setShippingData] = useState<ShippingAddressSnapshot>({
+  const [shippingData, setShippingData] = useState<AddressFormData>({
     firstName: user?.firstName || "",
     lastName: user?.lastName || "",
     address: "",
     city: "",
     state: "",
     zip: "",
+    country: "US",
   });
 
   const handleCompleteStep = (step: Step, nextStep: Step) => {
@@ -148,7 +148,16 @@ export function CheckoutFlow() {
             All transactions are secure and encrypted.
           </p>
           {/* Pass the collected shipping snapshot to PaymentForm */}
-          <PaymentForm shippingAddressSnapshot={shippingData} />
+          <PaymentForm
+            shippingAddressSnapshot={{
+              fullName: `${shippingData.firstName} ${shippingData.lastName}`,
+              addressLine1: shippingData.address,
+              city: shippingData.city,
+              state: shippingData.state,
+              postalCode: shippingData.zip,
+              country: shippingData.country || "US",
+            }}
+          />
         </div>
       </StepContainer>
     </div>
