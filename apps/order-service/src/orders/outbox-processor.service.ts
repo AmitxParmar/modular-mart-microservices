@@ -3,7 +3,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { OutboxEvent } from './entities/outbox-event.entity';
-import { ClientProxy } from '@nestjs/microservices';
+import { ClientProxy, RmqRecordBuilder } from '@nestjs/microservices';
 import { PinoLogger } from '@repo/common';
 
 @Injectable()
@@ -33,8 +33,13 @@ export class OutboxProcessorService {
 
     for (const event of events) {
       try {
-        // Emit to RabbitMQ
-        this.rabbitClient.emit(event.eventType, event.payload);
+        // Emit to RabbitMQ using RmqRecordBuilder to set the unique message ID
+        const record = new RmqRecordBuilder(event.payload)
+          .setOptions({
+            messageId: event.id,
+          })
+          .build();
+        this.rabbitClient.emit(event.eventType, record);
         
         // Mark as processed
         event.processed = true;

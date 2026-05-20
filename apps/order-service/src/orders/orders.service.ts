@@ -375,8 +375,23 @@ export class OrdersService {
     });
   }
 
-  async handleStockReserved(orderId: string, items: { productId: string; quantity: number }[]): Promise<void> {
+  async handleStockReserved(
+    orderId: string,
+    items: { productId: string; quantity: number }[],
+    messageId: string,
+  ): Promise<void> {
     await this.dataSource.transaction(async (manager) => {
+      const processedRepo = manager.getRepository(ProcessedMessage);
+      const alreadyProcessed = await processedRepo.findOne({
+        where: { id: messageId },
+      });
+      if (alreadyProcessed) {
+        this.logger.info(
+          `Idempotency check: Stock reserved event ${messageId} already processed. Skipping.`,
+        );
+        return;
+      }
+
       const order = await manager.findOne(Order, {
         where: { id: orderId },
         relations: ['items'],
@@ -419,15 +434,21 @@ export class OrdersService {
       });
       await manager.save(outboxEvent);
 
+      const processed = processedRepo.create({
+        id: messageId,
+        eventType: EVENT_PATTERNS.STOCK_RESERVED,
+      });
+      await manager.save(processed);
+
       this.logger.info(`Stock reserved for Order ${orderId}. Transitioned to PAYMENT_PENDING.`);
     });
   }
 
-  async handlePaymentFailed(orderId: string, reason: string): Promise<void> {
+  async handlePaymentFailed(orderId: string, reason: string, messageId: string): Promise<void> {
     await this.dataSource.transaction(async (manager) => {
       const processedRepo = manager.getRepository(ProcessedMessage);
       const alreadyProcessed = await processedRepo.findOne({
-        where: { id: orderId, eventType: EVENT_PATTERNS.PAYMENT_FAILED },
+        where: { id: messageId },
       });
       if (alreadyProcessed) {
         this.logger.info(`Idempotency check: Payment failure for Order ${orderId} already handled. Skipping.`);
@@ -479,7 +500,7 @@ export class OrdersService {
       await manager.save(cancelOutbox);
 
       const processed = processedRepo.create({
-        id: orderId,
+        id: messageId,
         eventType: EVENT_PATTERNS.PAYMENT_FAILED,
       });
       await processedRepo.save(processed);
@@ -488,8 +509,19 @@ export class OrdersService {
     });
   }
 
-  async handleStockReserveFailed(orderId: string, reason: string): Promise<void> {
+  async handleStockReserveFailed(orderId: string, reason: string, messageId: string): Promise<void> {
     await this.dataSource.transaction(async (manager) => {
+      const processedRepo = manager.getRepository(ProcessedMessage);
+      const alreadyProcessed = await processedRepo.findOne({
+        where: { id: messageId },
+      });
+      if (alreadyProcessed) {
+        this.logger.info(
+          `Idempotency check: Stock reserve failed event ${messageId} already processed. Skipping.`,
+        );
+        return;
+      }
+
       const order = await manager.findOne(Order, {
         where: { id: orderId },
       });
@@ -517,6 +549,12 @@ export class OrdersService {
         reason: `Stock reservation failed: ${order.rejectReason}`,
       });
       await manager.save(history);
+
+      const processed = processedRepo.create({
+        id: messageId,
+        eventType: EVENT_PATTERNS.STOCK_RESERVE_FAILED,
+      });
+      await manager.save(processed);
 
       this.logger.info(`Stock reservation failed for Order ${orderId}. Transitioned to STOCK_FAILED.`);
     });

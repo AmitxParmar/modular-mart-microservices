@@ -7,11 +7,12 @@ import {
   Body,
   UseGuards,
 } from '@nestjs/common';
+
 import { CatalogService } from './catalog.service';
 import { ClerkAuthGuard, CurrentUser, Roles, RolesGuard } from '@repo/auth';
 import type { ClerkUser } from '@repo/auth';
 import { Product } from './entities/product.entity';
-import { MessagePattern, EventPattern, Payload } from '@nestjs/microservices';
+import { MessagePattern, EventPattern, Payload, Ctx, RmqContext } from '@nestjs/microservices';
 import { EVENT_PATTERNS } from '@repo/contracts';
 
 @Controller('catalog')
@@ -21,38 +22,50 @@ export class CatalogController {
   @EventPattern(EVENT_PATTERNS.STOCK_RESERVE_REQUESTED)
   async handleStockReserveRequested(
     @Payload() data: { orderId: string; items: { productId: string; quantity: number }[] },
+    @Ctx() context: RmqContext,
   ) {
-    await this.catalogService.handleStockReserveRequest(data.orderId, data.items);
+    const message = context.getMessage();
+    const messageId = message?.properties?.messageId || `${data.orderId}:reserve`;
+    await this.catalogService.handleStockReserveRequest(data.orderId, data.items, messageId);
   }
 
   @EventPattern(EVENT_PATTERNS.ORDER_CANCELLED)
   async handleOrderCancelled(
     @Payload() data: { orderId: string; items: { productId: string; quantity: number }[] },
+    @Ctx() context: RmqContext,
   ) {
+    const message = context.getMessage();
+    const messageId = message?.properties?.messageId || `${data.orderId}:cancel`;
     this.catalogService.getLogger().info(
       `Received ORDER_CANCELLED event for Order ${data.orderId}. Releasing stock.`,
     );
-    await this.catalogService.releaseStockWithEvent(data.items, data.orderId);
+    await this.catalogService.releaseStockWithEvent(data.items, data.orderId, messageId, EVENT_PATTERNS.ORDER_CANCELLED);
   }
 
   @EventPattern(EVENT_PATTERNS.ORDER_REJECTED)
   async handleOrderRejected(
     @Payload() data: { orderId: string; items: { productId: string; quantity: number }[] },
+    @Ctx() context: RmqContext,
   ) {
+    const message = context.getMessage();
+    const messageId = message?.properties?.messageId || `${data.orderId}:reject`;
     this.catalogService.getLogger().info(
       `Received ORDER_REJECTED event for Order ${data.orderId}. Releasing stock.`,
     );
-    await this.catalogService.releaseStockWithEvent(data.items, data.orderId);
+    await this.catalogService.releaseStockWithEvent(data.items, data.orderId, messageId, EVENT_PATTERNS.ORDER_REJECTED);
   }
 
   @EventPattern(EVENT_PATTERNS.PAYMENT_FAILED)
   async handlePaymentFailed(
     @Payload() data: { orderId: string; items: { productId: string; quantity: number }[] },
+    @Ctx() context: RmqContext,
   ) {
+    const message = context.getMessage();
+    const messageId = message?.properties?.messageId || `${data.orderId}:payment-fail`;
     this.catalogService.getLogger().info(
       `Received PAYMENT_FAILED event for Order ${data.orderId}. Releasing stock as compensation.`,
     );
-    await this.catalogService.releaseStockWithEvent(data.items, data.orderId);
+    await this.catalogService.releaseStockWithEvent(data.items, data.orderId, messageId, EVENT_PATTERNS.PAYMENT_FAILED);
   }
 
   @MessagePattern('products.count')

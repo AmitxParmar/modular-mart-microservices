@@ -22,7 +22,7 @@ This document tracks the tasks for transitioning to a production-grade, event-dr
 ---
 
 ### 🛡️ Phase 3: Reliability & Resiliency Patterns
-- [ ] **Idempotent Consumers**: Implement message deduplication using a `processed_messages` schema to prevent double-processing.
+- [x] **Idempotent Consumers**: Implement message deduplication using a `processed_messages` schema to prevent double-processing.
 - [ ] **Transactional Outbox Pattern**: Insert order states and outbox events in a single transaction to guarantee event delivery.
 - [ ] **Retry Policies & DLQs**: Set up dead-letter exchanges and queues in RabbitMQ to handle transient errors gracefully.
 - [ ] **Distributed Tracing**: Standardize payloads to carry `correlationId`, `traceId`, and `causationId` for easy debugging.
@@ -35,4 +35,4 @@ This document tracks the tasks for transitioning to a production-grade, event-dr
 - [ ] **Inventory Service Extraction**: Decouple inventory/stock management from the general catalog (optional DDD portfolio expansion).
 
 ---
-*Last Updated: May 19, 2026*
+*Last Updated: May 20, 2026*

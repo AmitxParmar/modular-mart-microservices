@@ -7,7 +7,7 @@ import {
   UseGuards,
   Patch,
 } from '@nestjs/common';
-import { EventPattern, Payload } from '@nestjs/microservices';
+import { EventPattern, Payload, Ctx, RmqContext } from '@nestjs/microservices';
 import { PinoLogger } from '@repo/common';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
@@ -39,31 +39,40 @@ export class OrdersController {
   @EventPattern(EVENT_PATTERNS.STOCK_RESERVED)
   async handleStockReserved(
     @Payload() data: { orderId: string; items: { productId: string; quantity: number }[] },
+    @Ctx() context: RmqContext,
   ) {
+    const message = context.getMessage();
+    const messageId = message?.properties?.messageId || `${data.orderId}:reserved`;
     this.logger.info(
-      `Received STOCK_RESERVED RMQ event for Order ${data.orderId}`,
+      `Received STOCK_RESERVED RMQ event for Order ${data.orderId} (messageId: ${messageId})`,
     );
-    await this.ordersService.handleStockReserved(data.orderId, data.items);
+    await this.ordersService.handleStockReserved(data.orderId, data.items, messageId);
   }
 
   @EventPattern(EVENT_PATTERNS.STOCK_RESERVE_FAILED)
   async handleStockReserveFailed(
     @Payload() data: { orderId: string; reason: string },
+    @Ctx() context: RmqContext,
   ) {
+    const message = context.getMessage();
+    const messageId = message?.properties?.messageId || `${data.orderId}:reserve-failed`;
     this.logger.info(
-      `Received STOCK_RESERVE_FAILED RMQ event for Order ${data.orderId}`,
+      `Received STOCK_RESERVE_FAILED RMQ event for Order ${data.orderId} (messageId: ${messageId})`,
     );
-    await this.ordersService.handleStockReserveFailed(data.orderId, data.reason);
+    await this.ordersService.handleStockReserveFailed(data.orderId, data.reason, messageId);
   }
 
   @EventPattern(EVENT_PATTERNS.PAYMENT_FAILED)
   async handlePaymentFailed(
     @Payload() data: { orderId: string; reason: string },
+    @Ctx() context: RmqContext,
   ) {
+    const message = context.getMessage();
+    const messageId = message?.properties?.messageId || `${data.orderId}:payment-failed`;
     this.logger.info(
-      `Received PAYMENT_FAILED RMQ event for Order ${data.orderId}`,
+      `Received PAYMENT_FAILED RMQ event for Order ${data.orderId} (messageId: ${messageId})`,
     );
-    await this.ordersService.handlePaymentFailed(data.orderId, data.reason);
+    await this.ordersService.handlePaymentFailed(data.orderId, data.reason, messageId);
   }
 
   @Post()

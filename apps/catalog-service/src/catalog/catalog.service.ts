@@ -3,9 +3,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { Product } from './entities/product.entity';
 import { Category } from './entities/category.entity';
-import { ClientProxy } from '@nestjs/microservices';
+import { ProcessedMessage } from './entities/processed-message.entity';
+import { ClientProxy, RmqRecordBuilder } from '@nestjs/microservices';
 import { InjectPinoLogger, PinoLogger } from '@repo/common';
 import { EVENT_PATTERNS } from '@repo/contracts';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class CatalogService {
@@ -14,6 +16,8 @@ export class CatalogService {
     private readonly productRepo: Repository<Product>,
     @InjectRepository(Category)
     private readonly categoryRepo: Repository<Category>,
+    @InjectRepository(ProcessedMessage)
+    private readonly processedRepo: Repository<ProcessedMessage>,
     @InjectPinoLogger(CatalogService.name)
     private readonly logger: PinoLogger,
     @Inject('RABBITMQ_SERVICE')
@@ -196,36 +200,135 @@ export class CatalogService {
     });
   }
 
-  async releaseStockWithEvent(items: { productId: string; quantity: number }[], orderId: string) {
-    const result = await this.releaseStock(items);
-    if (result.success) {
-      this.rabbitClient.emit(EVENT_PATTERNS.STOCK_RELEASED, {
+  async releaseStockWithEvent(
+    items: { productId: string; quantity: number }[],
+    orderId: string,
+    messageId: string,
+    eventType: string,
+  ) {
+    this.logger.info(`releasing stock for items of Order ${orderId} (event: ${eventType}, messageId: ${messageId})`);
+    
+    const result = await this.productRepo.manager.transaction(async (manager) => {
+      // 1. Idempotency check
+      const processedRepo = manager.getRepository(ProcessedMessage);
+      const alreadyProcessed = await processedRepo.findOne({ where: { id: messageId } });
+      if (alreadyProcessed) {
+        this.logger.info(`Message ${messageId} already processed (idempotent). Skipping stock release.`);
+        return { success: true, alreadyProcessed: true };
+      }
+
+      // 2. Perform stock release
+      for (const item of items) {
+        const product = await manager.findOne(Product, {
+          where: { id: item.productId },
+          lock: { mode: 'pessimistic_write' },
+        });
+
+        if (!product) {
+          this.logger.warn(`releaseStock: Product with ID ${item.productId} not found`);
+          continue;
+        }
+
+        product.stockQuantity += item.quantity;
+        await manager.save(product);
+        this.logger.info(`Released stock for product ${product.id}. New stock: ${product.stockQuantity}`);
+      }
+
+      // 3. Mark message as processed
+      const processed = processedRepo.create({ id: messageId, eventType });
+      await manager.save(processed);
+
+      return { success: true, alreadyProcessed: false };
+    });
+
+    if (result.success && !result.alreadyProcessed) {
+      const payload = {
         orderId,
         items,
         releasedAt: new Date().toISOString(),
-      });
+      };
+      const record = new RmqRecordBuilder(payload)
+        .setOptions({
+          messageId: randomUUID(),
+        })
+        .build();
+      this.rabbitClient.emit(EVENT_PATTERNS.STOCK_RELEASED, record);
       this.logger.info(`Emitted STOCK_RELEASED event for Order ${orderId}.`);
     }
     return result;
   }
 
-  async handleStockReserveRequest(orderId: string, items: { productId: string; quantity: number }[]) {
-    this.logger.info(`Processing stock reserve request for Order ${orderId}`);
-    const result = await this.reserveStock(items);
+  async handleStockReserveRequest(
+    orderId: string,
+    items: { productId: string; quantity: number }[],
+    messageId: string,
+  ) {
+    this.logger.info(`Processing stock reserve request for Order ${orderId} (messageId: ${messageId})`);
+    
+    const result = await this.productRepo.manager.transaction(async (manager) => {
+      // 1. Idempotency check
+      const processedRepo = manager.getRepository(ProcessedMessage);
+      const alreadyProcessed = await processedRepo.findOne({ where: { id: messageId } });
+      if (alreadyProcessed) {
+        this.logger.info(`Message ${messageId} already processed (idempotent). Skipping stock reservation.`);
+        return { success: true, alreadyProcessed: true };
+      }
+
+      // 2. Perform stock reservation
+      for (const item of items) {
+        const product = await manager.findOne(Product, {
+          where: { id: item.productId },
+          lock: { mode: 'pessimistic_write' },
+        });
+
+        if (!product) {
+          return { success: false, error: `Product with ID ${item.productId} not found` };
+        }
+
+        if (product.stockQuantity < item.quantity) {
+          return { success: false, error: `Insufficient stock for product ${product.name}` };
+        }
+
+        product.stockQuantity -= item.quantity;
+        await manager.save(product);
+      }
+
+      // 3. Mark message as processed
+      const processed = processedRepo.create({ id: messageId, eventType: EVENT_PATTERNS.STOCK_RESERVE_REQUESTED });
+      await manager.save(processed);
+
+      return { success: true, alreadyProcessed: false };
+    });
+
     if (result.success) {
+      if (result.alreadyProcessed) {
+        return;
+      }
       this.logger.info(`Successfully reserved stock for Order ${orderId}. Emitting stock.reserved.`);
-      this.rabbitClient.emit(EVENT_PATTERNS.STOCK_RESERVED, {
+      const payload = {
         orderId,
         items,
         reservedAt: new Date().toISOString(),
-      });
+      };
+      const record = new RmqRecordBuilder(payload)
+        .setOptions({
+          messageId: randomUUID(),
+        })
+        .build();
+      this.rabbitClient.emit(EVENT_PATTERNS.STOCK_RESERVED, record);
     } else {
       this.logger.warn(`Failed to reserve stock for Order ${orderId}: ${result.error}. Emitting stock.reserve.failed.`);
-      this.rabbitClient.emit(EVENT_PATTERNS.STOCK_RESERVE_FAILED, {
+      const payload = {
         orderId,
         reason: result.error,
         failedAt: new Date().toISOString(),
-      });
+      };
+      const record = new RmqRecordBuilder(payload)
+        .setOptions({
+          messageId: randomUUID(),
+        })
+        .build();
+      this.rabbitClient.emit(EVENT_PATTERNS.STOCK_RESERVE_FAILED, record);
     }
   }
 
