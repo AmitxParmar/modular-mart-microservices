@@ -423,6 +423,71 @@ export class OrdersService {
     });
   }
 
+  async handlePaymentFailed(orderId: string, reason: string): Promise<void> {
+    await this.dataSource.transaction(async (manager) => {
+      const processedRepo = manager.getRepository(ProcessedMessage);
+      const alreadyProcessed = await processedRepo.findOne({
+        where: { id: orderId, eventType: EVENT_PATTERNS.PAYMENT_FAILED },
+      });
+      if (alreadyProcessed) {
+        this.logger.info(`Idempotency check: Payment failure for Order ${orderId} already handled. Skipping.`);
+        return;
+      }
+
+      const order = await manager.findOne(Order, {
+        where: { id: orderId },
+        relations: ['items'],
+      });
+
+      if (!order) {
+        this.logger.warn(`handlePaymentFailed: Order ${orderId} not found`);
+        return;
+      }
+
+      if (order.status !== OrderStatus.PAYMENT_PENDING && order.status !== OrderStatus.PENDING_STOCK) {
+        this.logger.warn(
+          `handlePaymentFailed: Order ${orderId} is not in PAYMENT_PENDING/PENDING_STOCK state (current: ${order.status})`,
+        );
+        return;
+      }
+
+      order.status = OrderStatus.CANCELLED;
+      order.rejectReason = reason || 'Payment failed';
+      const savedOrder = await manager.save(order);
+
+      const history = manager.create(OrderStatusHistory, {
+        orderId,
+        status: OrderStatus.CANCELLED,
+        reason: `Payment failed: ${order.rejectReason}`,
+      });
+      await manager.save(history);
+
+      const cancelOutbox = manager.create(OutboxEvent, {
+        eventType: EVENT_PATTERNS.ORDER_CANCELLED,
+        payload: {
+          orderId: savedOrder.id,
+          userId: savedOrder.userId,
+          sellerId: savedOrder.sellerId,
+          reason: reason || 'Payment failed after stock reservation',
+          cancelledAt: new Date().toISOString(),
+          items: savedOrder.items.map((i) => ({
+            productId: i.productId,
+            quantity: i.quantity,
+          })),
+        },
+      });
+      await manager.save(cancelOutbox);
+
+      const processed = processedRepo.create({
+        id: orderId,
+        eventType: EVENT_PATTERNS.PAYMENT_FAILED,
+      });
+      await processedRepo.save(processed);
+
+      this.logger.info(`Payment failed for Order ${orderId}. Transitioned to CANCELLED. Stock release event emitted.`);
+    });
+  }
+
   async handleStockReserveFailed(orderId: string, reason: string): Promise<void> {
     await this.dataSource.transaction(async (manager) => {
       const order = await manager.findOne(Order, {

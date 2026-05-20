@@ -56,6 +56,16 @@ export class OrdersController {
     await this.ordersService.handleStockReserveFailed(data.orderId, data.reason);
   }
 
+  @EventPattern(EVENT_PATTERNS.PAYMENT_FAILED)
+  async handlePaymentFailed(
+    @Payload() data: { orderId: string; reason: string },
+  ) {
+    this.logger.info(
+      `Received PAYMENT_FAILED RMQ event for Order ${data.orderId}`,
+    );
+    await this.ordersService.handlePaymentFailed(data.orderId, data.reason);
+  }
+
   @Post()
   @UseGuards(ClerkAuthGuard)
   async createOrder(

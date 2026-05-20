@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ClientProxy } from '@nestjs/microservices';
-import { EVENT_PATTERNS, PaymentSucceededEvent } from '@repo/contracts';
+import { EVENT_PATTERNS, PaymentSucceededEvent, PaymentFailedEvent } from '@repo/contracts';
 import { Payment, PaymentStatus } from './entities/payment.entity';
 import { InjectPinoLogger, PinoLogger } from '@repo/common';
 import Stripe from 'stripe';
@@ -133,6 +133,48 @@ export class PaymentsService {
       };
 
       this.rabbitClient.emit(EVENT_PATTERNS.PAYMENT_SUCCEEDED, eventPayload);
+    } else if (stripeEvent.type === 'payment_intent.payment_failed') {
+      const paymentIntent = stripeEvent.data.object as StripePaymentIntent;
+      const orderId = paymentIntent.metadata.orderId;
+      const userId = paymentIntent.metadata.userId;
+
+      if (!orderId) {
+        this.logger.warn(
+          `Payment failed but no orderId found in metadata for intent ${paymentIntent.id}`,
+        );
+        return;
+      }
+
+      const existingFailure = await this.paymentRepo.findOne({
+        where: { stripePaymentIntentId: paymentIntent.id, status: PaymentStatus.FAILED },
+      });
+      if (existingFailure) {
+        this.logger.info(
+          `Failed payment record for intent ${paymentIntent.id} already exists. Skipping (idempotent).`,
+        );
+        return;
+      }
+
+      const payment = this.paymentRepo.create({
+        orderId,
+        amount: paymentIntent.amount / 100,
+        status: PaymentStatus.FAILED,
+        stripePaymentIntentId: paymentIntent.id,
+      });
+      await this.paymentRepo.save(payment);
+
+      this.logger.info(
+        `Payment failure recorded for Order ${orderId}. Publishing ${EVENT_PATTERNS.PAYMENT_FAILED} event.`,
+      );
+
+      const failurePayload: PaymentFailedEvent = {
+        orderId,
+        userId: userId || 'unknown',
+        reason: paymentIntent.last_payment_error?.message || 'Payment declined',
+        failedAt: new Date().toISOString(),
+      };
+
+      this.rabbitClient.emit(EVENT_PATTERNS.PAYMENT_FAILED, failurePayload);
     }
   }
 

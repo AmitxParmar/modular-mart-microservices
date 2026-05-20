@@ -32,7 +32,7 @@ export class CatalogController {
     this.catalogService.getLogger().info(
       `Received ORDER_CANCELLED event for Order ${data.orderId}. Releasing stock.`,
     );
-    await this.catalogService.releaseStock(data.items);
+    await this.catalogService.releaseStockWithEvent(data.items, data.orderId);
   }
 
   @EventPattern(EVENT_PATTERNS.ORDER_REJECTED)
@@ -42,7 +42,17 @@ export class CatalogController {
     this.catalogService.getLogger().info(
       `Received ORDER_REJECTED event for Order ${data.orderId}. Releasing stock.`,
     );
-    await this.catalogService.releaseStock(data.items);
+    await this.catalogService.releaseStockWithEvent(data.items, data.orderId);
+  }
+
+  @EventPattern(EVENT_PATTERNS.PAYMENT_FAILED)
+  async handlePaymentFailed(
+    @Payload() data: { orderId: string; items: { productId: string; quantity: number }[] },
+  ) {
+    this.catalogService.getLogger().info(
+      `Received PAYMENT_FAILED event for Order ${data.orderId}. Releasing stock as compensation.`,
+    );
+    await this.catalogService.releaseStockWithEvent(data.items, data.orderId);
   }
 
   @MessagePattern('products.count')

@@ -131,9 +131,6 @@ export class CatalogService {
   async getProductsBatch(productIds: string[]) {
     if (!productIds || productIds.length === 0) return [];
     
-    // We import In from typeorm locally or at file level
-    const { In } = await import('typeorm');
-    
     return this.productRepo.find({
       where: { id: In(productIds) },
     });
@@ -199,15 +196,36 @@ export class CatalogService {
     });
   }
 
+  async releaseStockWithEvent(items: { productId: string; quantity: number }[], orderId: string) {
+    const result = await this.releaseStock(items);
+    if (result.success) {
+      this.rabbitClient.emit(EVENT_PATTERNS.STOCK_RELEASED, {
+        orderId,
+        items,
+        releasedAt: new Date().toISOString(),
+      });
+      this.logger.info(`Emitted STOCK_RELEASED event for Order ${orderId}.`);
+    }
+    return result;
+  }
+
   async handleStockReserveRequest(orderId: string, items: { productId: string; quantity: number }[]) {
     this.logger.info(`Processing stock reserve request for Order ${orderId}`);
     const result = await this.reserveStock(items);
     if (result.success) {
       this.logger.info(`Successfully reserved stock for Order ${orderId}. Emitting stock.reserved.`);
-      this.rabbitClient.emit(EVENT_PATTERNS.STOCK_RESERVED, { orderId, items });
+      this.rabbitClient.emit(EVENT_PATTERNS.STOCK_RESERVED, {
+        orderId,
+        items,
+        reservedAt: new Date().toISOString(),
+      });
     } else {
       this.logger.warn(`Failed to reserve stock for Order ${orderId}: ${result.error}. Emitting stock.reserve.failed.`);
-      this.rabbitClient.emit(EVENT_PATTERNS.STOCK_RESERVE_FAILED, { orderId, reason: result.error });
+      this.rabbitClient.emit(EVENT_PATTERNS.STOCK_RESERVE_FAILED, {
+        orderId,
+        reason: result.error,
+        failedAt: new Date().toISOString(),
+      });
     }
   }
 

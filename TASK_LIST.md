@@ -16,8 +16,8 @@ This document tracks the tasks for transitioning to a production-grade, event-dr
 ### 🔄 Phase 2: Asynchronous Saga (Checkout & Stock Reservation)
 - [x] **State Machine Extension**: Introduce intermediate order statuses (`PENDING_STOCK`, `STOCK_CONFIRMED`, `STOCK_FAILED`, `PAYMENT_PENDING`).
 - [x] **Order Service Consumers**: Register event patterns for `STOCK_RESERVED` and `STOCK_RESERVE_FAILED`.
-- [ ] **Catalog Service Saga Integration**: Evolve the reservation service to listen to reservation requests and publish reservation status events asynchronously.
-- [ ] **Compensation Logic (Rollbacks)**: Verify automatic refunding and order cancellation when reservations fail.
+- [x] **Catalog Service Saga Integration**: Evolve the reservation service to listen to reservation requests and publish reservation status events asynchronously.
+- [x] **Compensation Logic (Rollbacks)**: Verify automatic refunding and order cancellation when reservations fail.
 
 ---
 
