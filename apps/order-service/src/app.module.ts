@@ -4,6 +4,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DatabaseModule } from '@repo/database';
 import { ConfigModule } from './config/config.module';
+import { AuthClientModule } from '@repo/auth';
 import {
   HealthModule,
   HttpExceptionFilter,
@@ -14,14 +15,13 @@ import { LoggerModule } from 'nestjs-pino';
 // TypeOrmModule removed — no standalone forFeature registrations needed at root
 import { OrdersModule } from './orders/orders.module';
 import { AdminModule } from './admin/admin.module';
-import { AuthProxyModule } from './auth-proxy.module';
 import { MessagingModule } from './messaging.module';
 import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
     ConfigModule,
-    AuthProxyModule,
+    AuthClientModule,
     MessagingModule,
     ScheduleModule.forRoot(),
     LoggerModule.forRootAsync({

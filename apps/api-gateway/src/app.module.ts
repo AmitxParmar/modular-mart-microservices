@@ -1,8 +1,14 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { APP_FILTER } from '@nestjs/core';
 import { LoggerModule } from 'nestjs-pino';
+import {
+  createLoggerConfig,
+  CorrelationMiddleware,
+  HttpExceptionFilter,
+  HealthModule,
+} from '@repo/common';
+
 import { ConfigModule } from './config/config.module';
-import { CommonModule } from './common/common.module';
-import { HealthModule } from './health/health.module';
 import { RateLimitModule } from './rate-limit/rate-limit.module';
 import { ProxyModule } from './proxy/proxy.module';
 
@@ -12,10 +18,9 @@ import { ProxyModule } from './proxy/proxy.module';
  * Import order reflects the dependency graph:
  *  1. ConfigModule  - must be first; others depend on ConfigService
  *  2. LoggerModule  - structured HTTP request logging via nestjs-pino
- *  3. CommonModule  - global exception filter
- *  4. RateLimitModule - global rate-limit guard
- *  5. HealthModule  - /health endpoint (not proxied)
- *  6. ProxyModule   - reverse proxy to all downstream microservices (last,
+ *  3. RateLimitModule - global rate-limit guard
+ *  4. HealthModule  - /health endpoint (not proxied)
+ *  5. ProxyModule   - reverse proxy to all downstream microservices (last,
  *                     so middleware is applied after all other middleware)
  */
 @Module({
@@ -23,23 +28,27 @@ import { ProxyModule } from './proxy/proxy.module';
     ConfigModule,
 
     // Structured JSON logging for every HTTP request.
-    // In development we pretty-print; in production we emit raw JSON.
-    LoggerModule.forRoot({
-      pinoHttp: {
-        transport:
-          process.env.NODE_ENV === 'development'
-            ? { target: 'pino-pretty', options: { colorize: true } }
-            : undefined,
-        level: process.env.LOG_LEVEL ?? 'info',
-        // Redact sensitive headers from logs
-        redact: ['req.headers.authorization', 'req.headers.cookie'],
-      },
+    // Centrally managed in @repo/common/logger
+    LoggerModule.forRootAsync({
+      useFactory: () => createLoggerConfig('api-gateway'),
     }),
 
-    CommonModule,
     RateLimitModule,
     HealthModule,
     ProxyModule,
   ],
+  providers: [
+    {
+      provide: APP_FILTER,
+      useClass: HttpExceptionFilter,
+    },
+  ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer): void {
+    // Apply correlation ID middleware to all routes at the entry point.
+    // This ensures every request gets an X-Request-ID early in its lifecycle.
+    consumer.apply(CorrelationMiddleware).forRoutes('*');
+  }
+}
+

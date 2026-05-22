@@ -5,7 +5,7 @@ import { AppService } from './app.service';
 import { DatabaseModule } from '@repo/database';
 import { UsersModule } from './users/users.module';
 import { ConfigModule } from './config/config.module';
-import { AuthProxyModule } from './auth-proxy.module';
+import { AuthClientModule } from '@repo/auth';
 import {
   HealthModule,
   HttpExceptionFilter,
@@ -21,7 +21,7 @@ import { LoggerModule } from 'nestjs-pino';
       useFactory: () => createLoggerConfig('user-service'),
     }),
     DatabaseModule.forRoot(),
-    AuthProxyModule,
+    AuthClientModule,
     UsersModule,
     HealthModule,
   ],

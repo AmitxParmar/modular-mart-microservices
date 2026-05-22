@@ -2,6 +2,7 @@ import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
 import { DatabaseModule } from '@repo/database';
 import { ConfigModule } from './config/config.module';
+import { AuthClientModule } from '@repo/auth';
 import {
   HealthModule,
   HttpExceptionFilter,
@@ -10,17 +11,16 @@ import {
 } from '@repo/common';
 import { LoggerModule } from 'nestjs-pino';
 import { CatalogModule } from './catalog/catalog.module';
-import { AuthProxyModule } from './auth-proxy.module';
 import { MessagingModule } from './messaging.module';
 
 @Module({
   imports: [
     ConfigModule,
+    AuthClientModule,
     LoggerModule.forRootAsync({
       useFactory: () => createLoggerConfig('catalog-service'),
     }),
     DatabaseModule.forRoot(),
-    AuthProxyModule,
     MessagingModule,
     CatalogModule,
     HealthModule,

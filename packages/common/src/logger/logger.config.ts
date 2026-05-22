@@ -1,4 +1,7 @@
 import { Params } from 'nestjs-pino';
+import { SENSITIVE_FIELDS, REDACTION_LABEL, HEALTH_CHECK_PATH } from './logger.constants';
+import { serializers } from './logger.utils';
+import { genReqId } from './trace.utils';
 
 /**
  * Creates a consistent nestjs-pino LoggerModule config for all services.
@@ -7,58 +10,67 @@ import { Params } from 'nestjs-pino';
  * @param serviceName - Name of the service (used as a default log field)
  */
 export function createLoggerConfig(serviceName: string): Params {
+  const isDevelopment = process.env.NODE_ENV === 'development';
+
   return {
     pinoHttp: {
-      serializers: {
-        req(req) {
-          return {
-            id: req.id,
-            method: req.method,
-            url: req.url,
-          };
-        },
+      // 1. Request ID Generation
+      genReqId,
 
-        res(res) {
-          return {
-            statusCode: res.statusCode,
-          };
-        },
-      },
-      transport:
-          process.env.NODE_ENV === 'development'
-          ? {
+      // 2. Standardized Serializers
+      serializers,
+
+      // 3. Environment-Aware Transport
+      transport: isDevelopment
+        ? {
             target: 'pino-pretty',
-            options: { colorize: true },
+            options: {
+              colorize: true,
+              singleLine: true,
+              translateTime: 'SYS:standard',
+            },
           }
-    : undefined,
-      level: process.env.LOG_LEVEL ?? 'info',
-      // Make every log line include the service name for easy filtering in prod
-      customProps: (req,res) => ({ service: serviceName,requestId: req.id, }),
+        : undefined,
 
-      genReqId: (req) =>
-        req.headers['x-request-id']?.toString() ??
-        crypto.randomUUID(),
+      // 4. Log Level
+      level: process.env.LOG_LEVEL ?? (isDevelopment ? 'debug' : 'info'),
 
-      customSuccessMessage: (req, res) =>
-  `${req.method} ${req.url} completed ${res.statusCode}`,  
+      customLogLevel: (req: any, res: any, err?: Error) => {
+        if (res.statusCode >= 500 || err) return 'error';
+        if (res.statusCode >= 400) return 'warn';
+        return 'info';
+      },
 
-      customErrorMessage: (req, res, err) =>
-  `${req.method} ${req.url} failed with ${res.statusCode}: ${err.message}`,
+      // 5. Common Metadata
+      customProps: (req: any) => ({
+        service: serviceName,
+        env: process.env.NODE_ENV,
+        version: process.env.npm_package_version,
+        requestId: req.id,
+      }),
 
-      // Redact sensitive data before it reaches logs
+      // 6. Custom Messages
+      customSuccessMessage: (req: any, res: any) =>
+        `${req.method} ${req.url} completed ${res.statusCode}`,
+
+      customErrorMessage: (req: any, res: any, err: Error) =>
+        `${req.method} ${req.url} failed with ${res.statusCode}: ${err.message}`,
+
+      // 7. Redaction Rules
       redact: {
-        paths: [
-          'req.headers.authorization',
-          'req.headers.cookie',
-          'req.body.password',
-          'req.body.cardNumber',
-          'req.body.cvc',
-          'req.body.token',
-          'req.body.accessToken',
-          'req.body.refreshToken',
-        ],
-        censor: '[REDACTED]',
-      }
+        paths: SENSITIVE_FIELDS,
+        censor: REDACTION_LABEL,
+      },
+
+      // 8. Health Check Ignore Rules
+      autoLogging: {
+        ignore: (req: any) => req.url === HEALTH_CHECK_PATH,
+      },
+
+      // 9. Standardized Log Format
+      formatters: {
+        level: (label) => ({ level: label }),
+      },
     },
   };
 }

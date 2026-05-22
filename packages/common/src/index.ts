@@ -15,5 +15,5 @@ export { HealthController } from "./health/health.controller";
 export { HealthModule } from "./health/health.module";
 
 // Logger
-export { createLoggerConfig } from "./logger/logger.config";
+export * from "./logger";
 export { PinoLogger, InjectPinoLogger } from "nestjs-pino";
