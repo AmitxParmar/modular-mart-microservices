@@ -5,13 +5,15 @@ import { Repository } from 'typeorm';
 import { OutboxEvent } from './entities/outbox-event.entity';
 import { ClientProxy, RmqRecordBuilder } from '@nestjs/microservices';
 import { PinoLogger } from '@repo/common';
+import { EVENT_PATTERNS } from '@repo/contracts';
 
 @Injectable()
 export class OutboxProcessorService {
   constructor(
     @InjectRepository(OutboxEvent)
     private readonly outboxRepo: Repository<OutboxEvent>,
-    @Inject('RABBITMQ_SERVICE') private readonly rabbitClient: ClientProxy,
+    @Inject('CATALOG_SERVICE') private readonly catalogClient: ClientProxy,
+    @Inject('PAYMENT_SERVICE') private readonly paymentClient: ClientProxy,
     private readonly logger: PinoLogger,
   ) {}
 
@@ -39,7 +41,16 @@ export class OutboxProcessorService {
             messageId: event.id,
           })
           .build();
-        this.rabbitClient.emit(event.eventType, record);
+        
+        let client: ClientProxy;
+        if (event.eventType === EVENT_PATTERNS.ORDER_CREATED) {
+          client = this.paymentClient;
+        } else {
+          // Default to catalog service for stock reserve/cancelled/rejected events
+          client = this.catalogClient;
+        }
+
+        client.emit(event.eventType, record);
         
         // Mark as processed
         event.processed = true;

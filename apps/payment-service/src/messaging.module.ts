@@ -25,7 +25,7 @@ import { ConfigService, ConfigModule } from '@nestjs/config';
               configService.get<string>('RABBITMQ_URL') ||
                 'amqp://localhost:5672',
             ],
-            queue: 'payments_queue',
+            queue: 'catalog_orders_queue',
             queueOptions: {
               durable: true,
             },

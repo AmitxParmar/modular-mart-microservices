@@ -39,3 +39,5 @@ yarn-error.log*
 *.pem
 graphify-out
 .vscode
+# Added by code-review-graph
+.code-review-graph/

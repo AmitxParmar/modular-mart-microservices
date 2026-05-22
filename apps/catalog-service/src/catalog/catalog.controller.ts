@@ -99,11 +99,11 @@ export class CatalogController {
   ) {
     return this.catalogService.getProducts({
       categoryId,
-      minPrice: minPrice ? Number.parseFloat(minPrice) : undefined,
-      maxPrice: maxPrice ? Number.parseFloat(maxPrice) : undefined,
+      minPrice: minPrice && !isNaN(parseFloat(minPrice)) ? parseFloat(minPrice) : undefined,
+      maxPrice: maxPrice && !isNaN(parseFloat(maxPrice)) ? parseFloat(maxPrice) : undefined,
       search,
       cursor,
-      limit: limit ? Number.parseInt(limit, 10) : undefined,
+      limit: limit && !isNaN(parseInt(limit, 10)) ? parseInt(limit, 10) : undefined,
     });
   }
 

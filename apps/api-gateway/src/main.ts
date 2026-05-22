@@ -10,6 +10,7 @@ async function bootstrap(): Promise<void> {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     // Suppress NestJS's built-in logger during boot; Pino takes over after.
     bufferLogs: true,
+    bodyParser: false,
   });
 
   // ─── Structured logging (Pino) ─────────────────────────────────────────
