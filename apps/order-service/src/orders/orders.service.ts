@@ -358,7 +358,8 @@ export class OrdersService {
         await manager.save(history);
 
         this.logger.info(
-          `Saga Event Processed: Order ${orderId} successfully marked as PAID.`,
+          { orderId, paymentId },
+          `[Order Paid] Order ${orderId} successfully marked as PAID.`,
         );
       } else {
         this.logger.warn(
@@ -569,6 +570,20 @@ export class OrdersService {
       [OrderStatus.PENDING]: [OrderStatus.PAID, OrderStatus.CANCELLED],
       [OrderStatus.PAYMENT_PENDING]: [OrderStatus.PAID, OrderStatus.CANCELLED],
       [OrderStatus.STOCK_CONFIRMED]: [OrderStatus.PAID, OrderStatus.CANCELLED],
+      [OrderStatus.STOCK_FAILED]: [],
+      [OrderStatus.PAID]: [OrderStatus.APPROVED, OrderStatus.REJECTED],
+      [OrderStatus.APPROVED]: [OrderStatus.PROCESSING],
+      [OrderStatus.PROCESSING]: [OrderStatus.SHIPPED],
+      [OrderStatus.SHIPPED]: [OrderStatus.DELIVERED],
+      [OrderStatus.DELIVERED]: [],
+      [OrderStatus.REJECTED]: [],
+      [OrderStatus.CANCELLED]: [],
+    };
+
+    return allowed[current]?.includes(target) ?? false;
+  }
+}
+us.PAID, OrderStatus.CANCELLED],
       [OrderStatus.STOCK_FAILED]: [],
       [OrderStatus.PAID]: [OrderStatus.APPROVED, OrderStatus.REJECTED],
       [OrderStatus.APPROVED]: [OrderStatus.PROCESSING],

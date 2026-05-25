@@ -4,6 +4,8 @@ import { DatabaseModule } from '@repo/database';
 import { ConfigModule } from './config/config.module';
 import {
   HealthModule,
+  MetricsModule,
+  SentryModule,
   HttpExceptionFilter,
   CorrelationMiddleware,
   createLoggerConfig,
@@ -22,6 +24,8 @@ import { MessagingModule } from './messaging.module';
     DatabaseModule.forRoot(),
     PaymentsModule,
     HealthModule,
+    MetricsModule,
+    SentryModule,
   ],
   providers: [
     {

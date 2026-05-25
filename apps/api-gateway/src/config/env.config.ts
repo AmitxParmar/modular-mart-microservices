@@ -27,4 +27,5 @@ export const servicesConfig = registerAs('services', () => ({
   orderService: process.env.ORDER_SERVICE_URL ?? 'http://localhost:3002',
   paymentService: process.env.PAYMENT_SERVICE_URL ?? 'http://localhost:3004',
   cartService: process.env.CART_SERVICE_URL ?? 'http://localhost:3005',
+  sentryDsn: process.env.SENTRY_DSN,
 }));

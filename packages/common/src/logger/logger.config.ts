@@ -1,7 +1,7 @@
 import { Params } from 'nestjs-pino';
 import { SENSITIVE_FIELDS, REDACTION_LABEL, HEALTH_CHECK_PATH } from './logger.constants';
 import { serializers } from './logger.utils';
-import { genReqId } from './trace.utils';
+import { genReqId, traceUtils } from './trace.utils';
 
 /**
  * Creates a consistent nestjs-pino LoggerModule config for all services.
@@ -11,6 +11,9 @@ import { genReqId } from './trace.utils';
  */
 export function createLoggerConfig(serviceName: string): Params {
   const isDevelopment = process.env.NODE_ENV === 'development';
+  // Use pino-pretty only in development and if not explicitly disabled.
+  // This is crucial for Docker environments where pino-pretty (a devDependency) is missing.
+  const usePrettyLogs = isDevelopment && process.env.LOG_PRETTY !== 'false';
 
   return {
     pinoHttp: {
@@ -21,7 +24,7 @@ export function createLoggerConfig(serviceName: string): Params {
       serializers,
 
       // 3. Environment-Aware Transport
-      transport: isDevelopment
+      transport: usePrettyLogs
         ? {
             target: 'pino-pretty',
             options: {
@@ -47,6 +50,7 @@ export function createLoggerConfig(serviceName: string): Params {
         env: process.env.NODE_ENV,
         version: process.env.npm_package_version,
         requestId: req.id,
+        ...traceUtils.getTraceContext(),
       }),
 
       // 6. Custom Messages

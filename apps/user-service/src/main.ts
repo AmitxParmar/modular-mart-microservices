@@ -1,3 +1,4 @@
+import './tracing';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { Logger } from 'nestjs-pino';
@@ -19,7 +20,7 @@ async function bootstrap() {
   app.use(helmet());
 
   // Global route prefix — gateway forwards /api/* paths as-is
-  app.setGlobalPrefix('api', { exclude: ['health/(.*)'] });
+  app.setGlobalPrefix('api', { exclude: ['health/(.*)', 'metrics'] });
 
   // Enable CORS
 

@@ -46,10 +46,7 @@ RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store pnpm install
 # Copy compiled output from builder with chown
 COPY --chown=node:node --from=builder /app/apps/user-service/dist ./apps/user-service/dist
 
-COPY --chown=node:node --from=builder /app/packages/database/dist ./packages/database/dist
-COPY --chown=node:node --from=builder /app/packages/common/dist ./packages/common/dist
-COPY --chown=node:node --from=builder /app/packages/auth/dist ./packages/auth/dist
-COPY --chown=node:node --from=builder /app/packages/contracts/dist ./packages/contracts/dist
+COPY --chown=node:node --from=builder /app/packages/ ./packages/
 
 
 # Security: use non-root user

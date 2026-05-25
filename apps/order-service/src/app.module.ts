@@ -7,6 +7,8 @@ import { ConfigModule } from './config/config.module';
 import { AuthClientModule } from '@repo/auth';
 import {
   HealthModule,
+  MetricsModule,
+  SentryModule,
   HttpExceptionFilter,
   CorrelationMiddleware,
   createLoggerConfig,
@@ -31,6 +33,8 @@ import { ScheduleModule } from '@nestjs/schedule';
     OrdersModule,
     AdminModule,
     HealthModule,
+    MetricsModule,
+    SentryModule,
   ],
 
   controllers: [AppController],

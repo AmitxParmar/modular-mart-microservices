@@ -6,6 +6,8 @@ import {
   CorrelationMiddleware,
   HttpExceptionFilter,
   HealthModule,
+  MetricsModule,
+  SentryModule,
 } from '@repo/common';
 
 import { ConfigModule } from './config/config.module';
@@ -35,6 +37,8 @@ import { ProxyModule } from './proxy/proxy.module';
 
     RateLimitModule,
     HealthModule,
+    MetricsModule,
+    SentryModule,
     ProxyModule,
   ],
   providers: [

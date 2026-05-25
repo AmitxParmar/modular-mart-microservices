@@ -17,3 +17,12 @@ export { HealthModule } from "./health/health.module";
 // Logger
 export * from "./logger";
 export { PinoLogger, InjectPinoLogger } from "nestjs-pino";
+
+// Metrics
+export { MetricsModule } from "./metrics/metrics.module";
+
+// Sentry
+export { SentryModule } from "./sentry/sentry.module";
+
+// Tracing
+export { startTracing } from "./tracing";

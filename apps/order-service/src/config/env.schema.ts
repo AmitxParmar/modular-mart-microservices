@@ -17,6 +17,7 @@ export const envSchema = z.object({
   CLERK_PUBLISHABLE_KEY: z.string().min(1),
   CLERK_SECRET_KEY: z.string().min(1),
   USER_SERVICE_URL: z.url().default('http://localhost:3001'),
+  SENTRY_DSN: z.string().url().optional(),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;

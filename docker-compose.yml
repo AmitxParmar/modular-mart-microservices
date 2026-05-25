@@ -1,0 +1,197 @@
+services:
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "16686:16686" # UI
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./docker/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./docker/grafana-provisioning:/etc/grafana/provisioning
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    depends_on:
+      - prometheus
+      - loki
+
+  loki:
+    image: grafana/loki:latest
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./docker/loki-config.yaml:/etc/loki/local-config.yaml
+    command: -config.file=/etc/loki/local-config.yaml
+
+  promtail:
+    image: grafana/promtail:latest
+    volumes:
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./docker/promtail-config.yaml:/etc/promtail/config.yml
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      - loki
+
+  # App Services
+  user-service:
+    labels:
+      logging: "true"
+      service_name: "user-service"
+    build:
+      context: .
+      dockerfile: apps/user-service/Dockerfile
+    env_file:
+      - apps/user-service/.env
+    environment:
+      - LOG_PRETTY=false
+      - SERVICE_NAME=user-service
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
+      - OTEL_TRACES_ENABLED=true
+      - OTEL_METRICS_EXPORTER=none
+      - SENTRY_DSN=${SENTRY_DSN}
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3001/health/live"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    ports:
+      - "3001:3001"
+
+  catalog-service:
+    labels:
+      logging: "true"
+      service_name: "catalog-service"
+    build:
+      context: .
+      dockerfile: apps/catalog-service/Dockerfile
+    env_file:
+      - apps/catalog-service/.env
+    environment:
+      - LOG_PRETTY=false
+      - SERVICE_NAME=catalog-service
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
+      - OTEL_TRACES_ENABLED=true
+      - OTEL_METRICS_EXPORTER=none
+      - SENTRY_DSN=${SENTRY_DSN}
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3005/health/live"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    ports:
+      - "3005:3005"
+
+  order-service:
+    labels:
+      logging: "true"
+      service_name: "order-service"
+    build:
+      context: .
+      dockerfile: apps/order-service/Dockerfile
+    env_file:
+      - apps/order-service/.env
+    environment:
+      - LOG_PRETTY=false
+      - SERVICE_NAME=order-service
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
+      - OTEL_TRACES_ENABLED=true
+      - OTEL_METRICS_EXPORTER=none
+      - SENTRY_DSN=${SENTRY_DSN}
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3002/health/live"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    ports:
+      - "3002:3002"
+
+  payment-service:
+    labels:
+      logging: "true"
+      service_name: "payment-service"
+    build:
+      context: .
+      dockerfile: apps/payment-service/Dockerfile
+    env_file:
+      - apps/payment-service/.env
+    environment:
+      - LOG_PRETTY=false
+      - SERVICE_NAME=payment-service
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
+      - OTEL_TRACES_ENABLED=true
+      - OTEL_METRICS_EXPORTER=none
+      - SENTRY_DSN=${SENTRY_DSN}
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3004/health/live"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    ports:
+      - "3004:3004"
+
+  api-gateway:
+    labels:
+      logging: "true"
+      service_name: "api-gateway"
+    build:
+      context: .
+      dockerfile: apps/api-gateway/Dockerfile
+    env_file:
+      - apps/api-gateway/.env
+    environment:
+      - LOG_PRETTY=false
+      - SERVICE_NAME=api-gateway
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
+      - OTEL_TRACES_ENABLED=true
+      - OTEL_METRICS_EXPORTER=none
+      - SENTRY_DSN=${SENTRY_DSN}
+      - USER_SERVICE_URL=http://user-service:3001
+      - CATALOG_SERVICE_URL=http://catalog-service:3005
+      - ORDER_SERVICE_URL=http://order-service:3002
+      - PAYMENT_SERVICE_URL=http://payment-service:3004
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    depends_on:
+      user-service:
+        condition: service_healthy
+      catalog-service:
+        condition: service_healthy
+      order-service:
+        condition: service_healthy
+      payment-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8000/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "8000:8000"

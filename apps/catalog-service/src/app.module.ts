@@ -5,6 +5,8 @@ import { ConfigModule } from './config/config.module';
 import { AuthClientModule } from '@repo/auth';
 import {
   HealthModule,
+  MetricsModule,
+  SentryModule,
   HttpExceptionFilter,
   CorrelationMiddleware,
   createLoggerConfig,
@@ -24,6 +26,8 @@ import { MessagingModule } from './messaging.module';
     MessagingModule,
     CatalogModule,
     HealthModule,
+    MetricsModule,
+    SentryModule,
   ],
   providers: [
     {

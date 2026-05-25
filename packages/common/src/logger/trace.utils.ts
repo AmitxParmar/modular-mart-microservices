@@ -1,4 +1,6 @@
 import { IncomingMessage } from 'http';
+import { randomUUID } from 'crypto';
+import { trace, context } from '@opentelemetry/api';
 
 /**
  * Generates or preserves a request ID.
@@ -11,13 +13,25 @@ export function genReqId(req: IncomingMessage): string {
   if (headerId) {
     return Array.isArray(headerId) ? headerId[0] : headerId;
   }
-  return crypto.randomUUID();
+  return randomUUID();
 }
 
 /**
- * Future integration for OpenTelemetry or other tracing libraries.
+ * OpenTelemetry tracing utilities.
  */
 export const traceUtils = {
-  // Placeholder for traceId/spanId extraction
-  getTraceContext: () => ({}),
+  /**
+   * Extracts traceId and spanId from the current active span.
+   */
+  getTraceContext: () => {
+    const span = trace.getSpan(context.active());
+    if (!span) return {};
+    
+    const spanContext = span.spanContext();
+    return {
+      traceId: spanContext.traceId,
+      spanId: spanContext.spanId,
+      traceFlags: spanContext.traceFlags,
+    };
+  },
 };

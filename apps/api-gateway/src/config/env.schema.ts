@@ -30,6 +30,8 @@ export const EnvSchema = z.object({
   ORDER_SERVICE_URL: z.url().default('http://localhost:3003'),
   PAYMENT_SERVICE_URL: z.url().default('http://localhost:3004'),
   CART_SERVICE_URL: z.url().default('http://localhost:3005'),
+
+  SENTRY_DSN: z.string().url().optional(),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

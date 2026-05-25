@@ -18,6 +18,7 @@ export const envSchema = z.object({
   CLERK_SECRET_KEY: z.string().min(1),
   // URL of the order-service so payment can validate orders before creating intents
   ORDER_SERVICE_URL: z.url().default('http://localhost:3003'),
+  SENTRY_DSN: z.string().url().optional(),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;

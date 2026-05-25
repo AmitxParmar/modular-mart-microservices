@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { PinoLogger, InjectPinoLogger } from 'nestjs-pino';
+import * as Sentry from '@sentry/nestjs';
 
 export interface ErrorResponse {
   statusCode: number;
@@ -67,6 +68,9 @@ export class HttpExceptionFilter implements ExceptionFilter {
           err: exception instanceof Error ? exception : String(exception) },
         `Unhandled exception on ${request.method} ${request.url}`,
       );
+
+      // Capture error in Sentry
+      Sentry.captureException(exception);
     } else {
       this.logger.warn(
         { method: request.method, url: request.url, statusCode, correlationId },

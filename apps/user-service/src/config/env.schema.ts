@@ -13,6 +13,7 @@ export const envSchema = z.object({
   CLERK_SECRET_KEY: z.string().min(1),
 
   CLERK_WEBHOOK_SECRET: z.string().min(1).optional(),
+  SENTRY_DSN: z.string().url().optional(),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;
