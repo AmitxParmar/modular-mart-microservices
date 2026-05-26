@@ -59,7 +59,6 @@ services:
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
       - OTEL_TRACES_ENABLED=true
       - OTEL_METRICS_EXPORTER=none
-      - SENTRY_DSN=${SENTRY_DSN}
     dns:
       - 8.8.8.8
       - 8.8.4.4
@@ -87,7 +86,6 @@ services:
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
       - OTEL_TRACES_ENABLED=true
       - OTEL_METRICS_EXPORTER=none
-      - SENTRY_DSN=${SENTRY_DSN}
     dns:
       - 8.8.8.8
       - 8.8.4.4
@@ -115,7 +113,6 @@ services:
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
       - OTEL_TRACES_ENABLED=true
       - OTEL_METRICS_EXPORTER=none
-      - SENTRY_DSN=${SENTRY_DSN}
     dns:
       - 8.8.8.8
       - 8.8.4.4
@@ -143,7 +140,6 @@ services:
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
       - OTEL_TRACES_ENABLED=true
       - OTEL_METRICS_EXPORTER=none
-      - SENTRY_DSN=${SENTRY_DSN}
     dns:
       - 8.8.8.8
       - 8.8.4.4
@@ -171,7 +167,6 @@ services:
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
       - OTEL_TRACES_ENABLED=true
       - OTEL_METRICS_EXPORTER=none
-      - SENTRY_DSN=${SENTRY_DSN}
       - USER_SERVICE_URL=http://user-service:3001
       - CATALOG_SERVICE_URL=http://catalog-service:3005
       - ORDER_SERVICE_URL=http://order-service:3002

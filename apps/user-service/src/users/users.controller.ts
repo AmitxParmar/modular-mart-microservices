@@ -19,6 +19,7 @@ import { EVENT_PATTERNS } from '@repo/contracts';
 import type { GetUserRolePayload, GetUserRoleResponse, GetUserIdPayload, GetUserIdResponse } from '@repo/contracts';
 import type { ClerkUser } from '@repo/auth';
 import { InjectPinoLogger, PinoLogger } from '@repo/common';
+import { RabbitMQMessageHandler } from '../common/rabbitmq-message-handler.decorator';
 
 import type { WebhookEvent } from '@clerk/backend';
 
@@ -30,7 +31,7 @@ export class UsersController {
     private readonly configService: ConfigService,
   ) {}
 
-  @MessagePattern(EVENT_PATTERNS.GET_USER_ROLE)
+  @RabbitMQMessageHandler(EVENT_PATTERNS.GET_USER_ROLE)
   async getUserRole(
     @Payload() data: GetUserRolePayload,
   ): Promise<GetUserRoleResponse> {
@@ -38,7 +39,7 @@ export class UsersController {
     return this.usersService.getUserRoles(data.userId);
   }
 
-  @MessagePattern(EVENT_PATTERNS.GET_USER_ID)
+  @RabbitMQMessageHandler(EVENT_PATTERNS.GET_USER_ID)
   async getUserId(
     @Payload() data: GetUserIdPayload,
   ): Promise<GetUserIdResponse> {
@@ -61,7 +62,7 @@ export class UsersController {
     return { internalId: user?.id || null };
   }
 
-  @MessagePattern('users.count')
+  @RabbitMQMessageHandler('users.count')
   async countUsers(): Promise<number> {
     return this.usersService.countAll();
   }

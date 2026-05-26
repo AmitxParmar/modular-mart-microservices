@@ -44,15 +44,29 @@ async function bootstrap() {
         queue: 'catalog_queue',
         queueOptions: {
           durable: true,
+          deadLetterExchange: 'dlx_exchange',
+          deadLetterRoutingKey: 'dlq_catalog_queue',
         },
       },
+    });
+
+    // Dead-letter queue consumer
+    app.connectMicroservice<MicroserviceOptions>({
+        transport: Transport.RMQ,
+        options: {
+            urls: [rabbitmqUrl],
+            queue: 'dlq_catalog_queue',
+            queueOptions: {
+                durable: true,
+            },
+        },
     });
 
     // Start microservices in the background so we don't block the HTTP server
     app
       .startAllMicroservices()
       .then(() => {
-        console.log('Connected to RabbitMQ — catalog_queue active');
+        console.log('Connected to RabbitMQ — catalog_queue and dlq_catalog_queue active');
       })
       .catch((err) => {
         console.warn(

@@ -14,12 +14,13 @@ import type { ClerkUser } from '@repo/auth';
 import { Product } from './entities/product.entity';
 import { MessagePattern, EventPattern, Payload, Ctx, RmqContext } from '@nestjs/microservices';
 import { EVENT_PATTERNS } from '@repo/contracts';
+import { RabbitMQMessageHandler } from '../common/rabbitmq-message-handler.decorator';
 
 @Controller('catalog')
 export class CatalogController {
   constructor(private readonly catalogService: CatalogService) {}
 
-  @EventPattern(EVENT_PATTERNS.STOCK_RESERVE_REQUESTED)
+  @RabbitMQMessageHandler(EVENT_PATTERNS.STOCK_RESERVE_REQUESTED)
   async handleStockReserveRequested(
     @Payload() data: { orderId: string; items: { productId: string; quantity: number }[] },
     @Ctx() context: RmqContext,
@@ -29,7 +30,7 @@ export class CatalogController {
     await this.catalogService.handleStockReserveRequest(data.orderId, data.items, messageId);
   }
 
-  @EventPattern(EVENT_PATTERNS.ORDER_CANCELLED)
+  @RabbitMQMessageHandler(EVENT_PATTERNS.ORDER_CANCELLED)
   async handleOrderCancelled(
     @Payload() data: { orderId: string; items: { productId: string; quantity: number }[] },
     @Ctx() context: RmqContext,
@@ -42,7 +43,7 @@ export class CatalogController {
     await this.catalogService.releaseStockWithEvent(data.items, data.orderId, messageId, EVENT_PATTERNS.ORDER_CANCELLED);
   }
 
-  @EventPattern(EVENT_PATTERNS.ORDER_REJECTED)
+  @RabbitMQMessageHandler(EVENT_PATTERNS.ORDER_REJECTED)
   async handleOrderRejected(
     @Payload() data: { orderId: string; items: { productId: string; quantity: number }[] },
     @Ctx() context: RmqContext,
@@ -55,7 +56,7 @@ export class CatalogController {
     await this.catalogService.releaseStockWithEvent(data.items, data.orderId, messageId, EVENT_PATTERNS.ORDER_REJECTED);
   }
 
-  @EventPattern(EVENT_PATTERNS.PAYMENT_FAILED)
+  @RabbitMQMessageHandler(EVENT_PATTERNS.PAYMENT_FAILED)
   async handlePaymentFailed(
     @Payload() data: { orderId: string; items: { productId: string; quantity: number }[] },
     @Ctx() context: RmqContext,
@@ -68,22 +69,22 @@ export class CatalogController {
     await this.catalogService.releaseStockWithEvent(data.items, data.orderId, messageId, EVENT_PATTERNS.PAYMENT_FAILED);
   }
 
-  @MessagePattern('products.count')
+  @RabbitMQMessageHandler('products.count')
   async getProductsCount() {
     return this.catalogService.countActiveProducts();
   }
 
-  @MessagePattern('products.stats')
+  @RabbitMQMessageHandler('products.stats')
   async getCategoryStats() {
     return this.catalogService.getCategoryStats();
   }
 
-  @MessagePattern('products.get_batch')
+  @RabbitMQMessageHandler('products.get_batch')
   async getProductsBatch(productIds: string[]) {
     return this.catalogService.getProductsBatch(productIds);
   }
 
-  @MessagePattern('products.reserve_stock')
+  @RabbitMQMessageHandler('products.reserve_stock')
   async reserveStock(items: { productId: string; quantity: number }[]) {
     return this.catalogService.reserveStock(items);
   }

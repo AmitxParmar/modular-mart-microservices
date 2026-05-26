@@ -51,7 +51,7 @@ Do **not** start with ELK on a free tier. That becomes heavy fast and wastes tim
 - [x] Add manual spans around checkout, payment, inventory reservation, and message queue handlers.
 - [x] Export traces to Jaeger.
 - [x] Make sure trace context passes through HTTP headers and queue message metadata.
-- [ ] Re-verify full-stack trace propagation after `catalog-service` database connectivity is restored.
+- [x] Re-verify full-stack trace propagation after `catalog-service` database connectivity is restored.
 
 ### Phase 5: Add metrics
 - [x] Expose a `/metrics` endpoint from each service.
@@ -72,9 +72,9 @@ Do **not** start with ELK on a free tier. That becomes heavy fast and wastes tim
 
 ### Phase 7: Add queue observability
 - [x] Enable RabbitMQ management plugin.
-- [ ] Watch queue size, consumers, unacked messages, and dead-letter queues.
-- [ ] Add retries with backoff.
-- [ ] Add a dead-letter queue for poison messages.
+- [ ] Watch queue size, consumers, unacked messages, and dead-letter queues. (Blocked: CloudAMQP free tier does not expose a Prometheus endpoint)
+- [x] Add retries with backoff.
+- [x] Add a dead-letter queue for poison messages.
 
 ---
 ## Final Validation

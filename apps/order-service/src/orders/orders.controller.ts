@@ -20,6 +20,7 @@ import {
 } from '@repo/auth';
 import { EVENT_PATTERNS, OrderStatus } from '@repo/contracts';
 import type { PaymentSucceededEvent } from '@repo/contracts';
+import { RabbitMQMessageHandler } from '../common/rabbitmq-message-handler.decorator';
 
 @Controller('orders')
 export class OrdersController {
@@ -28,7 +29,7 @@ export class OrdersController {
     private readonly ordersService: OrdersService,
   ) {}
 
-  @EventPattern(EVENT_PATTERNS.PAYMENT_SUCCEEDED)
+  @RabbitMQMessageHandler(EVENT_PATTERNS.PAYMENT_SUCCEEDED)
   async handlePaymentSucceeded(@Payload() data: PaymentSucceededEvent) {
     this.logger.info(
       `Received PAYMENT_SUCCEEDED RMQ event for Order ${data.orderId}`,
@@ -36,7 +37,7 @@ export class OrdersController {
     await this.ordersService.markOrderAsPaid(data.orderId, data.paymentId);
   }
 
-  @EventPattern(EVENT_PATTERNS.STOCK_RESERVED)
+  @RabbitMQMessageHandler(EVENT_PATTERNS.STOCK_RESERVED)
   async handleStockReserved(
     @Payload() data: { orderId: string; items: { productId: string; quantity: number }[] },
     @Ctx() context: RmqContext,
@@ -49,7 +50,7 @@ export class OrdersController {
     await this.ordersService.handleStockReserved(data.orderId, data.items, messageId);
   }
 
-  @EventPattern(EVENT_PATTERNS.STOCK_RESERVE_FAILED)
+  @RabbitMQMessageHandler(EVENT_PATTERNS.STOCK_RESERVE_FAILED)
   async handleStockReserveFailed(
     @Payload() data: { orderId: string; reason: string },
     @Ctx() context: RmqContext,
@@ -62,7 +63,7 @@ export class OrdersController {
     await this.ordersService.handleStockReserveFailed(data.orderId, data.reason, messageId);
   }
 
-  @EventPattern(EVENT_PATTERNS.PAYMENT_FAILED)
+  @RabbitMQMessageHandler(EVENT_PATTERNS.PAYMENT_FAILED)
   async handlePaymentFailed(
     @Payload() data: { orderId: string; reason: string },
     @Ctx() context: RmqContext,

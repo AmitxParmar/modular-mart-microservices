@@ -15,6 +15,7 @@ import { ClerkAuthGuard, CurrentUser } from '@repo/auth';
 import type { ClerkUser } from '@repo/auth';
 import { CreateIntentDto } from './dto/create-intent.dto';
 import { EVENT_PATTERNS } from '@repo/contracts';
+import { RabbitMQMessageHandler } from '../common/rabbitmq-message-handler.decorator';
 
 @Controller('payments')
 export class PaymentsController {
@@ -82,7 +83,7 @@ export class PaymentsController {
    *
    * Microservices concept: Event-driven pre-work / eventual consistency
    */
-  @MessagePattern(EVENT_PATTERNS.ORDER_CREATED)
+  @RabbitMQMessageHandler(EVENT_PATTERNS.ORDER_CREATED)
   async onOrderCreated(@Payload() data: { orderId: string; totalAmount: number; userId: string }) {
     // Could pre-create a PENDING payment record here
     // For now, just log — demonstrates you know how to consume events

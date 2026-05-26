@@ -45,6 +45,21 @@ async function bootstrap() {
       queue: 'auth_queue',
       queueOptions: {
         durable: true,
+        deadLetterExchange: 'dlx_exchange',
+        deadLetterRoutingKey: 'dlq_auth_queue',
+      },
+    },
+  });
+
+  // Dead-letter queue consumer: connected so undeliverable messages are not silently dropped.
+  // Add a dedicated @EventPattern handler for DLQ alerts/alerting here if needed.
+  app.connectMicroservice<MicroserviceOptions>({
+    transport: Transport.RMQ,
+    options: {
+      urls: [rabbitmqUrl],
+      queue: 'dlq_auth_queue',
+      queueOptions: {
+        durable: true,
       },
     },
   });

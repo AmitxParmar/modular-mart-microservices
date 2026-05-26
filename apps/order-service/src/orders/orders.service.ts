@@ -381,6 +381,7 @@ export class OrdersService {
     items: { productId: string; quantity: number }[],
     messageId: string,
   ): Promise<void> {
+
     await this.dataSource.transaction(async (manager) => {
       const processedRepo = manager.getRepository(ProcessedMessage);
       const alreadyProcessed = await processedRepo.findOne({
@@ -570,20 +571,6 @@ export class OrdersService {
       [OrderStatus.PENDING]: [OrderStatus.PAID, OrderStatus.CANCELLED],
       [OrderStatus.PAYMENT_PENDING]: [OrderStatus.PAID, OrderStatus.CANCELLED],
       [OrderStatus.STOCK_CONFIRMED]: [OrderStatus.PAID, OrderStatus.CANCELLED],
-      [OrderStatus.STOCK_FAILED]: [],
-      [OrderStatus.PAID]: [OrderStatus.APPROVED, OrderStatus.REJECTED],
-      [OrderStatus.APPROVED]: [OrderStatus.PROCESSING],
-      [OrderStatus.PROCESSING]: [OrderStatus.SHIPPED],
-      [OrderStatus.SHIPPED]: [OrderStatus.DELIVERED],
-      [OrderStatus.DELIVERED]: [],
-      [OrderStatus.REJECTED]: [],
-      [OrderStatus.CANCELLED]: [],
-    };
-
-    return allowed[current]?.includes(target) ?? false;
-  }
-}
-us.PAID, OrderStatus.CANCELLED],
       [OrderStatus.STOCK_FAILED]: [],
       [OrderStatus.PAID]: [OrderStatus.APPROVED, OrderStatus.REJECTED],
       [OrderStatus.APPROVED]: [OrderStatus.PROCESSING],

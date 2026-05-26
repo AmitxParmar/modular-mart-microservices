@@ -48,14 +48,28 @@ async function bootstrap() {
         queue: 'payments_queue',
         queueOptions: {
           durable: true,
+          deadLetterExchange: 'dlx_exchange',
+          deadLetterRoutingKey: 'dlq_payments_queue',
         },
       },
+    });
+
+    // Dead-letter queue consumer
+    app.connectMicroservice<MicroserviceOptions>({
+        transport: Transport.RMQ,
+        options: {
+            urls: [rabbitmqUrl],
+            queue: 'dlq_payments_queue',
+            queueOptions: {
+                durable: true,
+            },
+        },
     });
 
     app
       .startAllMicroservices()
       .then(() => {
-        console.log('✅ Connected to RabbitMQ — payments_queue active');
+        console.log('✅ Connected to RabbitMQ — payments_queue and dlq_payments_queue active');
       })
       .catch((err) => {
         console.warn(
