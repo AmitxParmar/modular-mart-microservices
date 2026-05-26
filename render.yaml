@@ -11,6 +11,8 @@ envVarGroups:
         sync: false
       - key: CLERK_SECRET_KEY        # ADD (shared across services)
         sync: false
+      - key: SENTRY_DSN
+        sync: false
 
 services:
   # API Gateway
