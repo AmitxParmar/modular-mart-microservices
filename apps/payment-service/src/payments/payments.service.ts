@@ -1,11 +1,11 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ClientProxy } from '@nestjs/microservices';
 import { EVENT_PATTERNS, PaymentSucceededEvent, PaymentFailedEvent } from '@repo/contracts';
 import { Payment, PaymentStatus } from './entities/payment.entity';
-import { InjectPinoLogger, PinoLogger } from '@repo/common';
+import { PinoLogger } from 'nestjs-pino';
 import Stripe from 'stripe';
 
 type StripeInstance = InstanceType<typeof Stripe>;
@@ -15,9 +15,8 @@ type StripePaymentIntent = Awaited<
 >;
 
 @Injectable()
-export class PaymentsService {
+export class PaymentsService implements OnModuleInit {
   constructor(
-    @InjectPinoLogger(PaymentsService.name)
     private readonly logger: PinoLogger,
     @InjectRepository(Payment)
     private readonly paymentRepo: Repository<Payment>,
@@ -25,6 +24,10 @@ export class PaymentsService {
     @Inject('STRIPE_CLIENT') private readonly stripe: StripeInstance,
     private readonly configService: ConfigService,
   ) {}
+
+  onModuleInit() {
+    this.logger.setContext(PaymentsService.name);
+  }
 
   /**
    * Creates a Stripe PaymentIntent.

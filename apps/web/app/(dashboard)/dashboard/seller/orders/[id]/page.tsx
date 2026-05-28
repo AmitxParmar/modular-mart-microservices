@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useOrderTracking } from "@/features/order/api/order.queries";
-import { useUpdateOrderStatus } from "@/features/order/api/order.mutations";
+import { useUpdateOrderStatus } from "@/features/seller/mutations";
 import { OrderStatusBadge } from "@/features/order/components/order-status-badge";
 import { OrderTimeline } from "@/features/order/components/OrderTimeline";
 import { format } from "date-fns";
@@ -70,7 +70,7 @@ export default function SellerOrderDetailPage() {
 
   const handleStatusUpdate = (status: string, reason?: string) => {
     updateStatus(
-      { id, status, reason },
+      { id, status: status as any, reason },
       {
         onSuccess: () => {
           toast.success("Status Updated", {

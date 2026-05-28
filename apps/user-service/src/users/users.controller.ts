@@ -18,7 +18,7 @@ import { CurrentUser, ClerkAuthGuard } from '@repo/auth';
 import { EVENT_PATTERNS } from '@repo/contracts';
 import type { GetUserRolePayload, GetUserRoleResponse, GetUserIdPayload, GetUserIdResponse } from '@repo/contracts';
 import type { ClerkUser } from '@repo/auth';
-import { InjectPinoLogger, PinoLogger } from '@repo/common';
+import { PinoLogger } from 'nestjs-pino';
 import { RabbitMQMessageHandler } from '../common/rabbitmq-message-handler.decorator';
 
 import type { WebhookEvent } from '@clerk/backend';
@@ -26,10 +26,12 @@ import type { WebhookEvent } from '@clerk/backend';
 @Controller('users')
 export class UsersController {
   constructor(
-    @InjectPinoLogger(UsersController.name) private readonly logger: PinoLogger,
+    private readonly logger: PinoLogger,
     private readonly usersService: UsersService,
     private readonly configService: ConfigService,
-  ) {}
+  ) {
+    this.logger.setContext(UsersController.name);
+  }
 
   @RabbitMQMessageHandler(EVENT_PATTERNS.GET_USER_ROLE)
   async getUserRole(

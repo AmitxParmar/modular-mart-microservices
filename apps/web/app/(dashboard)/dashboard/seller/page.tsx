@@ -1,5 +1,7 @@
 "use client";
 
+import { useSellerStats, useSellerProducts } from "@/features/seller/queries";
+import { useSellerOrders } from "@/features/order/api/order.queries";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Package,
@@ -12,35 +14,45 @@ import {
 import { buttonVariants } from "@/components/ui/button";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-
-const SELLER_STATS = [
-  {
-    title: "Monthly Revenue",
-    value: "$12,450.00",
-    icon: <DollarSign className="w-4 h-4" />,
-    color: "text-emerald-500",
-  },
-  {
-    title: "Active Listings",
-    value: "24",
-    icon: <Package className="w-4 h-4" />,
-    color: "text-blue-500",
-  },
-  {
-    title: "Pending Orders",
-    value: "7",
-    icon: <ShoppingCart className="w-4 h-4" />,
-    color: "text-amber-500",
-  },
-  {
-    title: "Conversion Rate",
-    value: "3.2%",
-    icon: <TrendingUp className="w-4 h-4" />,
-    color: "text-indigo-500",
-  },
-];
+import { Skeleton } from "@/components/ui/skeleton";
+import { formatDistanceToNow } from "date-fns";
 
 export default function SellerDashboard() {
+  const { data: stats, isLoading: isStatsLoading } = useSellerStats();
+  const { data: products, isLoading: isProductsLoading } = useSellerProducts();
+  const { data: orders, isLoading: isOrdersLoading } = useSellerOrders();
+
+  const SELLER_STATS = [
+    {
+      title: "Total Revenue",
+      value: stats ? `$${Number(stats.totalEarnings).toLocaleString()}` : "$0",
+      icon: <DollarSign className="w-4 h-4" />,
+      color: "text-emerald-500",
+      isLoading: isStatsLoading,
+    },
+    {
+      title: "Active Products",
+      value: products ? products.filter(p => p.status === 'APPROVED').length.toString() : "0",
+      icon: <Package className="w-4 h-4" />,
+      color: "text-blue-500",
+      isLoading: isProductsLoading,
+    },
+    {
+      title: "Pending Orders",
+      value: stats ? stats.pendingOrders.toString() : "0",
+      icon: <ShoppingCart className="w-4 h-4" />,
+      color: "text-amber-500",
+      isLoading: isStatsLoading,
+    },
+    {
+      title: "Recent Earnings (30d)",
+      value: stats ? `$${Number(stats.recentEarnings).toLocaleString()}` : "$0",
+      icon: <TrendingUp className="w-4 h-4" />,
+      color: "text-indigo-500",
+      isLoading: isStatsLoading,
+    },
+  ];
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -71,7 +83,11 @@ export default function SellerDashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
+              {stat.isLoading ? (
+                <Skeleton className="h-8 w-24" />
+              ) : (
+                <div className="text-2xl font-bold">{stat.value}</div>
+              )}
             </CardContent>
           </Card>
         ))}
@@ -90,34 +106,48 @@ export default function SellerDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {[1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className="flex items-center justify-between p-3 rounded-lg border border-border/40"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-muted rounded flex items-center justify-center">
-                      <Package className="w-5 h-5 text-muted-foreground" />
+              {isOrdersLoading ? (
+                Array.from({ length: 3 }).map((_, i) => (
+                  <Skeleton key={i} className="h-16 w-full" />
+                ))
+              ) : !orders || orders.length === 0 ? (
+                <p className="text-center py-8 text-muted-foreground">No orders yet.</p>
+              ) : (
+                orders.slice(0, 5).map((order) => (
+                  <Link
+                    key={order.id}
+                    href={`/dashboard/seller/orders/${order.id}`}
+                    className="flex items-center justify-between p-3 rounded-lg border border-border/40 hover:bg-muted/10 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-muted rounded flex items-center justify-center">
+                        <Package className="w-5 h-5 text-muted-foreground" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">
+                          Order #{order.id.slice(0, 8).toUpperCase()}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {order.items.length} items • ${Number(order.totalAmount).toFixed(2)}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium">
-                        Order #ORD-2024-{i}283
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        2 items • $129.99
+                    <div className="text-right">
+                      <span className={cn(
+                        "text-[10px] font-bold px-2 py-0.5 rounded-full uppercase",
+                        order.status === 'DELIVERED' ? "bg-emerald-500/10 text-emerald-500" :
+                        order.status === 'CANCELLED' ? "bg-destructive/10 text-destructive" :
+                        "bg-amber-500/10 text-amber-500"
+                      )}>
+                        {order.status}
+                      </span>
+                      <p className="text-[10px] text-muted-foreground mt-1">
+                        {formatDistanceToNow(new Date(order.createdAt), { addSuffix: true })}
                       </p>
                     </div>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-[10px] font-bold bg-amber-500/10 text-amber-500 px-2 py-0.5 rounded-full">
-                      PENDING
-                    </span>
-                    <p className="text-[10px] text-muted-foreground mt-1">
-                      2 hours ago
-                    </p>
-                  </div>
-                </div>
-              ))}
+                  </Link>
+                ))
+              )}
             </div>
           </CardContent>
         </Card>
@@ -125,7 +155,7 @@ export default function SellerDashboard() {
         <Card className="border-border/40">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-lg font-bold">
-              Top Performing Products
+              Product Overview
             </CardTitle>
             <Link 
               href="/dashboard/seller/products"
@@ -136,30 +166,43 @@ export default function SellerDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {[1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className="flex items-center justify-between p-3 rounded-lg border border-border/40"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-muted rounded overflow-hidden">
-                      <div className="w-full h-full bg-linear-to-br from-primary/10 to-primary/30" />
+              {isProductsLoading ? (
+                Array.from({ length: 3 }).map((_, i) => (
+                  <Skeleton key={i} className="h-16 w-full" />
+                ))
+              ) : !products || products.length === 0 ? (
+                <p className="text-center py-8 text-muted-foreground">No products listed.</p>
+              ) : (
+                products.slice(0, 5).map((product) => (
+                  <div
+                    key={product.id}
+                    className="flex items-center justify-between p-3 rounded-lg border border-border/40"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-muted rounded overflow-hidden">
+                        <div className="w-full h-full bg-linear-to-br from-primary/10 to-primary/30" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">
+                          {product.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {product.stockQuantity} in stock
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium">
-                        Premium Modular Item {i}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        42 sales this month
-                      </p>
+                    <div className="text-right">
+                      <p className="text-sm font-bold">${Number(product.price).toFixed(2)}</p>
+                      <span className={cn(
+                        "text-[10px] font-bold uppercase",
+                        product.status === 'APPROVED' ? "text-emerald-500" : "text-amber-500"
+                      )}>
+                        {product.status}
+                      </span>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-bold">$199.99</p>
-                    <p className="text-[10px] text-emerald-500">+12% growth</p>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </CardContent>
         </Card>

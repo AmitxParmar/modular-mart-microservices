@@ -8,7 +8,7 @@ import {
   Patch,
 } from '@nestjs/common';
 import { EventPattern, Payload, Ctx, RmqContext } from '@nestjs/microservices';
-import { PinoLogger } from '@repo/common';
+import { PinoLogger } from 'nestjs-pino';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import {
@@ -90,6 +90,13 @@ export class OrdersController {
   @UseGuards(ClerkAuthGuard)
   getUserOrders(@CurrentUser() user: ClerkUser) {
     return this.ordersService.getUserOrders(user.internalId);
+  }
+
+  @Get('seller/stats')
+  @UseGuards(ClerkAuthGuard, RolesGuard)
+  @Roles('SELLER')
+  getSellerStats(@CurrentUser() user: ClerkUser) {
+    return this.ordersService.getSellerStats(user.internalId);
   }
 
   @Get('seller')

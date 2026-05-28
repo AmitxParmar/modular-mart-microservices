@@ -9,7 +9,7 @@ import { verifyToken } from "@clerk/backend";
 import { ConfigService } from "@nestjs/config";
 import type { Request } from "express";
 import type { ClerkUser } from "./types";
-import { PinoLogger } from "@repo/common";
+import { PinoLogger } from "nestjs-pino";
 
 /**
  * ClerkAuthGuard

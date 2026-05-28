@@ -5,9 +5,9 @@ import {
   HttpException,
   HttpStatus,
   Injectable,
+  Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
-import { PinoLogger, InjectPinoLogger } from 'nestjs-pino';
 import * as Sentry from '@sentry/nestjs';
 
 export interface ErrorResponse {
@@ -21,16 +21,16 @@ export interface ErrorResponse {
 
 /**
  * Shared global HTTP exception filter.
- * Formats ALL exceptions into a consistent JSON shape and logs them via Pino.
+ * Formats ALL exceptions into a consistent JSON shape and logs them via pino.
  * Import this from @repo/common and register globally in every service.
+ *
+ * Uses NestJS's built-in Logger (which nestjs-pino replaces with pino under the hood)
+ * to avoid cross-package class-identity issues with PinoLogger.
  */
 @Injectable()
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
-  constructor(
-    @InjectPinoLogger(HttpExceptionFilter.name)
-    private readonly logger: PinoLogger,
-  ) {}
+  private readonly logger = new Logger(HttpExceptionFilter.name);
 
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
@@ -64,17 +64,15 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
     if (statusCode >= HttpStatus.INTERNAL_SERVER_ERROR) {
       this.logger.error(
-        { method: request.method, url: request.url, statusCode, correlationId,
-          err: exception instanceof Error ? exception : String(exception) },
         `Unhandled exception on ${request.method} ${request.url}`,
+        exception instanceof Error ? exception.stack : String(exception),
       );
 
       // Capture error in Sentry
       Sentry.captureException(exception);
     } else {
       this.logger.warn(
-        { method: request.method, url: request.url, statusCode, correlationId },
-        `Client error on ${request.method} ${request.url}`,
+        `Client error ${statusCode} on ${request.method} ${request.url}`,
       );
     }
 

@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
-import { PinoLogger } from '@repo/common';
+import { PinoLogger } from 'nestjs-pino';
 import { Order } from './entities/order.entity';
 import { OrderItem } from './entities/order-item.entity';
 import { OrderStatusHistory } from './entities/order-status-history.entity';
@@ -192,6 +192,43 @@ export class OrdersService {
       relations: ['items'],
       order: { createdAt: 'DESC' },
     });
+  }
+
+  async getSellerStats(sellerId: string) {
+    const orders = await this.orderRepo.find({
+      where: { sellerId },
+    });
+
+    const totalEarnings = orders
+      .filter((o) => o.status === OrderStatus.DELIVERED || o.status === OrderStatus.PAID || o.status === OrderStatus.APPROVED || o.status === OrderStatus.PROCESSING || o.status === OrderStatus.SHIPPED)
+      .reduce((sum, o) => sum + Number(o.totalAmount), 0);
+
+    const totalOrders = orders.length;
+    const pendingOrders = orders.filter(
+      (o) => o.status === OrderStatus.PENDING_STOCK || o.status === OrderStatus.PAYMENT_PENDING || o.status === OrderStatus.PAID,
+    ).length;
+
+    // Last 30 days earnings
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const recentEarnings = orders
+      .filter((o) => o.createdAt >= thirtyDaysAgo && (o.status === OrderStatus.DELIVERED || o.status === OrderStatus.PAID || o.status === OrderStatus.APPROVED || o.status === OrderStatus.PROCESSING || o.status === OrderStatus.SHIPPED))
+      .reduce((sum, o) => sum + Number(o.totalAmount), 0);
+
+    return {
+      totalEarnings,
+      totalOrders,
+      pendingOrders,
+      recentEarnings,
+      orderStatusBreakdown: {
+        pending: orders.filter(o => o.status === OrderStatus.PENDING_STOCK || o.status === OrderStatus.PAYMENT_PENDING).length,
+        processing: orders.filter(o => o.status === OrderStatus.PAID || o.status === OrderStatus.APPROVED || o.status === OrderStatus.PROCESSING).length,
+        shipped: orders.filter(o => o.status === OrderStatus.SHIPPED).length,
+        delivered: orders.filter(o => o.status === OrderStatus.DELIVERED).length,
+        cancelled: orders.filter(o => o.status === OrderStatus.CANCELLED || o.status === OrderStatus.REJECTED).length,
+      }
+    };
   }
 
   async getOrderById(userId: string, orderId: string) {

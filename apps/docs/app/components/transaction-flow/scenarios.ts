@@ -1,6 +1,6 @@
 export const transactionScenarios = {
   success: {
-    name: 'Successful Order Transaction',
+    name: 'Successful Order Saga (Choreographed)',
     steps: [
       {
         title: 'Frontend initiates checkout',
@@ -11,457 +11,267 @@ export const transactionScenarios = {
             method: 'POST',
             path: '/orders',
             payload: {
-              items: [{ sku: 'SKU-1', qty: 2 }],
-              userId: 'user-123',
+              items: [{ productId: 'prod_A', quantity: 2 }],
+              shippingAddressId: 'addr_1',
             },
+          },
+          telemetry: {
+            traceId: 'trace_checkout_001',
+            span: 'web.checkout',
           },
         },
       },
       {
-        title: 'API Gateway processes request',
-        description: 'Authenticates user, attaches correlation ID, and forwards to Order Service.',
+        title: 'API Gateway: Auth & Ingress',
+        description: 'Authenticates user via Clerk, attaches correlation ID, and forwards to Order Service.',
         type: 'code',
         details: {
-          processed: {
-            jwtVerified: true,
+          ingress: {
+            service: 'API Gateway',
+            clerkAuth: 'VALID',
             correlationId: 'ord_92A1',
+            traceId: 'trace_checkout_001',
           },
         },
       },
       {
-        title: 'Order Service: Reserve Stock (RPC)',
-        description: 'Synchronously calls Catalog Service via RabbitMQ RPC to reserve stock using a pessimistic lock.',
-        type: 'code',
-        details: {
-          rpcCall: {
-            service: 'Catalog',
-            action: 'reserve_stock',
-            payload: {
-              items: [{ sku: 'SKU-1', qty: 2 }],
-            },
-            result: 'SUCCESS',
-          },
-        },
-      },
-      {
-        title: 'Order Service: Transaction begins',
-        description: 'Starts a database transaction for order creation and outbox entry.',
+        title: 'Order Service: Transaction Begins',
+        description: 'Starts a database transaction to ensure Order and Outbox entry are saved atomically.',
         type: 'database',
         details: {
-          sqlTransaction: 'BEGIN;',
+          sql: 'BEGIN;',
+          traceId: 'trace_checkout_001',
         },
       },
       {
-        title: 'Order Service: Create Order',
-        description: 'Inserts a new order record into the `orders` table.',
+        title: 'Order Service: Create Order (PENDING_STOCK)',
+        description: 'Inserts order record with initial state set to PENDING_STOCK.',
         type: 'database',
         details: {
           table: 'orders',
           action: 'INSERT',
           record: {
             id: 'ord_92A1',
-            userId: 'user-123',
-            status: 'PENDING',
-            total: 149.00,
-            createdAt: '2026-05-19T10:00:00Z',
+            status: 'PENDING_STOCK',
+            totalAmount: 299.00,
+            correlationId: 'ord_92A1',
           },
         },
       },
       {
-        title: 'Order Service: Add Outbox Event',
-        description: 'Inserts an `ORDER_CREATED` event into the `outbox_events` table.',
+        title: 'Order Service: Record Outbox Event',
+        description: 'Saves STOCK_RESERVE_REQUESTED event in the outbox table within the same transaction.',
         type: 'database',
         details: {
           table: 'outbox_events',
           action: 'INSERT',
-          record: {
-            id: 'evt_1',
-            aggregateType: 'Order',
-            aggregateId: 'ord_92A1',
-            eventType: 'ORDER_CREATED',
+          event: {
+            type: 'STOCK_RESERVE_REQUESTED',
             payload: {
               orderId: 'ord_92A1',
-              items: [{ sku: 'SKU-1', qty: 2 }],
-              total: 149.00,
-            },
-            processed: false,
-            createdAt: '2026-05-19T10:00:01Z',
-          },
-        },
-      },
-      {
-        title: 'Order Service: Commit Transaction',
-        description: 'Commits the database transaction, making order and outbox entry visible.',
-        type: 'database',
-        details: {
-          sqlTransaction: 'COMMIT;',
-        },
-      },
-      {
-        title: 'Outbox Relayer: Poll for events',
-        description: 'Dedicated process polls `outbox_events` for unprocessed events.',
-        type: 'code',
-        details: {
-          query: 'SELECT * FROM outbox_events WHERE processed = false LIMIT 10;',
-        },
-      },
-      {
-        title: 'Outbox Relayer: Publish ORDER_CREATED event',
-        description: 'Publishes `ORDER_CREATED` to RabbitMQ and marks it as processed.',
-        type: 'event',
-        details: {
-          broker: 'RabbitMQ',
-          exchange: 'orders.topic',
-          routingKey: 'order.created',
-          payload: {
-            event: 'ORDER_CREATED',
-            correlationId: 'ord_92A1',
-            orderId: 'ord_92A1',
-            items: [{ sku: 'SKU-1', qty: 2 }],
-            total: 149.00,
-          },
-        },
-      },
-      {
-        title: 'Payment Service: Consume ORDER_CREATED',
-        description: 'Payment Service consumes the `ORDER_CREATED` event from RabbitMQ.',
-        type: 'event',
-        details: {
-          broker: 'RabbitMQ',
-          queue: 'payment.order.created',
-          payload: {
-            event: 'ORDER_CREATED',
-            correlationId: 'ord_92A1',
-            orderId: 'ord_92A1',
-            items: [{ sku: 'SKU-1', qty: 2 }],
-            total: 149.00,
-          },
-        },
-      },
-      {
-        title: 'Payment Service: Process Idempotency Key',
-        description: 'Checks `processed_messages` table to prevent duplicate processing.',
-        type: 'database',
-        details: {
-          table: 'processed_messages',
-          action: 'SELECT',
-          query: "SELECT * FROM processed_messages WHERE message_id = 'evt_1';",
-          result: 'No existing record, proceed.',
-        },
-      },
-      {
-        title: 'Payment Service: Initiate payment with Stripe',
-        description: 'Calls external Stripe API to create a payment charge.',
-        type: 'code',
-        details: {
-          externalCall: {
-            service: 'Stripe',
-            method: 'POST',
-            endpoint: '/charges',
-            payload: {
-              amount: 14900,
-              currency: 'usd',
-              orderId: 'ord_92A1',
-              // ... other payment details
+              items: [{ productId: 'prod_A', quantity: 2 }],
             },
           },
         },
       },
       {
-        title: 'Payment Service: Record payment',
-        description: 'Inserts payment record into `payments` table.',
+        title: 'Order Service: Commit & Ack',
+        description: 'Commits DB transaction and returns success to frontend immediately.',
         type: 'database',
         details: {
-          table: 'payments',
-          action: 'INSERT',
-          record: {
-            id: 'pay_xyz',
-            orderId: 'ord_92A1',
-            amount: 149.00,
-            status: 'SUCCEEDED',
-            externalId: 'ch_123abc',
-          },
+          sql: 'COMMIT;',
+          response: { status: 201, orderId: 'ord_92A1' },
         },
       },
       {
-        title: 'Payment Service: Publish PAYMENT_SUCCEEDED',
-        description: 'Emits `PAYMENT_SUCCEEDED` event to RabbitMQ via its own outbox.',
+        title: 'Outbox Processor: Publish Event',
+        description: 'Background worker polls outbox and publishes the event to RabbitMQ.',
         type: 'event',
         details: {
           broker: 'RabbitMQ',
-          exchange: 'payments.topic',
-          routingKey: 'payment.succeeded',
+          exchange: 'mart.events',
+          routingKey: 'stock.reserve_requested',
           payload: {
-            event: 'PAYMENT_SUCCEEDED',
-            correlationId: 'ord_92A1',
+            eventType: 'STOCK_RESERVE_REQUESTED',
             orderId: 'ord_92A1',
-            paymentId: 'pay_xyz',
+            traceId: 'trace_checkout_001',
           },
         },
       },
       {
-        title: 'Order Service: Consume PAYMENT_SUCCEEDED',
-        description: 'Order Service consumes the `PAYMENT_SUCCEEDED` event.',
+        title: 'Catalog Service: Consume Reservation Request',
+        description: 'Catalog Service picks up the request and starts its own reservation transaction.',
+        type: 'event',
+        details: {
+          service: 'Catalog Service',
+          event: 'STOCK_RESERVE_REQUESTED',
+          traceId: 'trace_checkout_001',
+          span: 'catalog.reserve_stock',
+        },
+      },
+      {
+        title: 'Catalog Service: Pessimistic Lock',
+        description: 'Locks the product rows for update to prevent overselling during high concurrency.',
+        type: 'database',
+        details: {
+          sql: 'SELECT * FROM products WHERE id = "prod_A" FOR UPDATE;',
+          result: 'ROW_LOCKED',
+        },
+      },
+      {
+        title: 'Catalog Service: Commit & Publish Status',
+        description: 'Updates stock levels, commits, and publishes STOCK_RESERVED event via its own outbox.',
         type: 'event',
         details: {
           broker: 'RabbitMQ',
-          queue: 'order.payment.succeeded',
+          eventType: 'STOCK_RESERVED',
           payload: {
-            event: 'PAYMENT_SUCCEEDED',
-            correlationId: 'ord_92A1',
             orderId: 'ord_92A1',
-            paymentId: 'pay_xyz',
+            status: 'SUCCESS',
           },
         },
       },
       {
-        title: 'Order Service: Update Order Status',
-        description: 'Updates the order status to `COMPLETED` in the `orders` table.',
+        title: 'Order Service: Consume STOCK_RESERVED',
+        description: 'Order Service receives confirmation that stock is locked and ready.',
+        type: 'event',
+        details: {
+          service: 'Order Service',
+          event: 'STOCK_RESERVED',
+          traceId: 'trace_checkout_001',
+        },
+      },
+      {
+        title: 'Order Service: Transition to PAYMENT_PENDING',
+        description: 'Updates order status and publishes ORDER_CREATED to trigger payment/notifications.',
         type: 'database',
         details: {
           table: 'orders',
           action: 'UPDATE',
-          recordId: 'ord_92A1',
-          changes: {
-            status: 'COMPLETED',
-          },
+          changes: { status: 'PAYMENT_PENDING' },
+          outbox: 'ORDER_CREATED',
         },
       },
       {
-        title: 'Transaction Completed',
-        description: 'The distributed transaction for the order is successfully completed.',
+        title: 'Payment Service: Process Payment',
+        description: 'Consumes ORDER_CREATED, calls Stripe, and publishes results.',
         type: 'code',
         details: {
-          status: 'SUCCESS',
-          message: 'Order processed and payment confirmed.',
+          stripe: { status: 'SUCCEEDED', paymentId: 'pi_abc123' },
+          outbox: 'PAYMENT_SUCCEEDED',
+        },
+      },
+      {
+        title: 'Order Service: Finalize (PAID)',
+        description: 'Consumes PAYMENT_SUCCEEDED, verifies idempotency, and marks order as PAID.',
+        type: 'database',
+        details: {
+          table: 'orders',
+          status: 'PAID',
+          idempotency: {
+            table: 'processed_messages',
+            key: 'pi_abc123',
+            result: 'NEW_PROCESS',
+          },
+        },
+      },
+    ],
+  },
+  stockFailure: {
+    name: 'Compensation: Stock Reservation Failure',
+    steps: [
+      {
+        title: 'Order Created (PENDING_STOCK)',
+        description: 'Order starts in PENDING_STOCK state.',
+        type: 'database',
+        details: { status: 'PENDING_STOCK', orderId: 'ord_FAIL_01' },
+      },
+      {
+        title: 'Catalog Service: Reservation Attempt',
+        description: 'Catalog Service finds that stock is insufficient for one or more items.',
+        type: 'error',
+        details: {
+          check: 'quantity > available',
+          product: 'prod_B',
+          available: 0,
+          requested: 5,
+        },
+      },
+      {
+        title: 'Catalog Service: Publish Failure',
+        description: 'Publishes STOCK_RESERVE_FAILED event.',
+        type: 'event',
+        details: {
+          eventType: 'STOCK_RESERVE_FAILED',
+          payload: { orderId: 'ord_FAIL_01', reason: 'INSUFFICIENT_STOCK' },
+        },
+      },
+      {
+        title: 'Order Service: Consume Failure',
+        description: 'Order Service reacts to the stock reservation failure.',
+        type: 'event',
+        details: { event: 'STOCK_RESERVE_FAILED', traceId: 'trace_fail_01' },
+      },
+      {
+        title: 'Order Service: Transition to STOCK_FAILED',
+        description: 'Updates order status to STOCK_FAILED as a terminal state.',
+        type: 'database',
+        details: {
+          table: 'orders',
+          action: 'UPDATE',
+          changes: {
+            status: 'STOCK_FAILED',
+            rejectReason: 'Insufficient stock',
+          },
         },
       },
     ],
   },
   paymentFailure: {
-    name: 'Payment Failure Scenario',
+    name: 'Compensation: Payment Failure Rollback',
     steps: [
       {
-        title: 'Frontend initiates checkout',
-        description: 'User clicks "Place Order", sending a request to the API Gateway.',
+        title: 'Stock Successfully Reserved',
+        description: 'Saga has progressed to PAYMENT_PENDING.',
         type: 'code',
+        details: { status: 'PAYMENT_PENDING', stock: 'RESERVED' },
+      },
+      {
+        title: 'Payment Service: Stripe Declined',
+        description: 'External payment provider rejects the transaction.',
+        type: 'error',
         details: {
-          request: {
-            method: 'POST',
-            path: '/orders',
-            payload: {
-              items: [{ sku: 'SKU-1', qty: 2 }],
-              userId: 'user-123',
-            },
-          },
+          stripeError: 'card_declined',
+          reason: 'insufficient_funds',
         },
       },
       {
-        title: 'API Gateway processes request',
-        description: 'Authenticates user, attaches correlation ID, and forwards to Order Service.',
-        type: 'code',
+        title: 'Payment Service: Publish Failure',
+        description: 'Publishes PAYMENT_FAILED event.',
+        type: 'event',
         details: {
-          processed: {
-            jwtVerified: true,
-            correlationId: 'ord_92A1',
-          },
+          eventType: 'PAYMENT_FAILED',
+          payload: { orderId: 'ord_FAIL_02', reason: 'PAYMENT_DECLINED' },
         },
       },
       {
-        title: 'Order Service: Reserve Stock (RPC)',
-        description: 'Synchronously calls Catalog Service via RabbitMQ RPC to reserve stock using a pessimistic lock.',
-        type: 'code',
-        details: {
-          rpcCall: {
-            service: 'Catalog',
-            action: 'reserve_stock',
-            payload: {
-              items: [{ sku: 'SKU-1', qty: 2 }],
-            },
-            result: 'SUCCESS',
-          },
-        },
-      },
-      {
-        title: 'Order Service: Transaction begins',
-        description: 'Starts a database transaction for order creation and outbox entry.',
-        type: 'database',
-        details: {
-          sqlTransaction: 'BEGIN;',
-        },
-      },
-      {
-        title: 'Order Service: Create Order',
-        description: 'Inserts a new order record into the `orders` table.',
+        title: 'Order Service: Trigger Compensation',
+        description: 'Consumes PAYMENT_FAILED and initiates rollback by cancelling the order.',
         type: 'database',
         details: {
           table: 'orders',
-          action: 'INSERT',
-          record: {
-            id: 'ord_92A1',
-            userId: 'user-123',
-            status: 'PENDING',
-            total: 149.00,
-            createdAt: '2026-05-19T10:00:00Z',
-          },
+          status: 'CANCELLED',
+          outbox: 'ORDER_CANCELLED',
         },
       },
       {
-        title: 'Order Service: Add Outbox Event',
-        description: 'Inserts an `ORDER_CREATED` event into the `outbox_events` table.',
+        title: 'Catalog Service: Compensating Action',
+        description: 'Consumes ORDER_CANCELLED and releases the previously reserved stock.',
         type: 'database',
         details: {
-          table: 'outbox_events',
-          action: 'INSERT',
-          record: {
-            id: 'evt_1',
-            aggregateType: 'Order',
-            aggregateId: 'ord_92A1',
-            eventType: 'ORDER_CREATED',
-            payload: {
-              orderId: 'ord_92A1',
-              items: [{ sku: 'SKU-1', qty: 2 }],
-              total: 149.00,
-            },
-            processed: false,
-            createdAt: '2026-05-19T10:00:01Z',
-          },
-        },
-      },
-      {
-        title: 'Order Service: Commit Transaction',
-        description: 'Commits the database transaction, making order and outbox entry visible.',
-        type: 'database',
-        details: {
-          sqlTransaction: 'COMMIT;',
-        },
-      },
-      {
-        title: 'Outbox Relayer: Poll for events',
-        description: 'Dedicated process polls `outbox_events` for unprocessed events.',
-        type: 'code',
-        details: {
-          query: 'SELECT * FROM outbox_events WHERE processed = false LIMIT 10;',
-        },
-      },
-      {
-        title: 'Outbox Relayer: Publish ORDER_CREATED event',
-        description: 'Publishes `ORDER_CREATED` to RabbitMQ and marks it as processed.',
-        type: 'event',
-        details: {
-          broker: 'RabbitMQ',
-          exchange: 'orders.topic',
-          routingKey: 'order.created',
-          payload: {
-            event: 'ORDER_CREATED',
-            correlationId: 'ord_92A1',
-            orderId: 'ord_92A1',
-            items: [{ sku: 'SKU-1', qty: 2 }],
-            total: 149.00,
-          },
-        },
-      },
-      {
-        title: 'Payment Service: Consume ORDER_CREATED',
-        description: 'Payment Service consumes the `ORDER_CREATED` event from RabbitMQ.',
-        type: 'event',
-        details: {
-          broker: 'RabbitMQ',
-          queue: 'payment.order.created',
-          payload: {
-            event: 'ORDER_CREATED',
-            correlationId: 'ord_92A1',
-            orderId: 'ord_92A1',
-            items: [{ sku: 'SKU-1', qty: 2 }],
-            total: 149.00,
-          },
-        },
-      },
-      {
-        title: 'Payment Service: Process Idempotency Key',
-        description: 'Checks `processed_messages` table to prevent duplicate processing.',
-        type: 'database',
-        details: {
-          table: 'processed_messages',
-          action: 'SELECT',
-          query: "SELECT * FROM processed_messages WHERE message_id = 'evt_1';",
-          result: 'No existing record, proceed.',
-        },
-      },
-      {
-        title: 'Payment Service: Initiate payment with Stripe (Failure)',
-        description: 'Attempts to call external Stripe API, but it fails.',
-        type: 'error',
-        details: {
-          externalCall: {
-            service: 'Stripe',
-            method: 'POST',
-            endpoint: '/charges',
-            payload: {
-              amount: 14900,
-              currency: 'usd',
-              orderId: 'ord_92A1',
-            },
-          },
-          error: {
-            type: 'StripeError',
-            message: 'Payment declined: insufficient funds.',
-            statusCode: 402,
-          },
-        },
-      },
-      {
-        title: 'Payment Service: Publish PAYMENT_FAILED',
-        description: 'Emits `PAYMENT_FAILED` event to RabbitMQ via its own outbox.',
-        type: 'event',
-        details: {
-          broker: 'RabbitMQ',
-          exchange: 'payments.topic',
-          routingKey: 'payment.failed',
-          payload: {
-            event: 'PAYMENT_FAILED',
-            correlationId: 'ord_92A1',
-            orderId: 'ord_92A1',
-            reason: 'Insufficient funds',
-          },
-        },
-      },
-      {
-        title: 'Order Service: Consume PAYMENT_FAILED',
-        description: 'Order Service consumes the `PAYMENT_FAILED` event.',
-        type: 'event',
-        details: {
-          broker: 'RabbitMQ',
-          queue: 'order.payment.failed',
-          payload: {
-            event: 'PAYMENT_FAILED',
-            correlationId: 'ord_92A1',
-            orderId: 'ord_92A1',
-            reason: 'Insufficient funds',
-          },
-        },
-      },
-      {
-        title: 'Order Service: Initiate Saga Rollback',
-        description: 'Updates order status to `CANCELLED` and potentially triggers compensating actions.',
-        type: 'database',
-        details: {
-          table: 'orders',
-          action: 'UPDATE',
-          recordId: 'ord_92A1',
-          changes: {
-            status: 'CANCELLED',
-            reason: 'Payment failed',
-          },
-        },
-      },
-      {
-        title: 'Transaction Rollback Completed',
-        description: 'The distributed transaction for the order has been rolled back.',
-        type: 'error',
-        details: {
-          status: 'ROLLED_BACK',
-          message: 'Order cancelled due to payment failure.',
+          action: 'RELEASE_STOCK',
+          items: [{ productId: 'prod_A', quantity: 2 }],
+          logic: 'UPDATE products SET stock = stock + 2 WHERE id = "prod_A"',
         },
       },
     ],

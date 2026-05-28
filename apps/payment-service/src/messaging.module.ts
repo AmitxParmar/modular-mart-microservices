@@ -28,6 +28,8 @@ import { ConfigService, ConfigModule } from '@nestjs/config';
             queue: 'catalog_orders_queue',
             queueOptions: {
               durable: true,
+              deadLetterExchange: 'dlx_exchange',
+              deadLetterRoutingKey: 'dlq_catalog_orders_queue',
             },
           },
         }),

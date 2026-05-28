@@ -5,7 +5,7 @@ import {
   RequestMethod,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
+import { PinoLogger } from 'nestjs-pino';
 import {
   createProxyMiddleware,
   Options,
@@ -37,9 +37,10 @@ const SERVICE_ROUTES: ServiceRouteConfig[] = [
 export class ProxyModule implements NestModule {
   constructor(
     private readonly configService: ConfigService,
-    @InjectPinoLogger(ProxyModule.name)
     private readonly logger: PinoLogger,
-  ) {}
+  ) {
+    this.logger.setContext(ProxyModule.name);
+  }
 
   configure(consumer: MiddlewareConsumer): void {
     SERVICE_ROUTES.forEach(({ pathPrefix, configKey }) => {

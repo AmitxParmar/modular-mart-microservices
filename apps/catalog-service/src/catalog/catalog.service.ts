@@ -1,16 +1,16 @@
-import { Injectable, NotFoundException, Inject } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { Product } from './entities/product.entity';
 import { Category } from './entities/category.entity';
 import { ProcessedMessage } from './entities/processed-message.entity';
 import { ClientProxy, RmqRecordBuilder } from '@nestjs/microservices';
-import { InjectPinoLogger, PinoLogger } from '@repo/common';
+import { PinoLogger } from 'nestjs-pino';
 import { EVENT_PATTERNS } from '@repo/contracts';
 import { randomUUID } from 'crypto';
 
 @Injectable()
-export class CatalogService {
+export class CatalogService implements OnModuleInit {
   constructor(
     @InjectRepository(Product)
     private readonly productRepo: Repository<Product>,
@@ -18,11 +18,15 @@ export class CatalogService {
     private readonly categoryRepo: Repository<Category>,
     @InjectRepository(ProcessedMessage)
     private readonly processedRepo: Repository<ProcessedMessage>,
-    @InjectPinoLogger(CatalogService.name)
     private readonly logger: PinoLogger,
     @Inject('RABBITMQ_SERVICE')
     private readonly rabbitClient: ClientProxy,
   ) {}
+
+  onModuleInit() {
+    this.logger.setContext(CatalogService.name);
+  }
+
 
   async getProducts(filters: {
     categoryId?: string;
@@ -103,8 +107,21 @@ export class CatalogService {
   }
 
   async createProduct(data: Partial<Product>) {
+    // Generate slug from name if not provided
+    if (data.name && !data.slug) {
+      data.slug = data.name.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '') + '-' + Math.random().toString(36).substring(2, 7);
+    }
+    
     const product = this.productRepo.create(data);
     return await this.productRepo.save(product);
+  }
+
+  async getSellerProducts(sellerId: string) {
+    return this.productRepo.find({
+      where: { sellerId },
+      relations: ['category'],
+      order: { createdAt: 'DESC' },
+    });
   }
 
   async countActiveProducts() {

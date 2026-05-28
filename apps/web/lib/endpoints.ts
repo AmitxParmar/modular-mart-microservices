@@ -13,6 +13,7 @@ export const ENDPOINTS = {
   PRODUCTS: '/catalog/products',
   PRODUCT: (slug: string) => `/catalog/products/${slug}`,
   CATEGORIES: '/catalog/categories',
+  SELLER_PRODUCTS: '/catalog/seller/products',
   
   // Admin Product Management
   ADMIN_PRODUCTS: '/catalog/admin/products',
@@ -26,6 +27,7 @@ export const ENDPOINTS = {
   USER_ORDERS: '/orders', // Note: This matches the GET /orders in the service
   ORDER_TRACKING: (id: string) => `/orders/${id}/tracking`,
   SELLER_ORDERS: '/orders/seller',
+  SELLER_STATS: '/orders/seller/stats',
   SELLER_ORDER_STATUS: (id: string) => `/orders/seller/${id}/status`,
 
   // Admin Platform Management

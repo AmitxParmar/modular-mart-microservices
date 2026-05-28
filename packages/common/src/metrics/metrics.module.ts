@@ -4,7 +4,6 @@ import { collectDefaultMetrics } from 'prom-client';
 
 @Module({
   controllers: [MetricsController],
-  exports: [MetricsController],
 })
 export class MetricsModule implements OnModuleInit {
   onModuleInit() {

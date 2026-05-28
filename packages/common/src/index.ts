@@ -16,7 +16,6 @@ export { HealthModule } from "./health/health.module";
 
 // Logger
 export * from "./logger";
-export { PinoLogger, InjectPinoLogger } from "nestjs-pino";
 
 // Messaging
 export { RabbitMQMessageHandler } from "./messaging";

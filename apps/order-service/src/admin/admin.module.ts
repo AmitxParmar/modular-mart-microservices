@@ -19,7 +19,11 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
           options: {
             urls: [configService.get<string>('RABBITMQ_URL') || 'amqp://localhost:5672'],
             queue: 'catalog_queue',
-            queueOptions: { durable: true },
+            queueOptions: {
+              durable: true,
+              deadLetterExchange: 'dlx_exchange',
+              deadLetterRoutingKey: 'dlq_catalog_queue',
+            },
           },
         }),
       },

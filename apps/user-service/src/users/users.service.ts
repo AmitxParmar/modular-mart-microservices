@@ -4,7 +4,7 @@ import { Repository, DataSource } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { User } from './entities/user.entity';
 import { Role } from './entities/role.entity';
-import { InjectPinoLogger, PinoLogger } from '@repo/common';
+import { PinoLogger } from 'nestjs-pino';
 import {
   createClerkClient,
   type ClerkClient,
@@ -16,7 +16,7 @@ export class UsersService {
   private readonly clerkClient: ClerkClient;
 
   constructor(
-    @InjectPinoLogger(UsersService.name) private readonly logger: PinoLogger,
+    private readonly logger: PinoLogger,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     @InjectRepository(Role)
@@ -24,6 +24,7 @@ export class UsersService {
     private readonly dataSource: DataSource,
     private readonly configService: ConfigService,
   ) {
+    this.logger.setContext(UsersService.name);
     this.clerkClient = createClerkClient({
       secretKey: this.configService.get<string>('CLERK_SECRET_KEY'),
     });

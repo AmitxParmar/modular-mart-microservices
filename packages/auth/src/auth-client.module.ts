@@ -52,6 +52,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
             queue: 'auth_queue',
             queueOptions: {
               durable: true,
+              deadLetterExchange: 'dlx_exchange',
+              deadLetterRoutingKey: 'dlq_auth_queue',
             },
           },
         }),

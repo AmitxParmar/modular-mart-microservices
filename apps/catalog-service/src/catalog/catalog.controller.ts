@@ -125,8 +125,17 @@ export class CatalogController {
     @CurrentUser() user: ClerkUser,
     @Body() productData: Partial<Product>,
   ) {
-    // In a real scenario, we would attach user.internalId as seller_id here
-    return this.catalogService.createProduct(productData);
+    return this.catalogService.createProduct({
+      ...productData,
+      sellerId: user.userId,
+    });
+  }
+
+  @Get('seller/products')
+  @Roles('SELLER')
+  @UseGuards(ClerkAuthGuard, RolesGuard)
+  async getSellerProducts(@CurrentUser() user: ClerkUser) {
+    return this.catalogService.getSellerProducts(user.userId);
   }
 
   @Get('admin/products')
