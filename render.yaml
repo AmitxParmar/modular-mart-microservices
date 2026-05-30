@@ -21,11 +21,15 @@ services:
     runtime: docker
     dockerContext: .
     dockerfilePath: apps/api-gateway/Dockerfile
-    rootDir: apps/api-gateway
     plan: free
     region: singapore
     autoDeployTrigger: commit
     healthCheckPath: /health/live
+    buildFilter:
+      paths:
+        - apps/api-gateway/**
+        - packages/**
+        - pnpm-lock.yaml
     envVars:
       - fromGroup: shared-infra
       - key: PORT
@@ -57,11 +61,15 @@ services:
     runtime: docker
     dockerContext: .
     dockerfilePath: apps/user-service/Dockerfile
-    rootDir: apps/user-service
     plan: free
     region: singapore
     autoDeployTrigger: commit
     healthCheckPath: /health/live
+    buildFilter:
+      paths:
+        - apps/user-service/**
+        - packages/**
+        - pnpm-lock.yaml
     envVars:
       - fromGroup: shared-infra
       - key: PORT
@@ -77,11 +85,15 @@ services:
     runtime: docker
     dockerContext: .
     dockerfilePath: apps/catalog-service/Dockerfile
-    rootDir: apps/catalog-service
     plan: free
     region: singapore
     autoDeployTrigger: commit
     healthCheckPath: /health/live
+    buildFilter:
+      paths:
+        - apps/catalog-service/**
+        - packages/**
+        - pnpm-lock.yaml
     envVars:
       - fromGroup: shared-infra
       - key: PORT
@@ -95,11 +107,15 @@ services:
     runtime: docker
     dockerContext: .
     dockerfilePath: apps/order-service/Dockerfile
-    rootDir: apps/order-service
     plan: free
     region: singapore
     autoDeployTrigger: commit
     healthCheckPath: /health/live
+    buildFilter:
+      paths:
+        - apps/order-service/**
+        - packages/**
+        - pnpm-lock.yaml
     envVars:
       - fromGroup: shared-infra
       - key: PORT
@@ -113,11 +129,15 @@ services:
     runtime: docker
     dockerContext: .
     dockerfilePath: apps/payment-service/Dockerfile
-    rootDir: apps/payment-service
     plan: free
     region: singapore
     autoDeployTrigger: commit
     healthCheckPath: /health/live
+    buildFilter:
+      paths:
+        - apps/payment-service/**
+        - packages/**
+        - pnpm-lock.yaml
     envVars:
       - fromGroup: shared-infra
       - key: PORT
