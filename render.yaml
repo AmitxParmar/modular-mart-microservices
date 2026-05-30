@@ -1,3 +1,6 @@
+previews:
+  generation: automatic # Enable preview environments for PRs
+
 envVarGroups:
   - name: shared-infra
     envVars:
@@ -7,9 +10,9 @@ envVarGroups:
         value: info
       - key: RABBITMQ_URL
         sync: false
-      - key: CLERK_PUBLISHABLE_KEY   # ADD
+      - key: CLERK_PUBLISHABLE_KEY
         sync: false
-      - key: CLERK_SECRET_KEY        # ADD (shared across services)
+      - key: CLERK_SECRET_KEY
         sync: false
       - key: SENTRY_DSN
         sync: false
@@ -18,123 +21,115 @@ services:
   # API Gateway
   - type: web
     name: api-gateway
-    env: docker
+    runtime: docker
     dockerContext: .
     dockerfilePath: apps/api-gateway/Dockerfile
+    rootDir: apps/api-gateway
     plan: free
-    region: ohio
+    region: singapore
+    autoDeployTrigger: commit
     healthCheckPath: /health/live
     envVars:
       - fromGroup: shared-infra
       - key: PORT
         value: 3000
       - key: ALLOWED_ORIGINS
-        sync: false # Set to your Vercel production URL
+        sync: false
       - key: RATE_LIMIT_TTL
         value: "60000"
       - key: RATE_LIMIT_MAX
         value: "100"
       - key: USER_SERVICE_URL
-        fromService:
-          name: user-service
-          type: web
-          property: host
+        value: http://user-service:3000
       - key: PRODUCT_SERVICE_URL
-        fromService:
-          name: catalog-service
-          type: web
-          property: host
+        value: http://catalog-service:3000
+      - key: CATALOG_SERVICE_URL
+        value: http://catalog-service:3000
       - key: ORDER_SERVICE_URL
-        fromService:
-          name: order-service
-          type: web
-          property: host
+        value: http://order-service:3000
       - key: PAYMENT_SERVICE_URL
-        fromService:
-          name: payment-service
-          type: web
-          property: host
+        value: http://payment-service:3000
       - key: CART_SERVICE_URL
-        fromService:
-          name: order-service
-          type: web
-          property: host
-      - key: CLERK_PUBLISHABLE_KEY
-        fromGroup: shared-infra
-      - key: CLERK_SECRET_KEY
-        fromGroup: shared-infra
+        value: http://catalog-service:3000
       - key: CLERK_WEBHOOK_SECRET
-        sync: false    
+        sync: false
+
+  # User Service
+  - type: web
+    name: user-service
+    runtime: docker
+    dockerContext: .
+    dockerfilePath: apps/user-service/Dockerfile
+    rootDir: apps/user-service
+    plan: free
+    region: singapore
+    autoDeployTrigger: commit
+    healthCheckPath: /health/live
+    envVars:
+      - fromGroup: shared-infra
+      - key: PORT
+        value: 3000
+      - key: DATABASE_URL
+        sync: false
+      - key: CLERK_WEBHOOK_SECRET
+        sync: false
+
+  # Catalog Service
+  - type: web
+    name: catalog-service
+    runtime: docker
+    dockerContext: .
+    dockerfilePath: apps/catalog-service/Dockerfile
+    rootDir: apps/catalog-service
+    plan: free
+    region: singapore
+    autoDeployTrigger: commit
+    healthCheckPath: /health/live
+    envVars:
+      - fromGroup: shared-infra
+      - key: PORT
+        value: 3000
+      - key: DATABASE_URL
+        sync: false
 
   # Order Service
   - type: web
     name: order-service
-    env: docker
+    runtime: docker
     dockerContext: .
     dockerfilePath: apps/order-service/Dockerfile
+    rootDir: apps/order-service
     plan: free
-    region: ohio
+    region: singapore
+    autoDeployTrigger: commit
     healthCheckPath: /health/live
     envVars:
       - fromGroup: shared-infra
       - key: PORT
         value: 3000
       - key: DATABASE_URL
-        sync: false 
-        
-  # Catalog Service
-  - type: web
-    name: catalog-service
-    env: docker
-    dockerContext: .
-    dockerfilePath: apps/catalog-service/Dockerfile
-    plan: free
-    region: ohio
-    healthCheckPath: /health/live
-    envVars:
-      - fromGroup: shared-infra
-      - key: PORT
-        value: 3000
-      - key: DATABASE_URL
-        sync: false 
+        sync: false
 
   # Payment Service
   - type: web
     name: payment-service
-    env: docker
+    runtime: docker
     dockerContext: .
     dockerfilePath: apps/payment-service/Dockerfile
+    rootDir: apps/payment-service
     plan: free
-    region: ohio
+    region: singapore
+    autoDeployTrigger: commit
     healthCheckPath: /health/live
     envVars:
       - fromGroup: shared-infra
       - key: PORT
         value: 3000
       - key: DATABASE_URL
-        sync: false 
+        sync: false
       - key: STRIPE_SECRET_KEY
         sync: false
       - key: STRIPE_WEBHOOK_SECRET
         sync: false
-    
-  # User Service
-  - type: web
-    name: user-service
-    env: docker
-    dockerContext: .
-    dockerfilePath: apps/user-service/Dockerfile
-    plan: free
-    region: ohio
-    healthCheckPath: /health/live
-    envVars:
-      - fromGroup: shared-infra
-      - key: PORT
-        value: 3000
-      - key: DATABASE_URL
-        sync: false 
 
-      - key: CLERK_SECRET_KEY
-        sync: false
-      - key: CLERK_WEBHOOK_SECRET
-        sync: false
+
