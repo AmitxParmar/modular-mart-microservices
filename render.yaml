@@ -1,6 +1,3 @@
-previews:
-  generation: automatic # Enable preview environments for PRs
-
 envVarGroups:
   - name: shared-infra
     envVars:
