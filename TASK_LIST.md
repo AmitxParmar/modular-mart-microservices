@@ -26,10 +26,12 @@ This document tracks the tasks for transitioning to a production-grade, event-dr
 - [ ] **Transactional Outbox Pattern**: Insert order states and outbox events in a single transaction to guarantee event delivery.
 - [ ] **Retry Policies & DLQs**: Set up dead-letter exchanges and queues in RabbitMQ to handle transient errors gracefully.
 - [ ] **Distributed Tracing**: Standardize payloads to carry `correlationId`, `traceId`, and `causationId` for easy debugging.
+- [ ] **Security**: Do some research about microservices security.
 
 ---
 
 ### 📢 Phase 4: Operations & Integrations
+- [ ] **Redeploy to Render**: Update `render.yaml` with new service configurations and trigger a fresh deployment.
 - [ ] **Notification Service**: Build a lightweight email dispatch service consuming order/payment success events.
 - [ ] **API Gateway Circuit Breakers**: Protect API Gateway routes with circuit breakers to fail-fast under heavy loads.
 - [ ] **Inventory Service Extraction**: Decouple inventory/stock management from the general catalog (optional DDD portfolio expansion).

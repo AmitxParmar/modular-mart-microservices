@@ -7,21 +7,18 @@ import { UsersModule } from './users/users.module';
 import { ConfigModule } from './config/config.module';
 import { AuthClientModule } from '@repo/auth';
 import {
+  AppLoggingModule,
   HealthModule,
   MetricsModule,
   SentryModule,
   HttpExceptionFilter,
   CorrelationMiddleware,
-  createLoggerConfig,
 } from '@repo/common';
-import { LoggerModule } from 'nestjs-pino';
 
 @Module({
   imports: [
     ConfigModule,
-    LoggerModule.forRootAsync({
-      useFactory: () => createLoggerConfig('user-service'),
-    }),
+    AppLoggingModule.forRoot('user-service'),
     DatabaseModule.forRoot(),
     AuthClientModule,
     UsersModule,

@@ -1,6 +1,7 @@
 import { Injectable, NestMiddleware } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 import { randomUUID } from 'crypto';
+import { correlationStorage } from '../logger/correlation-id.store';
 
 /**
  * Correlation ID middleware.
@@ -19,6 +20,16 @@ export class CorrelationMiddleware implements NestMiddleware {
 
     req.headers['x-request-id'] = correlationId;
     res.setHeader('x-request-id', correlationId);
-    next();
+
+    if ((req as any).log) {
+      (req as any).log.info(`Incoming request: ${req.method} ${req.url}`);
+    } else {
+      console.log(`[CorrelationMiddleware] Incoming request: ${req.method} ${req.url}`);
+    }
+
+    // Provide the correlationId to the async local storage for both HTTP and Logger usage
+    correlationStorage.run(new Map([['correlationId', correlationId]]), () => {
+      next();
+    });
   }
 }

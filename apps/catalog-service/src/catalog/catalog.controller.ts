@@ -69,23 +69,23 @@ export class CatalogController {
     await this.catalogService.releaseStockWithEvent(data.items, data.orderId, messageId, EVENT_PATTERNS.PAYMENT_FAILED);
   }
 
-  @RabbitMQMessageHandler('products.count')
+  @MessagePattern('products.count')
   async getProductsCount() {
     return this.catalogService.countActiveProducts();
   }
 
-  @RabbitMQMessageHandler('products.stats')
+  @MessagePattern('products.stats')
   async getCategoryStats() {
     return this.catalogService.getCategoryStats();
   }
 
-  @RabbitMQMessageHandler('products.get_batch')
-  async getProductsBatch(productIds: string[]) {
+  @MessagePattern('products.get_batch')
+  async getProductsBatch(@Payload() productIds: string[]) {
     return this.catalogService.getProductsBatch(productIds);
   }
 
-  @RabbitMQMessageHandler('products.reserve_stock')
-  async reserveStock(items: { productId: string; quantity: number }[]) {
+  @MessagePattern('products.reserve_stock')
+  async reserveStock(@Payload() items: { productId: string; quantity: number }[]) {
     return this.catalogService.reserveStock(items);
   }
 
@@ -100,11 +100,11 @@ export class CatalogController {
   ) {
     return this.catalogService.getProducts({
       categoryId,
-      minPrice: minPrice && !isNaN(parseFloat(minPrice)) ? parseFloat(minPrice) : undefined,
-      maxPrice: maxPrice && !isNaN(parseFloat(maxPrice)) ? parseFloat(maxPrice) : undefined,
+      minPrice: minPrice && !Number.isNaN(Number.parseFloat(minPrice)) ? Number.parseFloat(minPrice) : undefined,
+      maxPrice: maxPrice && !Number.isNaN(Number.parseFloat(maxPrice)) ? Number.parseFloat(maxPrice) : undefined,
       search,
       cursor,
-      limit: limit && !isNaN(parseInt(limit, 10)) ? parseInt(limit, 10) : undefined,
+      limit: limit && !Number.isNaN(Number.parseInt(limit, 10)) ? Number.parseInt(limit, 10) : undefined,
     });
   }
 

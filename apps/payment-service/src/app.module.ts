@@ -3,14 +3,13 @@ import { APP_FILTER } from '@nestjs/core';
 import { DatabaseModule } from '@repo/database';
 import { ConfigModule } from './config/config.module';
 import {
+  AppLoggingModule,
   HealthModule,
   MetricsModule,
   SentryModule,
   HttpExceptionFilter,
   CorrelationMiddleware,
-  createLoggerConfig,
 } from '@repo/common';
-import { LoggerModule } from 'nestjs-pino';
 import { PaymentsModule } from './payments/payments.module';
 import { MessagingModule } from './messaging.module';
 
@@ -18,9 +17,7 @@ import { MessagingModule } from './messaging.module';
   imports: [
     ConfigModule,
     MessagingModule,
-    LoggerModule.forRootAsync({
-      useFactory: () => createLoggerConfig('payment-service'),
-    }),
+    AppLoggingModule.forRoot('payment-service'),
     DatabaseModule.forRoot(),
     PaymentsModule,
     HealthModule,

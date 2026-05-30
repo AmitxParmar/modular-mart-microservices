@@ -1,3 +1,5 @@
+import { err as pinoErrSerializer } from 'pino-std-serializers';
+
 /**
  * Standardized serializers for Pino.
  */
@@ -24,11 +26,7 @@ export const serializers = {
 
   /**
    * Error serializer.
-   * Ensures errors are consistently formatted.
+   * Ensures errors are consistently formatted using pino's robust standard serializer.
    */
-  err: (err: any) => ({
-    type: err.constructor.name,
-    message: err.message,
-    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
-  }),
+  err: pinoErrSerializer,
 };

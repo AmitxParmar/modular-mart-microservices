@@ -1,18 +1,17 @@
-import { Controller, Get, HttpCode, HttpStatus } from '@nestjs/common';
-import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
+import { Controller, Get, HttpCode, HttpStatus, Logger } from '@nestjs/common';
 
 /**
  * Health controller exposing two separate endpoints required for
  * Kubernetes (and Docker Swarm with health-check configs):
-...
-...
+ *
+ *  - liveness: checks if the application is running
+ *  - readiness: checks if the application is ready to accept traffic
  */
 @Controller('health')
 export class HealthController {
-  constructor(
-    @InjectPinoLogger(HealthController.name)
-    private readonly logger: PinoLogger,
-  ) {}
+  private readonly logger = new Logger(HealthController.name);
+
+  constructor() {}
 
   @Get('live')
   @HttpCode(HttpStatus.OK)
@@ -26,7 +25,7 @@ export class HealthController {
   @Get('ready')
   @HttpCode(HttpStatus.OK)
   readiness(): { status: string; timestamp: string; service: string } {
-    this.logger.info('Readiness check received');
+    this.logger.log('Readiness check received');
     // In future: add checks for DB connections, message queues, etc.
     return {
       status: 'ok',

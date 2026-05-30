@@ -1,11 +1,11 @@
 import {
+  Logger,
   MiddlewareConsumer,
   Module,
   NestModule,
   RequestMethod,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { PinoLogger } from 'nestjs-pino';
 import {
   createProxyMiddleware,
   Options,
@@ -35,12 +35,11 @@ const SERVICE_ROUTES: ServiceRouteConfig[] = [
 
 @Module({})
 export class ProxyModule implements NestModule {
+  private readonly logger = new Logger(ProxyModule.name);
+
   constructor(
     private readonly configService: ConfigService,
-    private readonly logger: PinoLogger,
-  ) {
-    this.logger.setContext(ProxyModule.name);
-  }
+  ) {}
 
   configure(consumer: MiddlewareConsumer): void {
     SERVICE_ROUTES.forEach(({ pathPrefix, configKey }) => {
@@ -48,8 +47,7 @@ export class ProxyModule implements NestModule {
 
       if (!targetUrl) {
         this.logger.warn(
-          { configKey, pathPrefix },
-          `No target URL configured for "${configKey}". Skipping route.`,
+          `No target URL configured for "${configKey}" (prefix: ${pathPrefix}). Skipping route.`,
         );
         return;
       }
@@ -62,16 +60,14 @@ export class ProxyModule implements NestModule {
         on: {
           error: (err: Error, req: Request, res: Response) => {
             const correlationId = req.headers['x-request-id'];
+            const requestPayload = (req as any).body;
             this.logger.error(
-              {
-                method: req.method,
-                url: req.url,
-                target: targetUrl,
-                correlationId,
-                err,
-              },
-              `Proxy error → ${targetUrl}`,
+              `Proxy error → ${targetUrl} | Method: ${req.method} | URL: ${req.url} | Correlation ID: ${correlationId} | Error: ${err.message}`,
+              err.stack,
             );
+            if (requestPayload && Object.keys(requestPayload).length > 0) {
+              this.logger.error(`Request payload for failed proxy call: ${JSON.stringify(requestPayload)}`);
+            }
             if (!res.headersSent) {
               res.status(502).json({
                 statusCode: 502,
@@ -95,13 +91,7 @@ export class ProxyModule implements NestModule {
             fixRequestBody(proxyReq, req);
 
             this.logger.debug(
-              {
-                method: req.method,
-                url: req.url,
-                target: targetUrl,
-                correlationId,
-              },
-              `Proxying request`,
+              `Proxying request | Method: ${req.method} | URL: ${req.url} | Target: ${targetUrl} | Correlation ID: ${correlationId}`,
             );
           },
         },
@@ -112,8 +102,7 @@ export class ProxyModule implements NestModule {
         method: RequestMethod.ALL,
       });
 
-      this.logger.info(
-        { pathPrefix, target: targetUrl },
+      this.logger.log(
         `Route registered: "${pathPrefix}/*" → ${targetUrl}`,
       );
     });

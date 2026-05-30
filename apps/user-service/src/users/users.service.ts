@@ -4,7 +4,7 @@ import { Repository, DataSource } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { User } from './entities/user.entity';
 import { Role } from './entities/role.entity';
-import { PinoLogger } from 'nestjs-pino';
+import { PinoLogger } from '@repo/common';
 import {
   createClerkClient,
   type ClerkClient,
@@ -37,6 +37,13 @@ export class UsersService {
     });
   }
 
+  async findAll(): Promise<User[]> {
+    return this.userRepository.find({
+      relations: ['roles'],
+      order: { createdAt: 'DESC' },
+    });
+  }
+
   async countAll(): Promise<number> {
     return this.userRepository.count();
   }
@@ -50,41 +57,99 @@ export class UsersService {
   async syncClerkUser(clerkId: string): Promise<User> {
     try {
       const clerkUserFull = await this.clerkClient.users.getUser(clerkId);
-      return await this.syncUserFromClerk(clerkUserFull);
+      const email = clerkUserFull.emailAddresses?.[0]?.emailAddress;
+      if (!email) {
+        throw new Error('User sync failed: missing email');
+      }
+      return await this.syncUser({
+        id: clerkUserFull.id,
+        email,
+        firstName: clerkUserFull.firstName ?? '',
+        lastName: clerkUserFull.lastName ?? '',
+      });
     } catch (error) {
-      this.logger.error(`Failed to fetch user ${clerkId} from Clerk for JIT sync: ${error.message}`);
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Failed to fetch user ${clerkId} from Clerk for JIT sync: ${message}`);
       throw error;
     }
   }
 
-  async syncUserFromClerk(payload: UserJSON | any): Promise<User> {
+  async syncUserFromClerk(payload: UserJSON): Promise<User> {
+    const email = payload.email_addresses?.[0]?.email_address;
+    if (!email) {
+      throw new Error('User sync failed: missing email');
+    }
+    return this.syncUser({
+      id: payload.id,
+      email,
+      firstName: payload.first_name ?? '',
+      lastName: payload.last_name ?? '',
+    });
+  }
+
+  private async syncClerkMetadata(clerkId: string, user: User): Promise<void> {
+    try {
+      this.logger.info(`[SYNC] Pushing internalId ${user.id} back to Clerk for user ${clerkId}`);
+      await this.clerkClient.users.updateUserMetadata(clerkId, {
+        publicMetadata: {
+          internalId: user.id,
+          roles: user.roles?.map((r) => r.name) || ['CUSTOMER'],
+        },
+      });
+      this.logger.info(`[SYNC] Clerk metadata sync complete for ${clerkId}`);
+    } catch (clerkError) {
+      const clerkMessage = clerkError instanceof Error ? clerkError.message : String(clerkError);
+      this.logger.error(`[SYNC] Failed to update Clerk metadata: ${clerkMessage}`);
+    }
+  }
+
+  private async createNewUser(
+    clerkId: string,
+    email: string,
+    firstName: string,
+    lastName: string,
+  ): Promise<User> {
+    this.logger.info(`[SYNC] Creating entirely new user record for ${email}.`);
+    const user = this.userRepository.create({
+      clerkId,
+      email,
+      firstName,
+      lastName,
+    });
+
+    const customerRole = await this.roleRepository.findOne({
+      where: { name: 'CUSTOMER' },
+    });
+    if (customerRole) {
+      this.logger.debug(`[SYNC] Assigning default CUSTOMER role.`);
+      user.roles = [customerRole];
+    } else {
+      this.logger.error(`[SYNC] CUSTOMER role NOT FOUND in database! User will be created without roles.`);
+    }
+
+    const savedUser = await this.userRepository.save(user);
+    this.logger.info(`[SYNC] Successfully created user record ${savedUser.id}`);
+    return savedUser;
+  }
+
+  private async syncUser(payload: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+  }): Promise<User> {
     const payloadId = payload.id;
-    this.logger.info(`[SYNC] syncUserFromClerk started for Clerk ID: ${payloadId}`);
-    this.logger.debug(`[SYNC] Payload keys: ${Object.keys(payload).join(', ')}`);
-    
-    // Robust extraction for email
-    let email = payload.email;
-    if (!email && payload.email_addresses?.length > 0) {
-      email = payload.email_addresses[0].email_address;
-    }
-    if (!email && payload.emailAddresses?.length > 0) {
-      email = payload.emailAddresses[0].emailAddress;
-    }
+    const email = payload.email;
+    const firstName = payload.firstName;
+    const lastName = payload.lastName;
 
-    if (!payloadId || !email) {
-      this.logger.error(`[SYNC] Critical data missing. ID: ${payloadId}, Email: ${email}`);
-      throw new Error(`User sync failed: missing critical data (ID or Email)`);
-    }
-
+    this.logger.info(`[SYNC] syncUser started for Clerk ID: ${payloadId}`);
     this.logger.info(`[SYNC] Processing user: ${email} (Clerk: ${payloadId})`);
 
     let user = await this.userRepository.findOne({
       where: { clerkId: payloadId },
       relations: ['roles'],
     });
-
-    const firstName = payload.first_name || payload.firstName || '';
-    const lastName = payload.last_name || payload.lastName || '';
 
     try {
       if (user) {
@@ -108,55 +173,25 @@ export class UsersService {
           existingEmail.lastName = lastName || existingEmail.lastName;
           user = await this.userRepository.save(existingEmail);
         } else {
-          this.logger.info(`[SYNC] Creating entirely new user record for ${email}.`);
-          user = this.userRepository.create({
-            clerkId: payloadId,
-            email,
-            firstName,
-            lastName,
-          });
-
-          const customerRole = await this.roleRepository.findOne({
-            where: { name: 'CUSTOMER' },
-          });
-          if (customerRole) {
-            this.logger.debug(`[SYNC] Assigning default CUSTOMER role.`);
-            user.roles = [customerRole];
-          } else {
-            this.logger.error(`[SYNC] CUSTOMER role NOT FOUND in database! User will be created without roles.`);
-          }
-
-          user = await this.userRepository.save(user);
-          this.logger.info(`[SYNC] Successfully created user record ${user.id}`);
+          user = await this.createNewUser(payloadId, email, firstName, lastName);
         }
       }
 
       // Re-verify the save
       const verifyUser = await this.userRepository.findOne({ where: { id: user.id } });
-      if (!verifyUser) {
-        this.logger.error(`[SYNC] CRITICAL: User ${user.id} was 'saved' but cannot be found in DB immediately after!`);
-      } else {
+      if (verifyUser) {
         this.logger.debug(`[SYNC] Save verified. Internal ID: ${user.id}`);
+      } else {
+        this.logger.error(`[SYNC] CRITICAL: User ${user.id} was 'saved' but cannot be found in DB immediately after!`);
       }
 
       // Sync internal ID back to Clerk Metadata
-      try {
-        this.logger.info(`[SYNC] Pushing internalId ${user.id} back to Clerk for user ${payloadId}`);
-        await this.clerkClient.users.updateUserMetadata(payloadId, {
-          publicMetadata: {
-            internalId: user.id,
-            roles: user.roles?.map((r) => r.name) || ['CUSTOMER'],
-          },
-        });
-        this.logger.info(`[SYNC] Clerk metadata sync complete for ${payloadId}`);
-      } catch (clerkError) {
-        this.logger.error(`[SYNC] Failed to update Clerk metadata: ${clerkError.message}`);
-        // We don't throw here because the DB record is already saved
-      }
+      await this.syncClerkMetadata(payloadId, user);
 
       return user;
     } catch (dbError) {
-      this.logger.error(`[SYNC] Database operation failed: ${dbError.message}`);
+      const dbMessage = dbError instanceof Error ? dbError.message : String(dbError);
+      this.logger.error(`[SYNC] Database operation failed: ${dbMessage}`);
       throw dbError;
     }
   }

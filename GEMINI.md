@@ -1,3 +1,44 @@
+# Project: E-Commerce Microservices
+
+A modern e-commerce platform built with a microservices architecture.
+
+## Tech Stack
+- **Monorepo Management:** [Turborepo](https://turbo.build/) with [pnpm](https://pnpm.io/) workspaces.
+- **Backend:** [NestJS](https://nestjs.com/) (TypeScript).
+- **Frontend:** [Next.js](https://nextjs.org/) (TypeScript).
+- **Database:** PostgreSQL with [TypeORM](https://typeorm.io/).
+- **Observability:** Grafana, Prometheus, Loki.
+- **Deployment:** [Render](https://render.com/).
+
+## Architecture & Services
+### Apps (`/apps`)
+- **api-gateway:** The entry point for all client requests, handling routing and authentication.
+- **web:** The main consumer-facing Next.js application.
+    - **Feature-Based Architecture:** Uses a modular `/features` directory. Each feature (e.g., `products`, `auth`, `cart`) should follow this structure:
+        - `api/`: TanStack Query hooks (queries and mutations).
+        - `components/`: Feature-specific UI components.
+        - `services/`: Business logic and API client calls.
+        - `utils/`: Helper functions specific to the feature.
+        - `types.ts`: Feature-specific TypeScript definitions.
+- **user-service:** Manages user profiles, authentication, and authorization.
+- **catalog-service:** Handles product catalog, categories, and inventory.
+- **order-service:** Manages order placement, processing, and history.
+- **payment-service:** Integrates with payment providers and tracks transactions.
+- **docs:** Internal documentation site.
+
+### Shared Packages (`/packages`)
+- **auth:** Shared authentication logic and guards.
+- **common:** Utility functions, constants, and shared types.
+- **contracts:** API definitions and DTOs shared between services.
+- **database:** TypeORM entities and database connection logic.
+- **ui:** Shared React components for the frontend.
+- **eslint-config / typescript-config:** Standardized linting and TS configurations.
+
+## Reference Documentation
+- **PRDs & Design:** See the `/prd` directory for detailed requirements, system design, and API specs.
+
+---
+
 ## graphify
 
 This project has a graphify knowledge graph at graphify-out/.

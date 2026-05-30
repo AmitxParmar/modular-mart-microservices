@@ -1,7 +1,7 @@
 import './tracing';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { Logger } from 'nestjs-pino';
+import { Logger, HttpExceptionFilter } from '@repo/common';
 import helmet from 'helmet';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { Transport, MicroserviceOptions } from '@nestjs/microservices';
@@ -15,6 +15,9 @@ async function bootstrap() {
 
   // Use Pino Logger globally
   app.useLogger(app.get(Logger));
+
+  // Global Exception Filter
+  app.useGlobalFilters(new HttpExceptionFilter());
 
   // Security HTTP Headers
   app.use(helmet());

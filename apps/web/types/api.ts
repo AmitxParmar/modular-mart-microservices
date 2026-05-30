@@ -154,12 +154,20 @@ export interface ServiceHealthLog {
   createdAt: string;
 }
 
+export interface Role {
+  id: string;
+  name: UserRole;
+  description: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface UserManagementItem {
   id: string;
   email: string;
   firstName: string | null;
   lastName: string | null;
-  roles: UserRole[];
+  roles: Role[];
   createdAt: string;
 }
 

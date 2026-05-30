@@ -4,14 +4,13 @@ import { DatabaseModule } from '@repo/database';
 import { ConfigModule } from './config/config.module';
 import { AuthClientModule } from '@repo/auth';
 import {
+  AppLoggingModule,
   HealthModule,
   MetricsModule,
   SentryModule,
   HttpExceptionFilter,
   CorrelationMiddleware,
-  createLoggerConfig,
 } from '@repo/common';
-import { LoggerModule } from 'nestjs-pino';
 import { CatalogModule } from './catalog/catalog.module';
 import { MessagingModule } from './messaging.module';
 
@@ -19,9 +18,7 @@ import { MessagingModule } from './messaging.module';
   imports: [
     ConfigModule,
     AuthClientModule,
-    LoggerModule.forRootAsync({
-      useFactory: () => createLoggerConfig('catalog-service'),
-    }),
+    AppLoggingModule.forRoot('catalog-service'),
     DatabaseModule.forRoot(),
     MessagingModule,
     CatalogModule,

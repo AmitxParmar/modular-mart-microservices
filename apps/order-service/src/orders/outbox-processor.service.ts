@@ -4,7 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { OutboxEvent } from './entities/outbox-event.entity';
 import { ClientProxy, RmqRecordBuilder } from '@nestjs/microservices';
-import { PinoLogger } from 'nestjs-pino';
+import { PinoLogger } from '@repo/common';
 import { EVENT_PATTERNS } from '@repo/contracts';
 
 @Injectable()

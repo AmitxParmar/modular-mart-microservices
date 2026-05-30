@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
-import { PinoLogger } from 'nestjs-pino';
+import { PinoLogger } from '@repo/common';
 import { Order } from './entities/order.entity';
 import { OrderItem } from './entities/order-item.entity';
 import { OrderStatusHistory } from './entities/order-status-history.entity';
@@ -267,6 +267,29 @@ export class OrdersService {
     });
 
     return { ...order, history };
+  }
+
+  async countAll(): Promise<number> {
+    return this.orderRepo.count().catch(() => 0);
+  }
+
+  async getTimeline() {
+    return this.orderRepo
+      .createQueryBuilder('order')
+      .select("DATE_TRUNC('day', order.created_at)", 'date')
+      .addSelect('COUNT(order.id)', 'count')
+      .addSelect('SUM(order.total_amount)', 'amount')
+      .groupBy("DATE_TRUNC('day', order.created_at)")
+      .orderBy("DATE_TRUNC('day', order.created_at)", 'ASC')
+      .getRawMany()
+      .then((rows) =>
+        rows.map((r) => ({
+          date: r.date,
+          count: Number(r.count ?? 0),
+          amount: Number(r.amount ?? 0),
+        })),
+      )
+      .catch(() => []);
   }
 
   async updateOrderStatus(

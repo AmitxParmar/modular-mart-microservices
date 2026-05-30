@@ -7,8 +7,8 @@ import {
   UseGuards,
   Patch,
 } from '@nestjs/common';
-import { EventPattern, Payload, Ctx, RmqContext } from '@nestjs/microservices';
-import { PinoLogger } from 'nestjs-pino';
+import { Payload, Ctx, RmqContext, MessagePattern } from '@nestjs/microservices';
+import { PinoLogger } from '@repo/common';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import {
@@ -74,6 +74,16 @@ export class OrdersController {
       `Received PAYMENT_FAILED RMQ event for Order ${data.orderId} (messageId: ${messageId})`,
     );
     await this.ordersService.handlePaymentFailed(data.orderId, data.reason, messageId);
+  }
+
+  @MessagePattern('orders.count')
+  async countOrders() {
+    return this.ordersService.countAll();
+  }
+
+  @MessagePattern('orders.timeline')
+  async getOrdersTimeline() {
+    return this.ordersService.getTimeline();
   }
 
   @Post()

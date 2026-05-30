@@ -2,6 +2,7 @@ import { Params } from 'nestjs-pino';
 import { SENSITIVE_FIELDS, REDACTION_LABEL, HEALTH_CHECK_PATH } from './logger.constants';
 import { serializers } from './logger.utils';
 import { genReqId, traceUtils } from './trace.utils';
+import { getCorrelationId } from './correlation-id.store';
 
 /**
  * Creates a consistent nestjs-pino LoggerModule config for all services.
@@ -50,6 +51,7 @@ export function createLoggerConfig(serviceName: string): Params {
         env: process.env.NODE_ENV,
         version: process.env.npm_package_version,
         requestId: req.id,
+        correlationId: getCorrelationId() !== 'unknown' ? getCorrelationId() : req.id,
         ...traceUtils.getTraceContext(),
       }),
 

@@ -5,9 +5,9 @@ import { Product } from './entities/product.entity';
 import { Category } from './entities/category.entity';
 import { ProcessedMessage } from './entities/processed-message.entity';
 import { ClientProxy, RmqRecordBuilder } from '@nestjs/microservices';
-import { PinoLogger } from 'nestjs-pino';
+import { PinoLogger } from '@repo/common';
 import { EVENT_PATTERNS } from '@repo/contracts';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 
 @Injectable()
 export class CatalogService implements OnModuleInit {
@@ -109,7 +109,7 @@ export class CatalogService implements OnModuleInit {
   async createProduct(data: Partial<Product>) {
     // Generate slug from name if not provided
     if (data.name && !data.slug) {
-      data.slug = data.name.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '') + '-' + Math.random().toString(36).substring(2, 7);
+      data.slug = data.name.toLowerCase().replaceAll(' ', '-').replace(/[^\w-]+/g, '') + '-' + Math.random().toString(36).substring(2, 7);
     }
     
     const product = this.productRepo.create(data);

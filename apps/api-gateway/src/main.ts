@@ -1,8 +1,8 @@
 import './tracing';
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, Logger as NestLogger } from '@nestjs/common';
+import { Logger } from '@repo/common';
 import { ConfigService } from '@nestjs/config';
-import { Logger } from 'nestjs-pino';
 import helmet from 'helmet';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
@@ -55,11 +55,11 @@ async function bootstrap(): Promise<void> {
     }),
   );
 
+  const logger = new NestLogger('Bootstrap');
+
   // ─── Start server ──────────────────────────────────────────────────────
   await app.listen(port);
-  app
-    .get(Logger)
-    .log(`🚀 API Gateway running on port ${port} [${nodeEnv}]`, 'Bootstrap');
+  logger.log(`🚀 API Gateway running on port ${port} [${nodeEnv}]`);
 
   // ─── Graceful Shutdown ─────────────────────────────────────────────────
   // Lets in-flight requests complete before exit.
@@ -67,9 +67,7 @@ async function bootstrap(): Promise<void> {
   app.enableShutdownHooks();
 
   const shutdown = async (signal: string): Promise<void> => {
-    app
-      .get(Logger)
-      .log(`Received ${signal}. Shutting down gracefully…`, 'Bootstrap');
+    logger.log(`Received ${signal}. Shutting down gracefully…`);
     await app.close();
     process.exit(0);
   };

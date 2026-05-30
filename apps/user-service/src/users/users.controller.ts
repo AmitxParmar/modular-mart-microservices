@@ -14,11 +14,11 @@ import { MessagePattern, Payload } from '@nestjs/microservices';
 import { UsersService } from './users.service';
 import { Webhook } from 'svix';
 import { ConfigService } from '@nestjs/config';
-import { CurrentUser, ClerkAuthGuard } from '@repo/auth';
+import { CurrentUser, ClerkAuthGuard, Roles, RolesGuard } from '@repo/auth';
 import { EVENT_PATTERNS } from '@repo/contracts';
 import type { GetUserRolePayload, GetUserRoleResponse, GetUserIdPayload, GetUserIdResponse } from '@repo/contracts';
 import type { ClerkUser } from '@repo/auth';
-import { PinoLogger } from 'nestjs-pino';
+import { PinoLogger } from '@repo/common';
 import { RabbitMQMessageHandler } from '../common/rabbitmq-message-handler.decorator';
 
 import type { WebhookEvent } from '@clerk/backend';
@@ -33,7 +33,7 @@ export class UsersController {
     this.logger.setContext(UsersController.name);
   }
 
-  @RabbitMQMessageHandler(EVENT_PATTERNS.GET_USER_ROLE)
+  @MessagePattern(EVENT_PATTERNS.GET_USER_ROLE)
   async getUserRole(
     @Payload() data: GetUserRolePayload,
   ): Promise<GetUserRoleResponse> {
@@ -41,7 +41,7 @@ export class UsersController {
     return this.usersService.getUserRoles(data.userId);
   }
 
-  @RabbitMQMessageHandler(EVENT_PATTERNS.GET_USER_ID)
+  @MessagePattern({ cmd: EVENT_PATTERNS.GET_USER_ID })
   async getUserId(
     @Payload() data: GetUserIdPayload,
   ): Promise<GetUserIdResponse> {
@@ -64,7 +64,7 @@ export class UsersController {
     return { internalId: user?.id || null };
   }
 
-  @RabbitMQMessageHandler('users.count')
+  @MessagePattern('users.count')
   async countUsers(): Promise<number> {
     return this.usersService.countAll();
   }
@@ -90,6 +90,13 @@ export class UsersController {
     }
     
     return user;
+  }
+
+  @Get('admin/users')
+  @Roles('ADMIN')
+  @UseGuards(ClerkAuthGuard, RolesGuard)
+  async getAllUsers() {
+    return this.usersService.findAll();
   }
 
   @Get('addresses/:id')

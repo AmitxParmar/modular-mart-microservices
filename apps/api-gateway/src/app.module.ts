@@ -1,13 +1,12 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
-import { LoggerModule } from 'nestjs-pino';
 import {
-  createLoggerConfig,
   CorrelationMiddleware,
   HttpExceptionFilter,
   HealthModule,
   MetricsModule,
   SentryModule,
+  AppLoggingModule,
 } from '@repo/common';
 
 import { ConfigModule } from './config/config.module';
@@ -18,28 +17,23 @@ import { ProxyModule } from './proxy/proxy.module';
  * Root application module.
  *
  * Import order reflects the dependency graph:
- *  1. ConfigModule  - must be first; others depend on ConfigService
- *  2. LoggerModule  - structured HTTP request logging via nestjs-pino
+ *  1. ConfigModule    - must be first; others depend on ConfigService
+ *  2. AppLoggingModule - structured HTTP request logging via nestjs-pino (from @repo/common)
  *  3. RateLimitModule - global rate-limit guard
- *  4. HealthModule  - /health endpoint (not proxied)
- *  5. ProxyModule   - reverse proxy to all downstream microservices (last,
- *                     so middleware is applied after all other middleware)
+ *  4. HealthModule    - /health endpoint (not proxied)
+ *  5. ProxyModule     - reverse proxy to all downstream microservices (last,
+ *                       so middleware is applied after all other middleware)
  */
 @Module({
   imports: [
     ConfigModule,
-
-    // Structured JSON logging for every HTTP request.
-    // Centrally managed in @repo/common/logger
-    LoggerModule.forRootAsync({
-      useFactory: () => createLoggerConfig('api-gateway'),
-    }),
-
+    AppLoggingModule.forRoot('api-gateway'),
     RateLimitModule,
     HealthModule,
     MetricsModule,
     SentryModule,
     ProxyModule,
+
   ],
   providers: [
     {

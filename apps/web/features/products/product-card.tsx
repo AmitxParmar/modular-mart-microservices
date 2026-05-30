@@ -8,7 +8,7 @@ interface ProductCardProps {
   onAddToCart?: (product: Product) => void;
 }
 
-function StockBadge({ qty }: { qty: number }) {
+function StockBadge({ qty }: Readonly<{ qty: number }>) {
   if (qty === 0) {
     return (
       <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-destructive/10 text-destructive rounded-full">
@@ -26,7 +26,7 @@ function StockBadge({ qty }: { qty: number }) {
   return null;
 }
 
-export function ProductCard({ product, onAddToCart }: ProductCardProps) {
+export function ProductCard({ product, onAddToCart }: Readonly<ProductCardProps>) {
   const inStock = product.stockQuantity > 0;
   const { addItem } = useCart();
 

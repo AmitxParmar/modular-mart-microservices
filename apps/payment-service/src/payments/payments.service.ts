@@ -5,7 +5,7 @@ import { Repository } from 'typeorm';
 import { ClientProxy } from '@nestjs/microservices';
 import { EVENT_PATTERNS, PaymentSucceededEvent, PaymentFailedEvent } from '@repo/contracts';
 import { Payment, PaymentStatus } from './entities/payment.entity';
-import { PinoLogger } from 'nestjs-pino';
+import { PinoLogger } from '@repo/common';
 import Stripe from 'stripe';
 
 type StripeInstance = InstanceType<typeof Stripe>;

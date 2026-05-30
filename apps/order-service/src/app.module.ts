@@ -6,17 +6,15 @@ import { DatabaseModule } from '@repo/database';
 import { ConfigModule } from './config/config.module';
 import { AuthClientModule } from '@repo/auth';
 import {
+  AppLoggingModule,
   HealthModule,
   MetricsModule,
   SentryModule,
   HttpExceptionFilter,
   CorrelationMiddleware,
-  createLoggerConfig,
 } from '@repo/common';
-import { LoggerModule } from 'nestjs-pino';
 // TypeOrmModule removed — no standalone forFeature registrations needed at root
 import { OrdersModule } from './orders/orders.module';
-import { AdminModule } from './admin/admin.module';
 import { MessagingModule } from './messaging.module';
 import { ScheduleModule } from '@nestjs/schedule';
 
@@ -26,12 +24,9 @@ import { ScheduleModule } from '@nestjs/schedule';
     AuthClientModule,
     MessagingModule,
     ScheduleModule.forRoot(),
-    LoggerModule.forRootAsync({
-      useFactory: () => createLoggerConfig('order-service'),
-    }),
+    AppLoggingModule.forRoot('order-service'),
     DatabaseModule.forRoot(),
     OrdersModule,
-    AdminModule,
     HealthModule,
     MetricsModule,
     SentryModule,

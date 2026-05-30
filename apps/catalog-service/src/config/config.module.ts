@@ -7,6 +7,7 @@ import { validateEnv } from './env.schema';
     NestConfigModule.forRoot({
       validate: validateEnv,
       isGlobal: true,
+      envFilePath: ['.env', 'apps/catalog-service/.env'],
     }),
   ],
 })
