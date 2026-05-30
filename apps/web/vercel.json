@@ -1,5 +1,6 @@
 {
   "framework": "nextjs",
-  "buildCommand": "pnpm turbo run build --filter=web",
-  "ignoreCommand": "pnpm turbo-ignore"
+  "installCommand": "cd ../.. && pnpm install --frozen-lockfile",
+  "buildCommand": "cd ../.. && pnpm turbo run build --filter=web",
+  "ignoreCommand": "npx turbo-ignore web --fallback=HEAD^1"
 }
