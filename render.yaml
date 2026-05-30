@@ -5,18 +5,19 @@ envVarGroups:
         value: production
       - key: LOG_LEVEL
         value: info
+      # SHARED SECRETS: Paste these once in Render Dashboard -> Env Groups
       - key: RABBITMQ_URL
-        sync: false
+        value: "REPLACE_ME"
       - key: CLERK_PUBLISHABLE_KEY
-        sync: false
+        value: "REPLACE_ME"
       - key: CLERK_SECRET_KEY
-        sync: false
+        value: "REPLACE_ME"
       - key: SENTRY_DSN
-        sync: false
+        value: "REPLACE_ME"
       - key: STRIPE_SECRET_KEY
-        sync: false
+        value: "REPLACE_ME"
       - key: STRIPE_WEBHOOK_SECRET
-        sync: false
+        value: "REPLACE_ME"
 
 services:
   # API Gateway
