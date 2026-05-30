@@ -13,6 +13,10 @@ envVarGroups:
         sync: false
       - key: SENTRY_DSN
         sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
 
 services:
   # API Gateway
@@ -122,6 +126,8 @@ services:
         value: 3000
       - key: DATABASE_URL
         sync: false
+      - key: USER_SERVICE_URL
+        value: http://user-service:3000
 
   # Payment Service
   - type: web
@@ -144,9 +150,8 @@ services:
         value: 3000
       - key: DATABASE_URL
         sync: false
-      - key: STRIPE_SECRET_KEY
-        sync: false
-      - key: STRIPE_WEBHOOK_SECRET
-        sync: false
+      - key: ORDER_SERVICE_URL
+        value: http://order-service:3000
+
 
 
