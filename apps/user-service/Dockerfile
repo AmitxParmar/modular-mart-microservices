@@ -21,8 +21,8 @@ RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
 COPY --from=pruner /app/out/json/ .
 COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 
-# Install dependencies utilizing BuildKit cache mount
-RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store pnpm install --frozen-lockfile
+# Install dependencies
+RUN pnpm install
 
 # Copy source code and build
 COPY --from=pruner /app/out/full/ .
@@ -40,8 +40,9 @@ RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
 COPY --chown=node:node --from=pruner /app/out/json/ .
 COPY --chown=node:node --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 
-# Install ONLY production dependencies utilizing BuildKit cache mount
-RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store pnpm install --frozen-lockfile --prod
+# Install ONLY production dependencies
+RUN pnpm install --prod
+
 
 # Copy compiled output from builder with chown
 COPY --chown=node:node --from=builder /app/apps/user-service/dist ./apps/user-service/dist
