@@ -40,13 +40,17 @@
   },
   "mcpServers": {
     "code-review-graph": {
-      "command": "C:\\Users\\AmitxParmar\\AppData\\Local\\Microsoft\\WindowsApps\\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\\python.exe",
+      "command": "code-review-graph",
       "args": [
-        "-m",
-        "code_review_graph",
         "serve"
       ],
       "cwd": "C:\\projects\\e-commerce-microservices"
+    },
+    "render": {
+      "httpUrl": "https://mcp.render.com/mcp",
+      "headers": {
+        "Authorization": "Bearer ${RENDER_MCP_TOKEN}"
+      }
     }
   }
 }
