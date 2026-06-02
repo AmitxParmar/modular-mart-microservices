@@ -7,6 +7,8 @@ import { NotificationChannel } from './entities/notification-channel.entity';
 import { ProcessedMessage } from './entities/processed-message.entity';
 import { NotificationTemplate } from './entities/notification-template.entity';
 import { NotificationPreference } from './entities/notification-preference.entity';
+import { TemplateService } from './template.service';
+import { PreferenceService } from './preference.service';
 
 /**
  * Notifications Module.
@@ -24,7 +26,15 @@ import { NotificationPreference } from './entities/notification-preference.entit
     ]),
   ],
   controllers: [NotificationsController],
-  providers: [NotificationsService],
-  exports: [NotificationsService], // Export so other modules can send notifications
+  providers: [
+    NotificationsService,
+    TemplateService,
+    PreferenceService,
+  ],
+  exports: [
+    NotificationsService,
+    TemplateService,
+    PreferenceService,
+  ], // Export services for use in other modules (e.g., event consumers)
 })
 export class NotificationsModule {}
