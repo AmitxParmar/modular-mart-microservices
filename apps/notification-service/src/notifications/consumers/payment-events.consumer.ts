@@ -1,7 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { EventPattern, Payload, Ctx, RmqContext } from '@nestjs/microservices';
+import { PinoLogger } from '@repo/common';
 import { NotificationsService } from '../notifications.service';
 import { ProcessedMessage } from '../entities/processed-message.entity';
 import { NotificationType } from '../enums/notification-type.enum';
@@ -10,29 +11,25 @@ import { EVENT_PATTERNS } from '@repo/contracts';
 
 /**
  * Consumer for Payment-related events from RabbitMQ.
- * Handles events like PAYMENT_SUCCEEDED and PAYMENT_FAILED.
  */
 @Injectable()
 export class PaymentEventsConsumer {
-  private readonly logger = new Logger(PaymentEventsConsumer.name);
-
   constructor(
     private readonly notificationsService: NotificationsService,
     @InjectRepository(ProcessedMessage)
     private readonly processedMessageRepository: Repository<ProcessedMessage>,
-  ) {}
+    private readonly logger: PinoLogger,
+  ) {
+    this.logger.setContext(PaymentEventsConsumer.name);
+  }
 
-  /**
-   * Listens for PAYMENT_SUCCEEDED events.
-   * Priority: HIGH
-   */
   @EventPattern(EVENT_PATTERNS.PAYMENT_SUCCEEDED)
   async handlePaymentSucceeded(
-    @Payload() data: any, // Use interface from contracts if available
+    @Payload() data: any,
     @Ctx() context: RmqContext,
   ) {
     const messageId = context.getMessage().properties.messageId;
-    this.logger.log(`💰 Received PAYMENT_SUCCEEDED event for user ${data.userId}`);
+    this.logger.info(`💰 Received PAYMENT_SUCCEEDED event for user ${data.userId}`);
 
     if (await this.isAlreadyProcessed(messageId)) return;
 
@@ -51,17 +48,13 @@ export class PaymentEventsConsumer {
     await this.markAsProcessed(messageId, EVENT_PATTERNS.PAYMENT_SUCCEEDED);
   }
 
-  /**
-   * Listens for PAYMENT_FAILED events.
-   * Priority: CRITICAL
-   */
   @EventPattern(EVENT_PATTERNS.PAYMENT_FAILED)
   async handlePaymentFailed(
     @Payload() data: any,
     @Ctx() context: RmqContext,
   ) {
     const messageId = context.getMessage().properties.messageId;
-    this.logger.log(`❌ Received PAYMENT_FAILED event for user ${data.userId}`);
+    this.logger.info(`❌ Received PAYMENT_FAILED event for user ${data.userId}`);
 
     if (await this.isAlreadyProcessed(messageId)) return;
 

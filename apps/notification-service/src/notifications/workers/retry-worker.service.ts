@@ -1,7 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, LessThan } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { PinoLogger } from '@repo/common';
 import { NotificationChannel } from '../entities/notification-channel.entity';
 import { ChannelStatus } from '../enums/channel-status.enum';
 
@@ -11,7 +12,6 @@ import { ChannelStatus } from '../enums/channel-status.enum';
  */
 @Injectable()
 export class RetryWorkerService {
-  private readonly logger = new Logger(RetryWorkerService.name);
   private isProcessing = false;
 
   // Retry delays in minutes: [1 min, 5 min, 30 min]
@@ -20,7 +20,10 @@ export class RetryWorkerService {
   constructor(
     @InjectRepository(NotificationChannel)
     private readonly channelRepository: Repository<NotificationChannel>,
-  ) {}
+    private readonly logger: PinoLogger,
+  ) {
+    this.logger.setContext(RetryWorkerService.name);
+  }
 
   /**
    * Periodic task that runs every minute to check for notifications needing a retry.
@@ -53,14 +56,14 @@ export class RetryWorkerService {
 
     if (failedChannels.length === 0) return;
 
-    this.logger.log(`🔄 Checking ${failedChannels.length} failed channels for retry feasibility`);
+    this.logger.info(`🔄 Checking ${failedChannels.length} failed channels for retry feasibility`);
 
     for (const channel of failedChannels) {
       // 2. Check if we should retry based on exponential backoff
       const shouldRetry = this.checkRetryEligibility(channel);
 
       if (shouldRetry) {
-        this.logger.log(`🔁 Scheduling retry #${channel.retryCount + 1} for ${channel.id}`);
+        this.logger.info(`🔁 Scheduling retry #${channel.retryCount + 1} for ${channel.id}`);
         
         // Update status back to PENDING so the Delivery Worker picks it up again
         channel.status = ChannelStatus.PENDING;
@@ -88,8 +91,7 @@ export class RetryWorkerService {
     const now = new Date().getTime();
     
     // Get delay in milliseconds for the current retry attempt
-    // Using index based on current retryCount
-    const delayMinutes = this.retryDelays[channel.retryCount] || 60; // Default to 60 min if out of bounds
+    const delayMinutes = this.retryDelays[channel.retryCount] || 60;
     const delayMs = delayMinutes * 60 * 1000;
 
     return (now - lastAttempt) >= delayMs;

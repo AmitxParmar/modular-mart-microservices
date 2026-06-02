@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { PinoLogger } from '@repo/common';
+import { Counter } from 'prom-client';
 import { Notification } from './entities/notification.entity';
 import { NotificationChannel } from './entities/notification-channel.entity';
 import { CreateNotificationDto } from './dto/create-notification.dto';
@@ -10,6 +12,14 @@ import { PreferenceService } from './preference.service';
 import { TemplateService } from './template.service';
 import { NotificationChannelType } from './enums/notification-channel.enum';
 import { ChannelStatus } from './enums/channel-status.enum';
+
+// ─── Custom Metrics ──────────────────────────────────────────────────────────
+// Track total notifications created, segmented by type and priority
+const notificationsCreatedTotal = new Counter({
+  name: 'notifications_created_total',
+  help: 'Total number of notifications created',
+  labelNames: ['type', 'priority'],
+});
 
 /**
  * Core service for handling notification lifecycle.
@@ -24,7 +34,11 @@ export class NotificationsService {
     private channelRepository: Repository<NotificationChannel>,
     private preferenceService: PreferenceService,
     private templateService: TemplateService,
-  ) {}
+    private readonly logger: PinoLogger,
+  ) {
+    // Set the context for structured logging
+    this.logger.setContext(NotificationsService.name);
+  }
 
   /**
    * Admin: Retrieves all notifications across all users with filtering.
@@ -82,15 +96,16 @@ export class NotificationsService {
 
   /**
    * Creates a new notification and its associated delivery channels.
-...
+   * Filters channels based on user preferences unless overridden.
    * 
    * @param dto Data required to create a notification
    */
   async createNotification(dto: CreateNotificationDto): Promise<Notification> {
     const { userId, type, priority, subject, content, metadata, scheduledAt, channels: overrideChannels } = dto;
 
+    this.logger.info(`Creating notification: ${type} for user ${userId}`);
+
     // 1. Determine which channels to use
-    // If overrideChannels is provided, use them. Otherwise, default to [EMAIL, IN_APP].
     const targetChannels = overrideChannels || [NotificationChannelType.EMAIL, NotificationChannelType.IN_APP];
 
     // 2. Filter channels based on user preferences
@@ -126,18 +141,17 @@ export class NotificationsService {
 
     await this.channelRepository.save(channelEntities);
     
-    // Return the notification with its channels
+    // 5. Increment creation metric
+    notificationsCreatedTotal.inc({ type, priority });
+
+    this.logger.info(`Notification ${savedNotification.id} created with ${channelEntities.length} channels`);
+    
     savedNotification.channels = channelEntities;
     return savedNotification;
   }
 
   /**
    * Retrieves a paginated list of notifications for a user.
-   * 
-   * @param userId The ID of the user
-   * @param page Current page number
-   * @param limit Number of items per page
-   * @param unreadOnly Filter by unread status
    */
   async getUserNotifications(
     userId: string,
@@ -147,7 +161,6 @@ export class NotificationsService {
   ): Promise<NotificationListDto> {
     const skip = (page - 1) * limit;
 
-    // 1. Build the query
     const queryBuilder = this.notificationRepository.createQueryBuilder('notification')
       .leftJoinAndSelect('notification.channels', 'channels')
       .where('notification.userId = :userId', { userId })
@@ -159,17 +172,14 @@ export class NotificationsService {
       queryBuilder.andWhere('notification.isRead = :isRead', { isRead: false });
     }
 
-    // 2. Execute query and count
     const [items, total] = await queryBuilder.getManyAndCount();
 
-    // 3. Get total unread count for the badge
     const unreadCount = await this.notificationRepository.count({
       where: { userId, isRead: false },
     });
 
     const totalPages = Math.ceil(total / limit);
 
-    // 4. Transform to DTO response
     return {
       items: items.map(this.mapToResponseDto),
       total,
@@ -207,6 +217,8 @@ export class NotificationsService {
     notification.readAt = new Date();
     const updated = await this.notificationRepository.save(notification);
 
+    this.logger.debug(`Notification ${id} marked as read by user ${userId}`);
+
     return this.mapToResponseDto(updated);
   }
 
@@ -218,6 +230,8 @@ export class NotificationsService {
       { userId, isRead: false },
       { isRead: true, readAt: new Date() },
     );
+    
+    this.logger.info(`All notifications marked as read for user ${userId}`);
     return { success: true };
   }
 

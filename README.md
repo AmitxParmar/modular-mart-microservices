@@ -32,6 +32,7 @@ graph TB
         CatalogSvc[Catalog Service]
         OrderSvc[Order Service]
         PaymentSvc[Payment Service]
+        NotifSvc[Notification Service]
     end
 
     subgraph Data_Layer [Isolated Data Layer]
@@ -39,6 +40,7 @@ graph TB
         CatalogDB[(Catalog PostgreSQL)]
         OrderDB[(Order PostgreSQL)]
         PaymentDB[(Payment PostgreSQL)]
+        NotifDB[(Notification PostgreSQL)]
     end
 
     subgraph Messaging [Event-Driven Choreography]
@@ -59,15 +61,19 @@ graph TB
     Gateway --> CatalogSvc
     Gateway --> OrderSvc
     Gateway --> PaymentSvc
+    Gateway --> NotifSvc
 
     UserSvc --> UserDB
     CatalogSvc --> CatalogDB
     OrderSvc --> OrderDB
     PaymentSvc --> PaymentDB
+    NotifSvc --> NotifDB
 
     OrderSvc -- Events --> RMQ
     CatalogSvc -- Events --> RMQ
     PaymentSvc -- Events --> RMQ
+    UserSvc -- Events --> RMQ
+    RMQ -- Consume --> NotifSvc
     
     Logic_Layer -.-> Loki
     Logic_Layer -.-> Prom

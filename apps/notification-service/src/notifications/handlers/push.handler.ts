@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { PinoLogger } from '@repo/common';
 import { INotificationHandler } from './notification-handler.interface';
 import { Notification } from '../entities/notification.entity';
 import { NotificationChannel } from '../entities/notification-channel.entity';
@@ -7,22 +8,23 @@ import { TemplateService } from '../template.service';
 
 /**
  * Mock handler for sending Push Notifications.
- * In a production system, this would integrate with Firebase (FCM), Expo, etc.
  */
 @Injectable()
 export class PushHandler implements INotificationHandler {
-  private readonly logger = new Logger(PushHandler.name);
-
-  constructor(private templateService: TemplateService) {}
+  constructor(
+    private templateService: TemplateService,
+    private readonly logger: PinoLogger,
+  ) {
+    this.logger.setContext(PushHandler.name);
+  }
 
   /**
    * Mock sending a Push Notification.
    */
   async send(notification: Notification, channel: NotificationChannel): Promise<void> {
     try {
-      this.logger.log(`🔔 [MOCK] Sending Push for notification ${notification.id} to user ${notification.userId}`);
+      this.logger.info(`🔔 [MOCK] Sending Push for notification ${notification.id} to user ${notification.userId}`);
 
-      // 1. Render the template for Push
       const { subject, body } = await this.templateService.renderTemplate(
         notification.type,
         NotificationChannelType.PUSH,
@@ -32,22 +34,16 @@ export class PushHandler implements INotificationHandler {
         },
       );
 
-      // 2. Simulate Push Notification delivery
-      this.logger.log(`[PUSH MOCK] Title: ${subject} | Body: ${body}`);
+      this.logger.info(`[PUSH MOCK] Title: ${subject} | Body: ${body}`);
       
-      // Simulate a small network delay
       await new Promise(resolve => setTimeout(resolve, 300));
-
-      this.logger.log(`✅ [MOCK] Push Notification delivered successfully`);
+      this.logger.info(`✅ [MOCK] Push Notification delivered successfully`);
     } catch (error) {
       this.logger.error(`❌ [MOCK] Failed to send Push: ${error.message}`);
       throw error;
     }
   }
 
-  /**
-   * This handler only supports the PUSH channel.
-   */
   supports(channelType: NotificationChannelType): boolean {
     return channelType === NotificationChannelType.PUSH;
   }

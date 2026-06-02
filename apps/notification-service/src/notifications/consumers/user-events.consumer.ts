@@ -1,7 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { EventPattern, Payload, Ctx, RmqContext } from '@nestjs/microservices';
+import { PinoLogger } from '@repo/common';
 import { NotificationsService } from '../notifications.service';
 import { ProcessedMessage } from '../entities/processed-message.entity';
 import { NotificationType } from '../enums/notification-type.enum';
@@ -10,29 +11,25 @@ import { EVENT_PATTERNS, UserCreatedEvent } from '@repo/contracts';
 
 /**
  * Consumer for User-related events from RabbitMQ.
- * Handles events like USER_CREATED (for welcome emails).
  */
 @Injectable()
 export class UserEventsConsumer {
-  private readonly logger = new Logger(UserEventsConsumer.name);
-
   constructor(
     private readonly notificationsService: NotificationsService,
     @InjectRepository(ProcessedMessage)
     private readonly processedMessageRepository: Repository<ProcessedMessage>,
-  ) {}
+    private readonly logger: PinoLogger,
+  ) {
+    this.logger.setContext(UserEventsConsumer.name);
+  }
 
-  /**
-   * Listens for USER_CREATED events.
-   * Priority: BULK
-   */
   @EventPattern(EVENT_PATTERNS.USER_CREATED)
   async handleUserCreated(
     @Payload() data: UserCreatedEvent,
     @Ctx() context: RmqContext,
   ) {
     const messageId = context.getMessage().properties.messageId;
-    this.logger.log(`👤 Received USER_CREATED event for user ${data.userId}`);
+    this.logger.info(`👤 Received USER_CREATED event for user ${data.userId}`);
 
     if (await this.isAlreadyProcessed(messageId)) return;
 

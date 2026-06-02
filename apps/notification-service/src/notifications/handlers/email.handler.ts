@@ -1,6 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
+import { PinoLogger } from '@repo/common';
 import { INotificationHandler } from './notification-handler.interface';
 import { Notification } from '../entities/notification.entity';
 import { NotificationChannel } from '../entities/notification-channel.entity';
@@ -12,18 +13,20 @@ import { TemplateService } from '../template.service';
  */
 @Injectable()
 export class EmailHandler implements INotificationHandler {
-  private readonly logger = new Logger(EmailHandler.name);
   private transporter: nodemailer.Transporter;
 
   constructor(
     private configService: ConfigService,
     private templateService: TemplateService,
+    private readonly logger: PinoLogger,
   ) {
-    // 1. Initialize the Nodemailer transporter using SMTP settings from config
+    this.logger.setContext(EmailHandler.name);
+    
+    // Initialize the Nodemailer transporter
     this.transporter = nodemailer.createTransport({
       host: this.configService.get<string>('SMTP_HOST'),
       port: this.configService.get<number>('SMTP_PORT'),
-      secure: this.configService.get<number>('SMTP_PORT') === 465, // true for 465, false for other ports
+      secure: this.configService.get<number>('SMTP_PORT') === 465,
       auth: {
         user: this.configService.get<string>('SMTP_USER'),
         pass: this.configService.get<string>('SMTP_PASSWORD'),
@@ -36,9 +39,8 @@ export class EmailHandler implements INotificationHandler {
    */
   async send(notification: Notification, channel: NotificationChannel): Promise<void> {
     try {
-      this.logger.log(`📧 Attempting to send Email for notification ${notification.id} to user ${notification.userId}`);
+      this.logger.info(`📧 Attempting to send Email for notification ${notification.id} to user ${notification.userId}`);
 
-      // 1. Render the template for Email
       const { subject, body } = await this.templateService.renderTemplate(
         notification.type,
         NotificationChannelType.EMAIL,
@@ -49,13 +51,9 @@ export class EmailHandler implements INotificationHandler {
         },
       );
 
-      // 2. Prepare the email options
-      // Note: In a real app, we'd fetch the user's email address from User Service
-      // For this demo, we'll use a placeholder if metadata doesn't have it
       const to = notification.metadata?.email || 'user@example.com';
       const from = this.configService.get<string>('SMTP_FROM', 'Modular Mart <noreply@modularmart.com>');
 
-      // 3. Send the email
       await this.transporter.sendMail({
         from,
         to,
@@ -63,10 +61,10 @@ export class EmailHandler implements INotificationHandler {
         html: body,
       });
 
-      this.logger.log(`✅ Email sent successfully to ${to}`);
+      this.logger.info(`✅ Email sent successfully to ${to}`);
     } catch (error) {
       this.logger.error(`❌ Failed to send Email: ${error.message}`, error.stack);
-      throw error; // Re-throw to be handled by the delivery worker (for retries)
+      throw error;
     }
   }
 

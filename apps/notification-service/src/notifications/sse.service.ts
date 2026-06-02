@@ -1,6 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { Subject, Observable, interval, map, merge, filter } from 'rxjs';
+import { Injectable } from '@nestjs/common';
+import { Subject, Observable, interval, map, merge, filter, finalize } from 'rxjs';
 import { MessageEvent } from '@nestjs/common';
+import { PinoLogger } from '@repo/common';
+import { Gauge } from 'prom-client';
 
 /**
  * Event structure for SSE updates.
@@ -11,16 +13,24 @@ export interface NotificationEvent {
   payload?: any;
 }
 
+// ─── Custom Metrics ──────────────────────────────────────────────────────────
+const activeSseConnections = new Gauge({
+  name: 'sse_connections_active',
+  help: 'Total number of active SSE connections',
+});
+
 /**
  * Service to manage Server-Sent Events (SSE) connections.
  * Allows pushing real-time updates to specific users connected via the /stream endpoint.
  */
 @Injectable()
 export class SseService {
-  private readonly logger = new Logger(SseService.name);
-  
   // 1. Central subject to broadcast all internal events
   private readonly eventSubject = new Subject<NotificationEvent>();
+
+  constructor(private readonly logger: PinoLogger) {
+    this.logger.setContext(SseService.name);
+  }
 
   /**
    * Returns an event stream for a specific user.
@@ -28,7 +38,8 @@ export class SseService {
    * @param userId The ID of the user to stream events for
    */
   getEventStream(userId: string): Observable<MessageEvent> {
-    this.logger.log(`🔌 User ${userId} connected to notification stream`);
+    this.logger.info(`🔌 User ${userId} connected to notification stream`);
+    activeSseConnections.inc();
 
     // 2. Filter the central stream for events belonging to this user
     const userEvents = this.eventSubject.asObservable().pipe(
@@ -42,7 +53,6 @@ export class SseService {
     );
 
     // 3. Create a heartbeat interval (30 seconds) to keep the connection alive
-    // This prevents proxies and load balancers from closing "idle" connections.
     const heartbeat = interval(30000).pipe(
       map(() => ({
         data: { type: 'HEARTBEAT' },
@@ -50,7 +60,13 @@ export class SseService {
     );
 
     // 4. Merge heartbeat and user events into a single stream
-    return merge(userEvents, heartbeat);
+    // Use finalize to decrement the gauge when the connection closes
+    return merge(userEvents, heartbeat).pipe(
+      finalize(() => {
+        this.logger.info(`🔌 User ${userId} disconnected from notification stream`);
+        activeSseConnections.dec();
+      })
+    );
   }
 
   /**

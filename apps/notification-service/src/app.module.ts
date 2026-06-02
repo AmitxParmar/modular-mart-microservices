@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -6,6 +6,13 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AppConfigModule } from './config/config.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import {
+  AppLoggingModule,
+  HealthModule,
+  MetricsModule,
+  SentryModule,
+  CorrelationMiddleware,
+} from '@repo/common';
 
 /**
  * The Root Module of the Notification Service.
@@ -16,7 +23,10 @@ import { NotificationsModule } from './notifications/notifications.module';
     // 1. Core configuration and environment validation
     AppConfigModule,
     
-    // 2. Database integration with asynchronous loading
+    // 2. Structured logging (Pino)
+    AppLoggingModule.forRoot('notification-service'),
+    
+    // 3. Database integration with asynchronous loading
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
@@ -28,13 +38,27 @@ import { NotificationsModule } from './notifications/notifications.module';
       }),
     }),
     
-    // 3. Enable scheduled tasks (Crons)
+    // 4. Enable scheduled tasks (Crons)
     ScheduleModule.forRoot(),
     
-    // 4. Domain-specific features
+    // 5. Observability modules
+    HealthModule,
+    MetricsModule,
+    SentryModule,
+    
+    // 6. Domain-specific features
     NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  /**
+   * Configure global middleware.
+   */
+  configure(consumer: MiddlewareConsumer) {
+    // Apply correlation ID middleware to all routes
+    // This ensures every request has a unique ID that propagates across services.
+    consumer.apply(CorrelationMiddleware).forRoutes('*');
+  }
+}

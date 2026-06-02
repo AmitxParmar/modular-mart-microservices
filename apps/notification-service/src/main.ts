@@ -1,7 +1,11 @@
+import './tracing';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger as NestLogger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Transport, MicroserviceOptions } from '@nestjs/microservices';
+import { Logger, HttpExceptionFilter } from '@repo/common';
+import helmet from 'helmet';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 
 /**
@@ -9,17 +13,32 @@ import { AppModule } from './app.module';
  * Configures the application as a "Hybrid App" (HTTP + RabbitMQ Microservice).
  */
 async function bootstrap() {
-  const logger = new NestLogger('Bootstrap');
-  
-  // 1. Create the main NestJS application (HTTP)
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    // Suppress NestJS's built-in logger during boot; Pino takes over after.
+    bufferLogs: true,
+  });
 
-  // 2. Load configuration
+  // 1. Structured logging (Pino)
+  // Replaces the default NestJS logger with our high-performance Pino logger.
+  app.useLogger(app.get(Logger));
+
+  // 2. Global Exception Filter
+  // Ensures all errors are returned in a consistent JSON format.
+  app.useGlobalFilters(new HttpExceptionFilter());
+
+  // 3. Security
+  app.use(helmet());
+
+  // 4. Global route prefix — gateway forwards /api/* paths as-is
+  // We exclude health and metrics from the prefix for monitoring tools.
+  app.setGlobalPrefix('api', { exclude: ['health/(.*)', 'metrics'] });
+
+  // 5. Load configuration
   const configService = app.get(ConfigService);
   const port = configService.get<number>('PORT', 3005);
   const rabbitmqUrl = configService.get<string>('RABBITMQ_URL');
 
-  // 3. Global Middleware & Pipes
+  // 6. Global Pipes
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -27,53 +46,65 @@ async function bootstrap() {
       transform: true,
     }),
   );
-  app.enableCors();
 
-  // 4. Configure RabbitMQ Microservice Listeners (Priority Queues)
-  // We connect to multiple queues to support different processing priorities.
-  
+  // 7. CORS
+  app.enableCors({
+    origin: '*',
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    credentials: true,
+  });
+
+  // 8. Trust Proxy
+  // Essential for reading the correct client IP when behind a load balancer (Render).
+  app.set('trust proxy', 1);
+
+  // 9. Configure RabbitMQ Microservice Listeners (Priority Queues)
   if (rabbitmqUrl) {
-    // --- Queue: Critical Notifications (e.g. Payment Failures) ---
-    app.connectMicroservice<MicroserviceOptions>({
-      transport: Transport.RMQ,
-      options: {
-        urls: [rabbitmqUrl],
-        queue: 'notifications.critical',
-        queueOptions: { durable: true },
-        prefetchCount: 1, // Process one at a time for high reliability
-      },
-    });
+    const queues = [
+      { name: 'notifications.critical', prefetch: 1 },
+      { name: 'notifications.high', prefetch: 5 },
+      { name: 'notifications.bulk', prefetch: 20 },
+    ];
 
-    // --- Queue: High Priority Notifications (e.g. Order Created) ---
-    app.connectMicroservice<MicroserviceOptions>({
-      transport: Transport.RMQ,
-      options: {
-        urls: [rabbitmqUrl],
-        queue: 'notifications.high',
-        queueOptions: { durable: true },
-        prefetchCount: 5, // Balanced concurrency
-      },
-    });
+    for (const queue of queues) {
+      app.connectMicroservice<MicroserviceOptions>({
+        transport: Transport.RMQ,
+        options: {
+          urls: [rabbitmqUrl],
+          queue: queue.name,
+          queueOptions: { 
+            durable: true,
+            deadLetterExchange: 'dlx_exchange',
+            deadLetterRoutingKey: `dlq_${queue.name}`,
+          },
+          prefetchCount: queue.prefetch,
+        },
+      });
 
-    // --- Queue: Bulk Notifications (e.g. Welcome Emails, Newsletters) ---
-    app.connectMicroservice<MicroserviceOptions>({
-      transport: Transport.RMQ,
-      options: {
-        urls: [rabbitmqUrl],
-        queue: 'notifications.bulk',
-        queueOptions: { durable: true },
-        prefetchCount: 20, // High concurrency for non-urgent tasks
-      },
-    });
+      // Connect Dead Letter Queue consumers to prevent message loss
+      app.connectMicroservice<MicroserviceOptions>({
+        transport: Transport.RMQ,
+        options: {
+          urls: [rabbitmqUrl],
+          queue: `dlq_${queue.name}`,
+          queueOptions: { durable: true },
+        },
+      });
+    }
 
-    // 5. Start all connected microservices
+    // Start all connected microservices
     await app.startAllMicroservices();
+    const logger = new NestLogger('Bootstrap');
     logger.log('📡 RabbitMQ Priority Queues connected and listening');
   }
 
-  // 6. Start the HTTP server
+  // 10. Start the HTTP server
   await app.listen(port);
+  const logger = new NestLogger('Bootstrap');
   logger.log(`🚀 Notification Service is running on: http://localhost:${port}`);
+  
+  // 11. Graceful Shutdown
+  app.enableShutdownHooks();
 }
 
 void bootstrap();
