@@ -14,14 +14,18 @@ import { SmsHandler } from './handlers/sms.handler';
 import { PushHandler } from './handlers/push.handler';
 import { InAppHandler } from './handlers/in-app.handler';
 import { NotificationHandlerFactory } from './handlers/notification-handler-factory.service';
+import { OrderEventsConsumer } from './consumers/order-events.consumer';
+import { PaymentEventsConsumer } from './consumers/payment-events.consumer';
+import { CatalogEventsConsumer } from './consumers/catalog-events.consumer';
+import { UserEventsConsumer } from './consumers/user-events.consumer';
 
 /**
  * Notifications Module.
- * Registers all entities and providers related to notifications.
+ * Registers all entities, providers, and event consumers.
  */
 @Module({
   imports: [
-    // Register entities with TypeORM so they can be injected as repositories
+    // Register entities with TypeORM
     TypeOrmModule.forFeature([
       Notification,
       NotificationChannel,
@@ -30,7 +34,14 @@ import { NotificationHandlerFactory } from './handlers/notification-handler-fact
       NotificationPreference,
     ]),
   ],
-  controllers: [NotificationsController],
+  controllers: [
+    NotificationsController,
+    // Note: Consumers using @EventPattern are registered as controllers in Hybrid Apps
+    OrderEventsConsumer,
+    PaymentEventsConsumer,
+    CatalogEventsConsumer,
+    UserEventsConsumer,
+  ],
   providers: [
     NotificationsService,
     TemplateService,
@@ -47,6 +58,6 @@ import { NotificationHandlerFactory } from './handlers/notification-handler-fact
     TemplateService,
     PreferenceService,
     NotificationHandlerFactory,
-  ], // Export services for use in other modules (e.g., event consumers, delivery workers)
+  ],
 })
 export class NotificationsModule {}
