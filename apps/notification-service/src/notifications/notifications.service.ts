@@ -27,8 +27,62 @@ export class NotificationsService {
   ) {}
 
   /**
+   * Admin: Retrieves all notifications across all users with filtering.
+   */
+  async findAllNotifications(
+    page = 1,
+    limit = 50,
+    type?: string,
+  ): Promise<any> {
+    const skip = (page - 1) * limit;
+    const queryBuilder = this.notificationRepository.createQueryBuilder('notification')
+      .leftJoinAndSelect('notification.channels', 'channels')
+      .orderBy('notification.createdAt', 'DESC')
+      .skip(skip)
+      .take(limit);
+
+    if (type) {
+      queryBuilder.andWhere('notification.type = :type', { type });
+    }
+
+    const [items, total] = await queryBuilder.getManyAndCount();
+    return {
+      items: items.map(this.mapToResponseDto),
+      total,
+      page,
+      limit,
+    };
+  }
+
+  /**
+   * Admin: Get statistics for notification delivery.
+   */
+  async getStats(): Promise<any> {
+    const totalNotifications = await this.notificationRepository.count();
+    const channelStats = await this.channelRepository
+      .createQueryBuilder('channel')
+      .select('channel.status', 'status')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('channel.status')
+      .getRawMany();
+
+    const typeStats = await this.notificationRepository
+      .createQueryBuilder('notification')
+      .select('notification.type', 'type')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('notification.type')
+      .getRawMany();
+
+    return {
+      totalNotifications,
+      byStatus: channelStats,
+      byType: typeStats,
+    };
+  }
+
+  /**
    * Creates a new notification and its associated delivery channels.
-   * Filters channels based on user preferences unless overridden.
+...
    * 
    * @param dto Data required to create a notification
    */
