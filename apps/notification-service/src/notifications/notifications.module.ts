@@ -9,6 +9,11 @@ import { NotificationTemplate } from './entities/notification-template.entity';
 import { NotificationPreference } from './entities/notification-preference.entity';
 import { TemplateService } from './template.service';
 import { PreferenceService } from './preference.service';
+import { EmailHandler } from './handlers/email.handler';
+import { SmsHandler } from './handlers/sms.handler';
+import { PushHandler } from './handlers/push.handler';
+import { InAppHandler } from './handlers/in-app.handler';
+import { NotificationHandlerFactory } from './handlers/notification-handler-factory.service';
 
 /**
  * Notifications Module.
@@ -30,11 +35,18 @@ import { PreferenceService } from './preference.service';
     NotificationsService,
     TemplateService,
     PreferenceService,
+    // Channel Handlers
+    EmailHandler,
+    SmsHandler,
+    PushHandler,
+    InAppHandler,
+    NotificationHandlerFactory,
   ],
   exports: [
     NotificationsService,
     TemplateService,
     PreferenceService,
-  ], // Export services for use in other modules (e.g., event consumers)
+    NotificationHandlerFactory,
+  ], // Export services for use in other modules (e.g., event consumers, delivery workers)
 })
 export class NotificationsModule {}
