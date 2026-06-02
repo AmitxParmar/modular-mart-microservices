@@ -5,6 +5,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { NotificationChannel } from '../entities/notification-channel.entity';
 import { ChannelStatus } from '../enums/channel-status.enum';
 import { NotificationHandlerFactory } from '../handlers/notification-handler-factory.service';
+import { SseService } from '../sse.service';
 
 /**
  * Background worker responsible for delivering pending notifications.
@@ -19,6 +20,7 @@ export class DeliveryWorkerService {
     @InjectRepository(NotificationChannel)
     private readonly channelRepository: Repository<NotificationChannel>,
     private readonly handlerFactory: NotificationHandlerFactory,
+    private readonly sseService: SseService,
   ) {}
 
   /**
@@ -78,6 +80,13 @@ export class DeliveryWorkerService {
           channel.status = ChannelStatus.SENT;
           channel.sentAt = new Date();
           await this.channelRepository.save(channel);
+
+          // F. Trigger real-time update via SSE
+          // This tells the frontend to invalidate the cache and fetch the new notification
+          this.sseService.pushNewNotification(channel.notification.userId, {
+            id: channel.notification.id,
+            type: channel.notification.type,
+          });
 
           this.logger.log(`✅ Successfully sent ${channel.channel} notification for ${channel.notification.id}`);
         } catch (error) {

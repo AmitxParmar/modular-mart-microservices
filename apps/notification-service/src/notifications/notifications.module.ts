@@ -20,6 +20,7 @@ import { CatalogEventsConsumer } from './consumers/catalog-events.consumer';
 import { UserEventsConsumer } from './consumers/user-events.consumer';
 import { DeliveryWorkerService } from './workers/delivery-worker.service';
 import { RetryWorkerService } from './workers/retry-worker.service';
+import { SseService } from './sse.service';
 
 /**
  * Notifications Module.
@@ -56,6 +57,7 @@ import { RetryWorkerService } from './workers/retry-worker.service';
     NotificationHandlerFactory,
     DeliveryWorkerService,
     RetryWorkerService,
+    SseService,
   ],
   exports: [
     NotificationsService,
