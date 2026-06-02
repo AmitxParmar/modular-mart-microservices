@@ -18,6 +18,8 @@ import { OrderEventsConsumer } from './consumers/order-events.consumer';
 import { PaymentEventsConsumer } from './consumers/payment-events.consumer';
 import { CatalogEventsConsumer } from './consumers/catalog-events.consumer';
 import { UserEventsConsumer } from './consumers/user-events.consumer';
+import { DeliveryWorkerService } from './workers/delivery-worker.service';
+import { RetryWorkerService } from './workers/retry-worker.service';
 
 /**
  * Notifications Module.
@@ -52,6 +54,8 @@ import { UserEventsConsumer } from './consumers/user-events.consumer';
     PushHandler,
     InAppHandler,
     NotificationHandlerFactory,
+    DeliveryWorkerService,
+    RetryWorkerService,
   ],
   exports: [
     NotificationsService,
