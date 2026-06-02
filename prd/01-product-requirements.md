@@ -7,87 +7,101 @@
 - **Description**: End-user shopping on the platform
 - **Permissions**:
   - Browse products and categories
-  - Add items to cart
-  - Complete purchases
-  - View order history
+  - Add items to cart (client-side persistence)
+  - Complete purchases via Stripe
+  - View order history and tracking
   - Manage profile and addresses
+  - Receive real-time notifications (SSE)
 - **Authentication**: Email/password via Clerk
 
-### 2. Seller (Future)
+### 2. Seller
 
-- **Description**: Third-party vendors selling products
+- **Description**: Independent vendors selling products on the platform
 - **Permissions**:
-  - Register as seller
-  - List products with inventory
-  - Manage orders for their products
-  - View sales analytics
-  - Process refunds/returns
-- **Authentication**: Separate seller portal with enhanced verification
+  - Register as seller via dedicated onboarding
+  - List products for approval by administrators
+  - Manage inventory levels for their products
+  - View sales analytics and earnings dashboards
+  - Process orders and update shipping status
+- **Authentication**: Clerk-based with `SELLER` role assignment
 
 ### 3. Administrator
 
 - **Description**: Platform management and oversight
 - **Permissions**:
-  - Manage all users and sellers
-  - Configure platform settings
-  - View system analytics
-  - Handle disputes and escalations
-  - Manage product categories
-- **Authentication**: Admin-only access with 2FA
+  - Manage all users and role assignments
+  - Approve or reject seller product submissions
+  - View system-wide analytics and logs (via Grafana)
+  - Manage notification templates and platform settings
+- **Authentication**: Admin-only access with RBAC
 
 ### 4. System (Internal)
 
-- **Description**: Automated services and integrations
+- **Description**: Automated services and event-driven logic
 - **Permissions**:
-  - Process payments via Stripe
-  - Send notifications
-  - Update inventory levels
-  - Generate reports
-  - Handle background jobs
+  - Process payments and handle webhooks
+  - Deliver multi-channel notifications
+  - Synchronize inventory across domains
+  - Execute background outbox processing
 
 ## Core Features
 
-### 1. User Management
+### 1. User & Identity Management
+- **Identity Provider**: Offloaded to Clerk for secure auth.
+- **Profile Syncing**: Automatic synchronization between Clerk and local User Service.
+- **RBAC**: Role-based access control (Customer, Seller, Admin) enforced across all services.
 
-- **Registration/Login**: Clerk-based authentication
-- **Profile Management**: Personal information and preferences
-- **Address Book**: Multiple shipping/billing addresses
-- **Order History**: Past purchases and status tracking
+### 2. Multi-vendor Product Catalog
+- **Catalog Isolation**: Separate domains for products and categories.
+- **Seller Hub**: Dedicated interface for sellers to manage their listings.
+- **Approval Workflow**: Products must be approved by an Admin before appearing in the storefront.
+- **Inventory Integrity**: Pessimistic locking in the database prevents overselling.
 
-### 2. Product Catalog
+### 3. Order Management & Saga
+- **Atomic Checkout**: Transactional Outbox pattern ensures order creation and inventory reservation are atomic.
+- **Order Splitting**: Orders containing items from multiple sellers are split for accurate tracking.
+- **Tracking Timeline**: Real-time status updates from `PENDING_STOCK` to `DELIVERED`.
 
-- **Category Management**: Hierarchical product organization
-- **Product Listings**: Detailed product pages with images
-- **Search & Filter**: Advanced product discovery
-- **Inventory Tracking**: Real-time stock availability
+### 4. Real-time Notifications
+- **Multi-channel**: Delivery via Email and In-App notifications.
+- **SSE Stream**: Live UI updates for order status changes and system alerts.
+- **Preferences**: Users can opt-in/out of specific notification channels.
 
-### 3. Shopping Cart
+### 5. Observability (LGTM Stack)
+- **Centralized Logs**: All services stream JSON logs to Loki.
+- **Metrics**: Real-time throughput and error rate tracking via Prometheus.
+- **Traces**: Distributed tracing via Jaeger for cross-service request visualization.
 
-- **Guest Cart**: Temporary cart for non-logged-in users
-- **User Cart**: Persistent cart across sessions
-- **Cart Operations**: Add, remove, update quantities
-- **Cart Merging**: Automatic merge on login
+## User Journeys
 
-### 4. Checkout Process
+### Journey 1: Customer Purchase
+1. Browse products with advanced filters.
+2. Add items to cart (client-side store).
+3. Checkout: Select address and confirm payment method.
+4. Payment: Securely pay via Stripe Elements.
+5. Post-purchase: Receive real-time confirmation via SSE and email.
+6. Track order timeline as the seller processes the items.
 
-- **Multi-step Flow**: Address → Payment → Confirmation
-- **Payment Integration**: Stripe with multiple payment methods
-- **Order Summary**: Clear breakdown of costs
-- **Order Confirmation**: Email and UI confirmation
+### Journey 2: Seller Onboarding & Selling
+1. Log in and access the Seller Dashboard.
+2. Create new product listing with detailed metadata.
+3. Wait for Admin approval (notified via SSE/Email).
+4. Monitor dashboard for new orders.
+5. Process orders: Update status to `PROCESSING` and then `SHIPPED`.
+6. Track earnings and product performance in real-time.
 
-### 5. Order Management
+## Success Metrics (Updated)
 
-- **Order Tracking**: Status updates from PENDING to DELIVERED
-- **Order History**: Complete purchase history
-- **Order Details**: Invoice and shipping information
-- **Cancellation/Returns**: Limited time cancellation window
+- **Order Processing Speed**: < 2 seconds from checkout to stock reservation.
+- **Saga Reliability**: 99.9% event delivery success via Outbox pattern.
+- **Observability Coverage**: 100% of services integrated with LGTM.
+- **Seller Satisfaction**: Onboarding to first sale in < 24 hours.
 
-### 6. Notifications
+## Edge Cases
 
-- **Order Updates**: Status change notifications
-- **Promotional**: Marketing emails (opt-in)
-- **Account Alerts**: Security and profile updates
-- **Real-time**: WebSocket notifications for critical updates
+- **Concurrency**: Handled via Pessimistic Locking in Catalog Service.
+- **Payment Failure**: Compensation logic in the Saga releases reserved stock automatically.
+- **Idempotency**: All consumers deduplicate messages via `processed_messages` to prevent double-processing.
 
 ## User Journeys
 

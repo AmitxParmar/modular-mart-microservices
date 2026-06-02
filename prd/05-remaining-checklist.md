@@ -1,142 +1,58 @@
 # Modular Mart - Learning Roadmap & Next Steps
 
-## Priority Legend (Learning Focus)
+## ✅ Completed & Verified Learning
 
-- **P0**: Core Learning - Essential microservices concepts to practice
-- **P1**: Important Skills - Valuable skills for full-stack development
-- **P2**: Enhancement Learning - Nice-to-have features for deeper understanding
-- **P3**: Exploration - Optional topics for broader learning
-- **P4**: Future Concepts - Advanced topics for later exploration
+### 1. Event-Driven Architecture with RabbitMQ
+- [x] **Setup RabbitMQ Cluster**: Configured in Docker with health checks.
+- [x] **Transactional Outbox**: Implemented in Order Service for atomic event publishing.
+- [x] **Idempotent Consumption**: Deduplication logic via `processed_messages` across all services.
+- [x] **Choreographed Saga**: Full stock reservation and payment flow implemented via events.
 
-## Current Status & Completed Learning
+### 2. Full-Stack Observability (LGTM)
+- [x] **Loki & Promtail**: Structured JSON log aggregation.
+- [x] **Prometheus**: Real-time metrics scraping and status monitoring.
+- [x] **Jaeger**: Distributed tracing across HTTP and RMQ boundaries.
+- [x] **Grafana**: Provisioned dashboards for unified system visibility.
 
-### ✅ Already Implemented & Working
+### 3. Multi-vendor Marketplace Core
+- [x] **Seller Hub**: Dedicated dashboards for product and order management.
+- [x] **Order Splitting**: Logical splitting of orders by seller for accurate tracking.
+- [x] **Approval Workflow**: Admin-gated product listings.
 
-- **Core Architecture**: Microservices with Turborepo monorepo
-- **API Gateway**: Central routing with JWT validation
-- **User Service**: Clerk authentication integration
-- **Catalog & Order Service**: Product and order management
-- **Stripe Integration**: ✅ **COMPLETE** - Full payment flow with webhooks
-- **Web Frontend**: Next.js 14 with shared UI components
-- **Database Schemas**: PostgreSQL schemas for both services
+### 4. Notification Engine
+- [x] **Multi-channel delivery**: Email, SSE, and In-App notifications.
+- [x] **Template System**: Handlebars-based dynamic blueprint management.
 
-## Learning Opportunities & Next Steps
+---
 
-### 🎯 P0 - Core Microservices Learning
+## 🎯 P0 - Critical Next Steps
 
-#### 1. Event-Driven Architecture with RabbitMQ
+#### 1. Redis Catalog Caching
+**Status**: Researching  
+**Learning Focus**: Read-aside and write-through caching patterns.
+- [ ] Implement Redis caching for high-traffic `/catalog/products` endpoints.
+- [ ] Handle cache invalidation on product updates or approval.
+- [ ] Practice "Cache Aside" pattern for search results.
 
-**Status**: Learning in Progress  
-**Learning Focus**: Asynchronous communication patterns  
-**Estimated Time**: 1-2 weeks
+#### 2. Infrastructure as Code (IaC)
+**Status**: Planning  
+**Learning Focus**: Terraform and cloud resource management.
+- [ ] Create Terraform scripts for Render service deployment.
+- [ ] Automate PostgreSQL instance provisioning.
+- [ ] Implement secure secret management (HashiCorp Vault or Cloud Secret Managers).
 
-**Learning Checklist**:
+---
 
-- [ ] **Setup RabbitMQ locally**
-  - [ ] Install and configure RabbitMQ
-  - [ ] Create exchanges and queues
-  - [ ] Test basic publish/subscribe
+## 📈 P1 - High Priority Enhancements
 
-- [ ] **Implement Event Producers**
-  - [ ] Publish `ORDER_CREATED` events from Order Service
-  - [ ] Publish `USER_CREATED` events from User Service
-  - [ ] Implement retry logic for failed messages
+#### 3. Checkout UI Refinement
+- [ ] Complete the multi-step frontend flow (Address → Payment → Result).
+- [ ] Integrate Stripe Elements for a polished, secure checkout experience.
+- [ ] Implement real-time inventory "soft locks" on the client side.
 
-- [ ] **Implement Event Consumers**
-  - [ ] Create notification service consumer
-  - [ ] Implement idempotent event handling
-  - [ ] Practice dead letter queue patterns
-
-- [ ] **Learn Error Handling**
-  - [ ] Implement circuit breakers
-  - [ ] Practice message acknowledgment patterns
-  - [ ] Learn about eventual consistency
-
-#### 2. Docker Deployment to Render
-
-**Status**: Next to Learn  
-**Learning Focus**: Containerization and cloud deployment  
-**Estimated Time**: 1 week
-
-**Learning Checklist**:
-
-- [ ] **Dockerize Each Service**
-  - [ ] Create Dockerfile for each microservice
-  - [ ] Configure multi-stage builds
-  - [ ] Optimize image sizes
-
-- [ ] **Deploy to Render**
-  - [ ] Create Render services for each microservice
-  - [ ] Configure environment variables
-  - [ ] Set up health checks and logging
-
-- [ ] **Learn Service Discovery**
-  - [ ] Configure service communication in cloud
-  - [ ] Practice with service URLs and networking
-  - [ ] Implement basic load balancing concepts
-
-#### 2. Cart Service Implementation
-
-**Status**: Not Started  
-**Complexity**: Medium  
-**Dependencies**: Redis, Product Service  
-**Estimated Effort**: 2-3 weeks
-
-**Checklist**:
-
-- [ ] **Redis Setup & Configuration**
-  - [ ] Install and configure Redis
-  - [ ] Define Redis data structures for carts
-  - [ ] Implement TTL for guest carts (7 days)
-  - [ ] Setup Redis clustering for production
-
-- [ ] **Cart Operations**
-  - [ ] Add item to cart with quantity validation
-  - [ ] Update item quantities
-  - [ ] Remove items from cart
-  - [ ] Clear entire cart
-  - [ ] Calculate cart totals (subtotal, tax, shipping)
-
-- [ ] **Guest Cart Support**
-  - [ ] Generate session IDs for guest users
-  - [ ] Persist guest carts across browser sessions
-  - [ ] Merge guest cart with user cart on login
-  - [ ] Cleanup expired guest carts
-
-- [ ] **Inventory Integration**
-  - [ ] Check product availability when adding to cart
-  - [ ] Reserve inventory temporarily (soft lock)
-  - [ ] Release inventory on cart abandonment
-  - [ ] Handle out-of-stock scenarios gracefully
-
-### 🎯 P1 - High Priority (Essential for MVP)
-
-#### 3. Notification Service
-
-**Status**: Not Started  
-**Complexity**: Medium  
-**Dependencies**: RabbitMQ, Email Service  
-**Estimated Effort**: 2 weeks
-
-**Checklist**:
-
-- [ ] **Email Notifications**
-  - [ ] Integrate with email service (Resend/SendGrid)
-  - [ ] Create email templates for order confirmations
-  - [ ] Implement order status update emails
-  - [ ] Add welcome email for new users
-
-- [ ] **Event Consumption**
-  - [ ] Subscribe to RabbitMQ events
-  - [ ] Process `ORDER_CREATED` events
-  - [ ] Process `PAYMENT_SUCCESS` events
-  - [ ] Process `ORDER_SHIPPED` events
-
-- [ ] **Template Management**
-  - [ ] Create template engine for dynamic content
-  - [ ] Support variables in templates
-  - [ ] Manage template versions
-  - [ ] Preview templates before sending
+#### 4. Advanced Analytics Pipeline
+- [ ] Set up ELK stack or BigQuery for deep log and transaction analysis.
+- [ ] Build business intelligence dashboards for top-selling products and seller performance.
 
 #### 4. Checkout Flow Completion
 

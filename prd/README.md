@@ -78,20 +78,19 @@ This directory contains comprehensive documentation for the **Modular Mart perso
 
 ### Current Status
 
-- **Project Type**: Personal Learning Project
-- **Completed**: Core architecture, services, database schemas, **Stripe integration**
-- **In Progress**: Event-driven architecture learning, Docker deployment
-- **Next Learning Focus**: RabbitMQ, Docker deployment to Render, testing strategies
+- **Project Type**: Microservices Marketplace
+- **Completed**: Core architecture, separate Catalog/Order services, **Multi-vendor dashboards**, **Stripe integration**, **Notification Service (SSE)**.
+- **In Progress**: Redis-based catalog caching, Terraform-based IaC.
+- **Observability**: Fully operational **LGTM** stack (Loki, Grafana, Prometheus, Jaeger).
 
 ### Learning Technology Stack
 
-- **Backend**: NestJS (microservices), TypeORM (database patterns)
-- **Frontend**: Next.js 14 (App Router), Tailwind CSS, Shadcn UI
-- **Database**: PostgreSQL with NeonDB (serverless)
-- **Authentication**: Clerk (external auth integration)
-- **Payments**: Stripe (✅ **COMPLETE** - full integration)
-- **Messaging**: RabbitMQ (learning event-driven patterns)
-- **Deployment**: Docker, Vercel (frontend), Render (backend)
+- **Backend**: NestJS (microservices), TypeORM (pessimistic locking), RabbitMQ (outbox pattern).
+- **Frontend**: Next.js 14 (Customer/Seller dashboards), Tailwind CSS, Shadcn UI.
+- **Database**: PostgreSQL (Isolated per service), NeonDB.
+- **Authentication**: Clerk (Role-based access).
+- **Payments**: Stripe (Webhook-driven choreography).
+- **Observability**: LGTM (Loki, Grafana, Prometheus, Jaeger).
 
 ### Learning Priorities (Next Steps)
 
