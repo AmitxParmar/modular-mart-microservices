@@ -17,13 +17,6 @@ export { HealthModule } from "./health/health.module";
 // Logger
 export * from "./logger";
 
-// Messaging
-export {
-  RabbitMQMessageHandler,
-  createRmqOptions,
-  startAllMicroservicesWithRetry,
-} from "./messaging";
-
 // Metrics
 export { MetricsModule } from "./metrics/metrics.module";
 

@@ -1,7 +1,7 @@
 import { Module, Global } from '@nestjs/common';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { ConfigService, ConfigModule } from '@nestjs/config';
-import { createRmqOptions } from '@repo/common';
+import { createRmqOptions } from '@repo/common/messaging';
 
 @Global()
 @Module({

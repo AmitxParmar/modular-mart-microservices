@@ -1,7 +1,7 @@
 import { Module, Global } from '@nestjs/common';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { createRmqOptions } from '@repo/common';
+import { createRmqOptions } from '@repo/common/messaging';
 
 /**
  * AuthClientModule provides a global microservice client for authentication and authorization.

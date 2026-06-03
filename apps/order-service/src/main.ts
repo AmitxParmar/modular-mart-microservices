@@ -1,11 +1,11 @@
 import './tracing';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { Logger } from '@repo/common';
 import {
-  Logger,
   createRmqOptions,
   startAllMicroservicesWithRetry,
-} from '@repo/common';
+} from '@repo/common/messaging';
 import helmet from 'helmet';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { Transport, MicroserviceOptions } from '@nestjs/microservices';
