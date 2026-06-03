@@ -33,6 +33,8 @@ const SERVICE_ROUTES: ServiceRouteConfig[] = [
   { pathPrefix: '/api/cart', configKey: 'services.catalogService' },
 ];
 
+const COLD_START_PROXY_TIMEOUT_MS = 45_000;
+
 @Module({})
 export class ProxyModule implements NestModule {
   private readonly logger = new Logger(ProxyModule.name);
@@ -55,8 +57,8 @@ export class ProxyModule implements NestModule {
       const proxyOptions: Options = {
         target: targetUrl,
         changeOrigin: true,
-        proxyTimeout: 10000, // 10s timeout for the proxy to connect
-        timeout: 10000, // 10s timeout for the upstream to respond
+        proxyTimeout: COLD_START_PROXY_TIMEOUT_MS,
+        timeout: COLD_START_PROXY_TIMEOUT_MS,
         on: {
           error: (err: Error, req: Request, res: Response) => {
             const correlationId = req.headers['x-request-id'];

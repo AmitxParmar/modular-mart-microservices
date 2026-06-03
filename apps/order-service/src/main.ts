@@ -1,7 +1,11 @@
 import './tracing';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { Logger } from '@repo/common';
+import {
+  Logger,
+  createRmqOptions,
+  startAllMicroservicesWithRetry,
+} from '@repo/common';
 import helmet from 'helmet';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { Transport, MicroserviceOptions } from '@nestjs/microservices';
@@ -39,41 +43,27 @@ async function bootstrap() {
   if (rabbitmqUrl && rabbitmqUrl !== 'false') {
     app.connectMicroservice<MicroserviceOptions>({
       transport: Transport.RMQ,
-      options: {
+      options: createRmqOptions({
         urls: [rabbitmqUrl],
         queue: 'catalog_orders_queue',
-        queueOptions: {
-          durable: true,
-          deadLetterExchange: 'dlx_exchange',
-          deadLetterRoutingKey: 'dlq_catalog_orders_queue',
-        },
-      },
+        deadLetterExchange: 'dlx_exchange',
+        deadLetterRoutingKey: 'dlq_catalog_orders_queue',
+      }),
     });
 
     // Dead-letter queue consumer
     app.connectMicroservice<MicroserviceOptions>({
       transport: Transport.RMQ,
-      options: {
+      options: createRmqOptions({
         urls: [rabbitmqUrl],
         queue: 'dlq_catalog_orders_queue',
-        queueOptions: {
-          durable: true,
-        },
-      },
+      }),
     });
 
-    // Start microservices in the background so we don't block the HTTP server
-    app
-      .startAllMicroservices()
-      .then(() => {
-        console.log('Connected to RabbitMQ — catalog_orders_queue and dlq_catalog_orders_queue active');
-      })
-      .catch((err) => {
-        console.warn(
-          `[WARN] RabbitMQ unavailable (${(err as Error).message}). ` +
-            `Running without event queue. Start RabbitMQ to enable saga events.`,
-        );
-      });
+    void startAllMicroservicesWithRetry(() => app.startAllMicroservices(), {
+      logger: console,
+      serviceName: 'order-service',
+    });
   } else {
     console.warn(
       '[WARN] RabbitMQ connection disabled via environment configuration.',

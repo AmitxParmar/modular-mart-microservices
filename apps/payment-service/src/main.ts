@@ -1,7 +1,11 @@
 import './tracing';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { Logger } from '@repo/common';
+import {
+  Logger,
+  createRmqOptions,
+  startAllMicroservicesWithRetry,
+} from '@repo/common';
 import helmet from 'helmet';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { Transport, MicroserviceOptions } from '@nestjs/microservices';
@@ -43,40 +47,27 @@ async function bootstrap() {
   if (rabbitmqUrl && rabbitmqUrl !== 'false') {
     app.connectMicroservice<MicroserviceOptions>({
       transport: Transport.RMQ,
-      options: {
+      options: createRmqOptions({
         urls: [rabbitmqUrl],
         queue: 'payments_queue',
-        queueOptions: {
-          durable: true,
-          deadLetterExchange: 'dlx_exchange',
-          deadLetterRoutingKey: 'dlq_payments_queue',
-        },
-      },
+        deadLetterExchange: 'dlx_exchange',
+        deadLetterRoutingKey: 'dlq_payments_queue',
+      }),
     });
 
     // Dead-letter queue consumer
     app.connectMicroservice<MicroserviceOptions>({
-        transport: Transport.RMQ,
-        options: {
-            urls: [rabbitmqUrl],
-            queue: 'dlq_payments_queue',
-            queueOptions: {
-                durable: true,
-            },
-        },
+      transport: Transport.RMQ,
+      options: createRmqOptions({
+        urls: [rabbitmqUrl],
+        queue: 'dlq_payments_queue',
+      }),
     });
 
-    app
-      .startAllMicroservices()
-      .then(() => {
-        console.log('✅ Connected to RabbitMQ — payments_queue and dlq_payments_queue active');
-      })
-      .catch((err) => {
-        console.warn(
-          `[WARN] RabbitMQ unavailable (${(err as Error).message}). ` +
-            `HTTP server still running. Payments will work but events won't be consumed.`,
-        );
-      });
+    void startAllMicroservicesWithRetry(() => app.startAllMicroservices(), {
+      logger: console,
+      serviceName: 'payment-service',
+    });
   } else {
     console.warn(
       '[WARN] RabbitMQ disabled via environment. Running HTTP-only mode.',
