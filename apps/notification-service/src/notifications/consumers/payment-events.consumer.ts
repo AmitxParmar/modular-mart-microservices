@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Controller } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { EventPattern, Payload, Ctx, RmqContext } from '@nestjs/microservices';
@@ -12,7 +12,7 @@ import { EVENT_PATTERNS } from '@repo/contracts';
 /**
  * Consumer for Payment-related events from RabbitMQ.
  */
-@Injectable()
+@Controller()
 export class PaymentEventsConsumer {
   constructor(
     private readonly notificationsService: NotificationsService,

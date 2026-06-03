@@ -31,7 +31,7 @@ async function bootstrap() {
 
   // 4. Global route prefix — gateway forwards /api/* paths as-is
   // We exclude health and metrics from the prefix for monitoring tools.
-  app.setGlobalPrefix('api', { exclude: ['health/(.*)', 'metrics'] });
+  app.setGlobalPrefix('api', { exclude: ['health/:path*', 'metrics'] });
 
   // 5. Load configuration
   const configService = app.get(ConfigService);

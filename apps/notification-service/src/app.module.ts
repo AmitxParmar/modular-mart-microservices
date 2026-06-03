@@ -6,6 +6,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AppConfigModule } from './config/config.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { AuthClientModule } from '@repo/auth';
 import {
   AppLoggingModule,
   HealthModule,
@@ -46,7 +47,10 @@ import {
     MetricsModule,
     SentryModule,
     
-    // 6. Domain-specific features
+    // 6. Global Auth Client (for RBAC)
+    AuthClientModule,
+
+    // 7. Domain-specific features
     NotificationsModule,
   ],
   controllers: [AppController],

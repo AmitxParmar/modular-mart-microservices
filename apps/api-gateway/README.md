@@ -23,7 +23,9 @@
 
 ## Description
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+API Gateway for Modular Mart e-commerce platform. Acts as the single entry point for all client requests, handling routing, authentication, rate limiting, and observability.
+
+**📄 [Kong Gateway Migration Plan](./KONG_MIGRATION_PLAN.md)** - Complete guide for migrating to Kong Gateway with focus on production patterns (authentication plugins, distributed rate limiting, circuit breakers, caching, observability).
 
 ## Project setup
 

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Controller } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { EventPattern, Payload, Ctx, RmqContext } from '@nestjs/microservices';
@@ -7,12 +7,13 @@ import { NotificationsService } from '../notifications.service';
 import { ProcessedMessage } from '../entities/processed-message.entity';
 import { NotificationType } from '../enums/notification-type.enum';
 import { NotificationPriority } from '../enums/notification-priority.enum';
-import { EVENT_PATTERNS, OrderCreatedEvent, OrderCancelledEvent } from '@repo/contracts';
+import { EVENT_PATTERNS } from '@repo/contracts';
+import type { OrderCreatedEvent, OrderCancelledEvent } from '@repo/contracts';
 
 /**
  * Consumer for Order-related events from RabbitMQ.
  */
-@Injectable()
+@Controller()
 export class OrderEventsConsumer {
   constructor(
     private readonly notificationsService: NotificationsService,

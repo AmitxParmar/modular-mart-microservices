@@ -21,7 +21,8 @@ import { CreateNotificationDto } from './dto/create-notification.dto';
 import { UpdatePreferenceDto } from './dto/update-preference.dto';
 import { CreateTemplateDto } from './dto/create-template.dto';
 import { UpdateTemplateDto } from './dto/update-template.dto';
-import { CurrentUser, ClerkAuthGuard, ClerkUser, Roles, RolesGuard } from '@repo/auth';
+import { CurrentUser, ClerkAuthGuard, Roles, RolesGuard } from '@repo/auth';
+import type { ClerkUser } from '@repo/auth';
 
 /**
  * Controller for managing user notifications.
