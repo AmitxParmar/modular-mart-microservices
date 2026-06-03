@@ -1,7 +1,11 @@
 import './tracing';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { Logger } from '@repo/common';
+import {
+  Logger,
+  createRmqOptions,
+  startAllMicroservicesWithRetry,
+} from '@repo/common';
 import helmet from 'helmet';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { Transport, MicroserviceOptions } from '@nestjs/microservices';
@@ -40,37 +44,33 @@ async function bootstrap() {
   // Configure RabbitMQ Microservice for internal RBAC calls (from order-service, etc.)
   app.connectMicroservice<MicroserviceOptions>({
     transport: Transport.RMQ,
-    options: {
+    options: createRmqOptions({
       urls: [rabbitmqUrl],
       queue: 'auth_queue',
-      queueOptions: {
-        durable: true,
-        deadLetterExchange: 'dlx_exchange',
-        deadLetterRoutingKey: 'dlq_auth_queue',
-      },
-    },
+      deadLetterExchange: 'dlx_exchange',
+      deadLetterRoutingKey: 'dlq_auth_queue',
+    }),
   });
 
   // Dead-letter queue consumer: connected so undeliverable messages are not silently dropped.
   // Add a dedicated @EventPattern handler for DLQ alerts/alerting here if needed.
   app.connectMicroservice<MicroserviceOptions>({
     transport: Transport.RMQ,
-    options: {
+    options: createRmqOptions({
       urls: [rabbitmqUrl],
       queue: 'dlq_auth_queue',
-      queueOptions: {
-        durable: true,
-      },
-    },
+    }),
   });
-
-  await app.startAllMicroservices();
 
   // Use configured PORT or fallback from ConfigService
   const port = configService.get<number>('PORT', 3001);
   const tcpPort = configService.get<number>('TCP_PORT', 3011);
 
   await app.listen(port);
+  void startAllMicroservicesWithRetry(() => app.startAllMicroservices(), {
+    logger: console,
+    serviceName: 'user-service',
+  });
   const logger = app.get(Logger);
   logger.log(
     `User Service listening on HTTP port ${port} and TCP port ${tcpPort}`,

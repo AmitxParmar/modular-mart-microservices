@@ -1,6 +1,7 @@
 import { Module, Global } from '@nestjs/common';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { createRmqOptions } from '@repo/common';
 
 /**
  * AuthClientModule provides a global microservice client for authentication and authorization.
@@ -44,18 +45,12 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
         imports: [ConfigModule],
         useFactory: (configService: ConfigService) => ({
           transport: Transport.RMQ,
-          options: {
-            urls: [
-              configService.get<string>('RABBITMQ_URL') ||
-                'amqp://localhost:5672',
-            ],
+          options: createRmqOptions({
+            urls: [configService.get<string>('RABBITMQ_URL') ?? ''],
             queue: 'auth_queue',
-            queueOptions: {
-              durable: true,
-              deadLetterExchange: 'dlx_exchange',
-              deadLetterRoutingKey: 'dlq_auth_queue',
-            },
-          },
+            deadLetterExchange: 'dlx_exchange',
+            deadLetterRoutingKey: 'dlq_auth_queue',
+          }),
         }),
         inject: [ConfigService],
       },

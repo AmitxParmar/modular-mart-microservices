@@ -1,10 +1,9 @@
 import { Controller, Get, UseGuards, Inject, Logger, InternalServerErrorException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { Repository, DataSource } from "typeorm";
 import { ClientProxy } from "@nestjs/microservices";
-import { firstValueFrom, timeout, catchError } from "rxjs";
+import { firstValueFrom, timeout } from "rxjs";
 import { Product } from "./entities/product.entity";
-import { ServiceHealthLog } from "./entities/service-health-log.entity";
 import { ClerkAuthGuard, Roles, RolesGuard } from "@repo/auth";
 
 type OrderTimelineRow = {
@@ -27,12 +26,11 @@ export class AdminController {
   constructor(
     @InjectRepository(Product)
     private readonly productRepo: Repository<Product>,
-    @InjectRepository(ServiceHealthLog)
-    private readonly healthRepo: Repository<ServiceHealthLog>,
     @Inject("ORDER_SERVICE")
     private readonly orderClient: ClientProxy,
     @Inject("AUTH_SERVICE")
     private readonly authClient: ClientProxy,
+    private readonly dataSource: DataSource,
   ) {}
 
   @Get("stats")
@@ -94,17 +92,40 @@ export class AdminController {
 
   @Get("health")
   async getHealth() {
-    try {
-      return await this.healthRepo.find({
-        order: { createdAt: "DESC" },
-        take: 10,
-      });
-    } catch (error: any) {
-      this.logger.error("Health route failed", error);
-      throw new InternalServerErrorException(
-        `Failed to load health logs: ${error.message || error}`,
-      );
-    }
+    const services = [
+      { name: "catalog-database", probe: this.checkDatabase() },
+      { name: "order-service", probe: this.checkService(this.orderClient, "orders.count", "order-service") },
+      { name: "auth-service", probe: this.checkService(this.authClient, "users.count", "auth-service") },
+    ];
+
+    const results = await Promise.allSettled(
+      services.map((s) => s.probe),
+    );
+
+    return services.map((s, i) => {
+      const r = results[i];
+      const healthy = r.status === "fulfilled" && r.value;
+      return {
+        id: crypto.randomUUID(),
+        serviceName: s.name,
+        status: healthy ? "healthy" : "down",
+        latencyMs: r.status === "fulfilled" ? r.value : 0,
+        errorDetails: r.status === "rejected" ? (r.reason?.message ?? String(r.reason)) : undefined,
+        createdAt: new Date().toISOString(),
+      };
+    });
+  }
+
+  private async checkDatabase(): Promise<number> {
+    const start = Date.now();
+    await this.dataSource.query("SELECT 1");
+    return Date.now() - start;
+  }
+
+  private async checkService(client: ClientProxy, cmd: string, label: string): Promise<number> {
+    const start = Date.now();
+    await firstValueFrom(client.send<number>(cmd, {}).pipe(timeout(2000)));
+    return Date.now() - start;
   }
 
   @Get("analytics")

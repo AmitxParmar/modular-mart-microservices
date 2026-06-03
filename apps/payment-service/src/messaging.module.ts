@@ -1,6 +1,7 @@
 import { Module, Global } from '@nestjs/common';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { ConfigService, ConfigModule } from '@nestjs/config';
+import { createRmqOptions } from '@repo/common';
 
 /**
  * Global RabbitMQ publisher client.
@@ -20,18 +21,12 @@ import { ConfigService, ConfigModule } from '@nestjs/config';
         inject: [ConfigService],
         useFactory: (configService: ConfigService) => ({
           transport: Transport.RMQ,
-          options: {
-            urls: [
-              configService.get<string>('RABBITMQ_URL') ||
-                'amqp://localhost:5672',
-            ],
+          options: createRmqOptions({
+            urls: [configService.get<string>('RABBITMQ_URL') ?? ''],
             queue: 'catalog_orders_queue',
-            queueOptions: {
-              durable: true,
-              deadLetterExchange: 'dlx_exchange',
-              deadLetterRoutingKey: 'dlq_catalog_orders_queue',
-            },
-          },
+            deadLetterExchange: 'dlx_exchange',
+            deadLetterRoutingKey: 'dlq_catalog_orders_queue',
+          }),
         }),
       },
     ]),

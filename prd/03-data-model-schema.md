@@ -1,127 +1,91 @@
 # Modular Mart - Data Model & Schema
 
-## Entities Overview
+## Service-Specific Schemas
 
-### User Service Entities
+### 1. User Service (User DB)
+- **Users**: Core profiles synced from Clerk.
+  - `clerk_id` (Unique), `email` (Unique), `first_name`, `last_name`.
+- **Addresses**: Multi-address support for customers.
+- **Roles**: RBAC management (CUSTOMER, SELLER, ADMIN).
+- **UserRoles**: Join table for many-to-many role assignments.
 
-#### 1. User
+### 2. Catalog Service (Catalog DB)
+- **Products**: Sellable items with `seller_id`, `price`, and `stock_quantity`.
+- **Categories**: Hierarchical product grouping.
+- **ProcessedMessages**: Idempotency table for deduplicating incoming RabbitMQ events.
 
-- **Description**: Platform user with authentication via Clerk
-- **Primary Key**: `id` (UUID)
-- **Relations**:
-  - One-to-Many: Addresses
-  - Many-to-Many: Roles
-- **Fields**:
-  - `clerk_id`: External identifier from Clerk (unique)
-  - `email`: User email address (unique)
-  - `first_name`, `last_name`: Personal information
-  - `created_at`, `updated_at`: Timestamps
+### 3. Order Service (Order DB)
+- **Orders**: Lifecycle tracking with statuses (`PENDING_STOCK`, `PAID`, etc.).
+- **OrderItems**: Snapshot of products, quantities, and prices at time of purchase.
+- **OrderStatusHistory**: Audit trail for every status transition.
+- **OutboxEvents**: Buffer for business events to be published asynchronously.
+- **ProcessedMessages**: Idempotency table for deduplicating payment and stock events.
 
-#### 2. Role
+### 4. Payment Service (Payment DB)
+- **Payments**: Transaction records linked to Stripe `payment_intent_id`.
+- **Status**: PENDING, SUCCESS, FAILED, REFUNDED.
 
-- **Description**: Access control roles (CUSTOMER, SELLER, ADMIN)
-- **Primary Key**: `id` (UUID)
-- **Relations**: Many-to-Many: Users
-- **Fields**:
-  - `name`: Role name (unique)
-  - `description`: Role description
-  - `created_at`, `updated_at`: Timestamps
-
-#### 3. Address
-
-- **Description**: Shipping and billing addresses
-- **Primary Key**: `id` (UUID)
-- **Relations**: Many-to-One: User
-- **Fields**:
-  - `user_id`: Reference to user
-  - `street`, `city`, `state`, `postal_code`, `country`: Address components
-  - `is_default`: Flag for default address
-  - `created_at`, `updated_at`: Timestamps
-
-### Catalog & Order Service Entities
-
-#### 4. Category
-
-- **Description**: Product categorization hierarchy
-- **Primary Key**: `id` (UUID)
-- **Relations**: One-to-Many: Products
-- **Fields**:
-  - `name`: Category name
-  - `slug`: URL-friendly identifier (unique)
-  - `description`: Category description
-  - `created_at`, `updated_at`: Timestamps
-
-#### 5. Product
-
-- **Description**: Sellable items with inventory
-- **Primary Key**: `id` (UUID)
-- **Relations**:
-  - Many-to-One: Category
-  - One-to-Many: OrderItems
-- **Fields**:
-  - `category_id`: Reference to category
-  - `name`: Product name
-  - `slug`: URL-friendly identifier (unique)
-  - `description`: Product description
-  - `price`: Decimal price (10,2)
-  - `stock_quantity`: Available inventory
-  - `created_at`, `updated_at`: Timestamps
-
-#### 6. Order
-
-- **Description**: Customer purchase order
-- **Primary Key**: `id` (UUID)
-- **Relations**:
-  - One-to-Many: OrderItems
-  - One-to-Many: Payments
-- **Fields**:
-  - `user_id`: Reference to user (Clerk ID)
-  - `status`: Enum (PENDING, PAID, SHIPPED, DELIVERED, CANCELLED)
-  - `total_amount`: Decimal total (10,2)
-  - `shipping_address_id`: Reference to address (UUID from User Service)
-  - `created_at`, `updated_at`: Timestamps
-
-#### 7. OrderItem
-
-- **Description**: Individual line items in an order
-- **Primary Key**: `id` (UUID)
-- **Relations**:
-  - Many-to-One: Order
-  - Logical: Product (cross-service reference)
-- **Fields**:
-  - `order_id`: Reference to order
-  - `product_id`: Reference to product (UUID)
-  - `quantity`: Item quantity
-  - `unit_price`: Price at time of purchase (10,2)
-  - `created_at`, `updated_at`: Timestamps
-
-#### 8. Payment
-
-- **Description**: Payment transaction records
-- **Primary Key**: `id` (UUID)
-- **Relations**: Logical: Order (cross-service reference)
-- **Fields**:
-  - `order_id`: Reference to order (UUID)
-  - `amount`: Payment amount (10,2)
-  - `status`: Enum (PENDING, SUCCESS, FAILED, REFUNDED)
-  - `stripe_payment_intent_id`: External Stripe identifier
-  - `created_at`, `updated_at`: Timestamps
+### 5. Notification Service (Notification DB)
+- **Notifications**: Core message entities with read status.
+- **NotificationChannels**: Delivery tracking per medium (Email, SSE).
+- **NotificationTemplates**: Handlebars-based message blueprints.
+- **NotificationPreferences**: User opt-in/out settings.
+- **ProcessedMessages**: Idempotency for event-driven delivery.
 
 ## Relations Diagram
 
 ```mermaid
 erDiagram
     User ||--o{ Address : has
-    User }o--o{ Role : "assigned to"
-
+    User }o--o{ Order : places
+    
     Category ||--o{ Product : contains
-    Product ||--o{ OrderItem : "appears in"
-
+    Product ||--o{ OrderItem : "referenced in"
+    
     Order ||--o{ OrderItem : contains
-    Order ||--o{ Payment : "has payment"
+    Order ||--o{ OrderStatusHistory : tracks
+    Order ||--o{ OutboxEvent : generates
+    
+    Payment }|--|| Order : "pays for"
+    
+    Notification }|--|| User : "targets"
+    Notification ||--o{ NotificationChannel : "sent via"
+```
 
-    User ||--o{ Order : places
-    Address ||--o{ Order : "shipped to"
+## Key Reliability Patterns
+
+### Transactional Outbox (`outbox_events`)
+Used in the **Order Service** to ensure atomicity between order state changes and event publishing.
+```sql
+CREATE TABLE outbox_events (
+    id UUID PRIMARY KEY,
+    event_type TEXT NOT NULL,
+    payload JSONB NOT NULL,
+    processed BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+### Idempotent Consumers (`processed_messages`)
+Implemented in all services that consume RabbitMQ events to guarantee exactly-once processing.
+```sql
+CREATE TABLE processed_messages (
+    id TEXT PRIMARY KEY, -- Usually the Message ID or Correlation ID
+    event_type TEXT NOT NULL,
+    processed_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+### Order Status History
+Provides a full audit trail for debugging and customer tracking.
+```sql
+CREATE TABLE order_status_history (
+    id UUID PRIMARY KEY,
+    order_id UUID REFERENCES orders(id),
+    status TEXT NOT NULL,
+    reason TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
 ```
 
 ## Indexes

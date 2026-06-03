@@ -1,148 +1,54 @@
-# Modular Mart - Learning & Improvement Opportunities
+# Modular Mart - Engineering Improvements
 
-## Database Learning Opportunities
+## ✅ Completed Improvements
 
-### 1. Query Optimization Practice
+### 1. Observability Pillar (LGTM Stack)
+- **Tracing**: Full distributed tracing via Jaeger. Spans propagate through HTTP and RabbitMQ.
+- **Logging**: Standardized JSON logging via `nestjs-pino` with automatic Correlation ID injection.
+- **Metrics**: Real-time throughput and error rate tracking via Prometheus and Grafana.
 
-**Current State**: Basic indexes on foreign keys
-**Learning Opportunities**:
+### 2. Reliability & Resilience
+- **Transactional Outbox**: Guaranteed event delivery for the Checkout Saga.
+- **Idempotency**: Message deduplication across all critical consumers.
+- **Health Probes**: Liveness and readiness checks for all containerized services.
 
-#### Practice Creating Composite Indexes
+---
 
-```sql
--- Learning exercise: Create indexes for common query patterns
-CREATE INDEX idx_orders_user_status ON orders(user_id, status);
-CREATE INDEX idx_orders_created_status ON orders(created_at, status);
-CREATE INDEX idx_products_category_price ON products(category_id, price);
-```
+## 🧠 Technical Challenges Overcome
 
-#### Learn Query Performance Analysis
+### 1. The Dual-Write Problem
+*   **Problem**: Updating a database and publishing an event to RabbitMQ is not naturally atomic. If the database write succeeds but the network fails before publishing, the system becomes inconsistent.
+*   **Solution**: Implemented the **Transactional Outbox Pattern**. Events are saved to the same database as the domain entity. A background processor ensures they are eventually published to RabbitMQ.
 
-- **Tool**: EXPLAIN ANALYZE for query plans
-- **Exercise**: Identify and optimize slow queries
-- **Learning Goal**: Understand how indexes affect performance
-- **Practice**: Write queries with different WHERE clauses and observe performance
+### 2. "Thundering Herd" on Failed Messages
+*   **Problem**: Immediate requeueing of failed RabbitMQ messages can overwhelm a service during transient outages (e.g., a database restart).
+*   **Solution**: Built a custom **Exponential Backoff** interceptor that delays retries (1s, 2s, 4s) before finally routing persistent failures to a **Dead Letter Queue (DLQ)**.
 
-#### Learn Connection Management
+### 3. High-Concurrency Overselling
+*   **Problem**: During "flash sales," multiple users might check stock simultaneously, see "1 item left," and both complete the purchase.
+*   **Solution**: Utilized **Pessimistic Write Locks** (`SELECT ... FOR UPDATE`) in the Catalog Service. This forces requests to wait sequentially for the stock decrement, ensuring absolute inventory integrity.
 
-- **Current**: Basic connection handling
-- **Learning**: Implement connection pooling in TypeORM
-- **Benefit**: Understand connection lifecycle and resource management
-- **Exercise**: Test with multiple concurrent requests
+### 4. Cross-Service Correlation
+*   **Problem**: Tracing a single user request across 5 microservices and a message broker is impossible with standard logs.
+*   **Solution**: Standardized an **X-Request-ID** header that is injected at the API Gateway and propagated through every HTTP call and RabbitMQ message property. This is integrated with **OpenTelemetry** for full Jaeger visualization.
 
-### 2. Database Schema Enhancements
+---
 
-**Current State**: Basic schema with minimal constraints
+## 🎯 Next Focus Areas
 
-#### Add Missing Constraints
+### 1. Catalog Performance (Redis)
+- **Goal**: Reduce database load for the most frequent read operations.
+- **Action**: Implement read-aside caching for product lists and category stats.
+- **Invalidation**: Automatic cache purging when a product is updated or approved.
 
-```sql
--- Add check constraints
-ALTER TABLE products ADD CONSTRAINT chk_price_positive CHECK (price > 0);
-ALTER TABLE orders ADD CONSTRAINT chk_total_positive CHECK (total_amount >= 0);
-ALTER TABLE order_items ADD CONSTRAINT chk_quantity_positive CHECK (quantity > 0);
+### 2. Multi-vendor Scalability
+- **Goal**: Optimize the platform for hundreds of concurrent sellers.
+- **Action**: Enhance the `Order Splitter` logic to handle complex shipping calculations per seller.
+- **Reporting**: Advanced financial reconciliation for seller payouts.
 
--- Add not null constraints
-ALTER TABLE products ALTER COLUMN name SET NOT NULL;
-ALTER TABLE categories ALTER COLUMN slug SET NOT NULL;
-ALTER TABLE orders ALTER COLUMN user_id SET NOT NULL;
-```
-
-#### Add Audit Columns
-
-```sql
--- Add to all tables
-ALTER TABLE users ADD COLUMN created_by UUID;
-ALTER TABLE users ADD COLUMN updated_by UUID;
-ALTER TABLE users ADD COLUMN deleted_at TIMESTAMPTZ;
-ALTER TABLE users ADD COLUMN version INTEGER DEFAULT 1;
-
--- Add triggers for automatic updates
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = NOW();
-    RETURN NEW;
-END;
-$$ language 'plpgsql';
-
-CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-```
-
-### 3. Partitioning Strategy
-
-**Current State**: Single table for all historical data
-**Improvement**: Time-based partitioning
-
-```sql
--- Partition orders table by month
-CREATE TABLE orders_2026_05 PARTITION OF orders
-    FOR VALUES FROM ('2026-05-01') TO ('2026-06-01');
-
-CREATE TABLE orders_2026_06 PARTITION OF orders
-    FOR VALUES FROM ('2026-06-01') TO ('2026-07-01');
-
--- Create monthly partitions automatically
-CREATE OR REPLACE FUNCTION create_monthly_partitions()
-RETURNS void AS $$
-BEGIN
-    -- Logic to create next month's partition
-    -- Run via cron job monthly
-END;
-$$ language 'plpgsql';
-```
-
-### 4. Read Replicas Setup
-
-**Current State**: Single database instance
-**Improvement**: Master-replica architecture
-
-```yaml
-# docker-compose.yml addition
-services:
-  postgres-primary:
-    image: postgres:15
-    environment:
-      POSTGRES_REPLICATION_MODE: master
-      POSTGRES_REPLICATION_USER: replicator
-      POSTGRES_REPLICATION_PASSWORD: ${REPLICATION_PASSWORD}
-
-  postgres-replica:
-    image: postgres:15
-    environment:
-      POSTGRES_REPLICATION_MODE: slave
-      POSTGRES_REPLICATION_SSLMODE: prefer
-    depends_on:
-      - postgres-primary
-```
-
-## Performance Improvements
-
-### 1. Caching Strategy
-
-**Current State**: Minimal caching
-**Improvement**: Multi-layer caching
-
-#### Redis Cache Layers
-
-```typescript
-// Service-level interface
-interface CacheService {
-  get<T>(key: string): Promise<T | null>;
-  set<T>(key: string, value: T, ttl?: number): Promise<void>;
-  delete(key: string): Promise<void>;
-  invalidatePattern(pattern: string): Promise<void>;
-}
-
-// Cache keys pattern
-const CACHE_KEYS = {
-  PRODUCT: (id: string) => `product:${id}`,
-  CATEGORY: (slug: string) => `category:${slug}`,
-  USER_CART: (userId: string) => `cart:user:${userId}`,
-  GUEST_CART: (sessionId: string) => `cart:guest:${sessionId}`,
-};
-```
+### 3. Frontend Optimizations
+- **Goal**: Improve Core Web Vitals.
+- **Action**: Implement Next.js image optimization and optimistic UI updates for the cart.
 
 #### Cache Invalidation Strategy
 

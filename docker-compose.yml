@@ -152,6 +152,33 @@ services:
     ports:
       - "3004:3004"
 
+  notification-service:
+    labels:
+      logging: "true"
+      service_name: "notification-service"
+    build:
+      context: .
+      dockerfile: apps/notification-service/Dockerfile
+    env_file:
+      - apps/notification-service/.env
+    environment:
+      - LOG_PRETTY=false
+      - SERVICE_NAME=notification-service
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
+      - OTEL_TRACES_ENABLED=true
+      - OTEL_METRICS_EXPORTER=none
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3005/health/live"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    ports:
+      - "3006:3005"
+
   api-gateway:
     labels:
       logging: "true"
@@ -171,6 +198,7 @@ services:
       - CATALOG_SERVICE_URL=http://catalog-service:3005
       - ORDER_SERVICE_URL=http://order-service:3002
       - PAYMENT_SERVICE_URL=http://payment-service:3004
+      - NOTIFICATION_SERVICE_URL=http://notification-service:3005
     dns:
       - 8.8.8.8
       - 8.8.4.4
@@ -182,6 +210,8 @@ services:
       order-service:
         condition: service_healthy
       payment-service:
+        condition: service_healthy
+      notification-service:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8000/health/live"]

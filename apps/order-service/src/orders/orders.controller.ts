@@ -106,14 +106,14 @@ export class OrdersController {
   @UseGuards(ClerkAuthGuard, RolesGuard)
   @Roles('SELLER')
   getSellerStats(@CurrentUser() user: ClerkUser) {
-    return this.ordersService.getSellerStats(user.internalId);
+    return this.ordersService.getSellerStats(user.userId);
   }
 
   @Get('seller')
   @UseGuards(ClerkAuthGuard, RolesGuard)
   @Roles('SELLER')
   getSellerOrders(@CurrentUser() user: ClerkUser) {
-    return this.ordersService.getSellerOrders(user.internalId);
+    return this.ordersService.getSellerOrders(user.userId);
   }
 
   @Get(':id')
@@ -138,7 +138,7 @@ export class OrdersController {
   ) {
     return this.ordersService.updateOrderStatus(
       id,
-      user.internalId,
+      user.userId,
       body.status,
       body.reason,
     );
