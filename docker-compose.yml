@@ -198,6 +198,7 @@ services:
       - CATALOG_SERVICE_URL=http://catalog-service:3005
       - ORDER_SERVICE_URL=http://order-service:3002
       - PAYMENT_SERVICE_URL=http://payment-service:3004
+      - NOTIFICATION_SERVICE_URL=http://notification-service:3005
     dns:
       - 8.8.8.8
       - 8.8.4.4
@@ -209,6 +210,8 @@ services:
       order-service:
         condition: service_healthy
       payment-service:
+        condition: service_healthy
+      notification-service:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8000/health/live"]
