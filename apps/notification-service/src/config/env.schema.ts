@@ -27,8 +27,8 @@ export const envSchema = z.object({
   FCM_SERVER_KEY: z.string().optional(),
 
   // Observability
-  JAEGER_ENDPOINT: z.string().url().optional(),
-  SENTRY_DSN: z.string().url().optional(),
+  JAEGER_ENDPOINT: z.string().url().optional().or(z.literal('')),
+  SENTRY_DSN: z.string().url().optional().or(z.literal('')),
 
   // Clerk
   CLERK_SECRET_KEY: z.string().min(1),
