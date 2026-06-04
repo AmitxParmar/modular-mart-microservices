@@ -3,31 +3,18 @@ import type { NextRequest } from 'next/server';
 
 /**
  * Application roles used for route protection.
- * Keeping them as a union type gives us:
- * - autocomplete
- * - type safety
- * - prevention of invalid role strings
  */
 type Role = 'ADMIN' | 'SELLER' | 'CUSTOMER';
 
 /**
  * Shape of the custom metadata stored inside Clerk JWT/session claims.
- *
- * Depending on your Clerk JWT template configuration,
- * roles may appear under:
- * - metadata
- * - publicMetadata
- * - public_metadata
  */
 type RoleMetadata = {
   roles?: string[];
 };
 
 /**
- * Extended session claims structure.
- *
- * Clerk's default sessionClaims type does not know
- * about our custom role metadata, so we extend it here.
+ * Extended session claims structure to include custom role metadata.
  */
 type SessionClaimsWithRoles = {
   metadata?: RoleMetadata;
@@ -36,12 +23,31 @@ type SessionClaimsWithRoles = {
 };
 
 /**
- * Matches all routes that require authentication.
- *
- * Examples:
- * - /dashboard
- * - /customer/orders
- * - /checkout
+ * Configuration for route-based authorization.
+ * Maps path patterns to the roles allowed to access them.
+ */
+const ROUTE_PROTECTION = [
+  { 
+    matcher: createRouteMatcher(['/dashboard/admin(.*)']), 
+    roles: ['ADMIN'] as Role[],
+    name: 'Admin Dashboard'
+  },
+  { 
+    matcher: createRouteMatcher(['/dashboard/seller(.*)']), 
+    roles: ['SELLER'] as Role[],
+    name: 'Seller Dashboard'
+  },
+  { 
+    matcher: createRouteMatcher(['/customer(.*)', '/dashboard/customer(.*)', '/checkout(.*)']), 
+    roles: ['CUSTOMER'] as Role[],
+    name: 'Customer Area',
+    // Special handling for checkout to avoid redirect loops with modal auth
+    skipRedirectOnUnauthenticated: (path: string) => path.startsWith('/checkout')
+  },
+];
+
+/**
+ * Matches all routes that require at least basic authentication.
  */
 const isProtectedRoute = createRouteMatcher([
   '/dashboard(.*)',
@@ -50,232 +56,61 @@ const isProtectedRoute = createRouteMatcher([
 ]);
 
 /**
- * Matches routes specifically intended for CUSTOMER users.
- *
- * Used for role-based authorization checks.
- */
-const isCustomerRoute = createRouteMatcher([
-  '/customer(.*)',
-  '/dashboard/customer(.*)',
-  '/checkout(.*)',
-]);
-
-/**
- * Main Clerk middleware.
- *
- * Runs before requests hit your pages/API routes.
- *
- * Responsibilities:
- * 1. Check if route is protected
- * 2. Verify user is signed in
- * 3. Extract user roles from Clerk session claims
- * 4. Restrict access based on roles
+ * Main Clerk middleware for authentication and role-based access control.
+ * Orchestrates the verification process based on the ROUTE_PROTECTION config.
  */
 export default clerkMiddleware(async (auth, req: NextRequest) => {
-  /**
-   * Skip middleware logic completely
-   * if the current route is public.
-   */
+  // 1. Skip middleware for public routes
   if (!isProtectedRoute(req)) return;
 
-  /**
-   * Retrieve authentication/session data
-   * for the current request.
-   */
   const session = await auth();
+  const path = new URL(req.url).pathname;
 
-  /**
-   * Step 1:
-   * User must be authenticated.
-   *
-   * If not signed in,
-   * handle based on route type.
-   */
+  // 2. Handle unauthenticated users
   if (!session.userId) {
-    /**
-     * For /checkout, we do NOT redirect to Clerk's sign-in page.
-     * This avoids redirect loops when using modal-based auth (AuthDialog).
-     * The page will load, and client-side logic will show the dialog.
-     */
-    if (req.nextUrl.pathname.startsWith('/checkout')) {
+    // Check if any rule allows skipping redirect (e.g., checkout uses a modal)
+    const currentRule = ROUTE_PROTECTION.find(rule => rule.matcher(req));
+    if (currentRule?.skipRedirectOnUnauthenticated?.(path)) {
       return;
     }
-
-    /**
-     * For other protected routes (like /dashboard),
-     * redirect them to Clerk sign-in page.
-     */
     return session.redirectToSignIn();
   }
 
-  /**
-   * Step 2:
-   * Extract session claims.
-   *
-   * We cast because Clerk doesn't automatically
-   * know about our custom metadata structure.
-   */
-  const claims = session.sessionClaims as
-    | SessionClaimsWithRoles
-    | undefined;
+  // 3. Extract and normalize user roles from Clerk session claims
+  const claims = session.sessionClaims as SessionClaimsWithRoles | undefined;
+  const metadata: RoleMetadata = claims?.metadata ?? claims?.publicMetadata ?? claims?.public_metadata ?? {};
+  const userRoles: Role[] = (metadata.roles ?? []).map(role => role.toUpperCase() as Role);
 
-  /**
-   * Helpful debug log while configuring Clerk JWT templates.
-   *
-   * Remove in production if unnecessary.
-   */
-  console.log(
-    'Middleware Debug: Session Claims:',
-    JSON.stringify(claims, null, 2)
-  );
+  // 4. Verify role-based access based on configuration
+  for (const rule of ROUTE_PROTECTION) {
+    if (rule.matcher(req)) {
+      const isAuthorized = rule.roles.some(role => userRoles.includes(role));
+      
+      // Fallback: Allow access if no roles are set yet (for onboarding/dev)
+      if (!isAuthorized && userRoles.length === 0) {
+        console.warn(`Middleware: No roles found for user ${session.userId}. Allowing temporary fallback.`);
+        continue;
+      }
 
-  /**
-   * Step 3:
-   * Extract metadata safely.
-   *
-   * Different Clerk configurations may expose metadata
-   * using different property names.
-   */
-  const metadata: RoleMetadata =
-    claims?.metadata ??
-    claims?.publicMetadata ??
-    claims?.public_metadata ??
-    {};
-
-  /**
-   * Normalize roles:
-   * - fallback to empty array
-   * - convert all roles to uppercase
-   *
-   * This prevents issues like:
-   * - "admin"
-   * - "Admin"
-   * - "ADMIN"
-   */
-  const userRoles: Role[] = (metadata.roles ?? []).map(
-    (role) => role.toUpperCase() as Role
-  );
-
-  console.log(
-    'Middleware Debug: Extracted User Roles (Normalized):',
-    userRoles
-  );
-
-  /**
-   * Current request pathname.
-   *
-   * Example:
-   * /dashboard/admin/orders
-   */
-  const path = new URL(req.url).pathname;
-
-  /**
-   * ADMIN route protection.
-   *
-   * Only users with ADMIN role
-   * can access /dashboard/admin/*
-   */
-  if (
-    path.startsWith('/dashboard/admin') &&
-    !userRoles.includes('ADMIN')
-  ) {
-    console.warn(
-      `Middleware: Access denied for ${session.userId} to admin dashboard. Roles found:`,
-      userRoles
-    );
-
-    return Response.redirect(
-      new URL('/dashboard/forbidden', req.url)
-    );
-  }
-
-  /**
-   * SELLER route protection.
-   *
-   * Only SELLER users can access:
-   * /dashboard/seller/*
-   */
-  if (
-    path.startsWith('/dashboard/seller') &&
-    !userRoles.includes('SELLER')
-  ) {
-    console.warn(
-      `Middleware: Access denied for ${session.userId} to seller dashboard. Roles found:`,
-      userRoles
-    );
-
-    return Response.redirect(
-      new URL('/dashboard/forbidden', req.url)
-    );
-  }
-
-  /**
-   * CUSTOMER route protection.
-   *
-   * Only CUSTOMER users can access:
-   * - /customer/*
-   * - /dashboard/customer/*
-   * - /checkout
-   */
-  if (
-    isCustomerRoute(req) &&
-    !userRoles.includes('CUSTOMER')
-  ) {
-    /**
-     * Fallback behavior:
-     *
-     * If no roles exist at all,
-     * allow access temporarily.
-     *
-     * This is useful during:
-     * - Clerk JWT template setup
-     * - migration
-     * - debugging
-     */
-    if (userRoles.length === 0) {
-      console.warn(
-        `Middleware: No roles found in session claims for ${session.userId}. Allowing access as fallback.`
-      );
-
-      return;
+      if (!isAuthorized) {
+        console.warn(`Middleware: Access denied for ${session.userId} to ${rule.name}. Required: ${rule.roles}, Found: ${userRoles}`);
+        return Response.redirect(new URL('/dashboard/forbidden', req.url));
+      }
     }
-
-    /**
-     * User has roles,
-     * but not the required CUSTOMER role.
-     */
-  
-
-    return Response.redirect(
-      new URL('/dashboard/forbidden', req.url)
-    );
   }
 });
 
 /**
  * Next.js middleware matcher configuration.
- *
  * Controls which requests trigger this middleware.
  */
 export const config = {
   matcher: [
-    /**
-     * Run middleware for all routes except:
-     * - _next static files
-     * - images
-     * - css/js assets
-     * - other static resources
-     */
+    // Skip static files and assets
     '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
-
-    /**
-     * Always run middleware for API routes.
-     */
+    // Always run for API routes
     '/(api|trpc)(.*)',
-
-    /**
-     * Required for Clerk frontend APIs.
-     */
+    // Required for Clerk frontend APIs
     '/__clerk/(.*)',
   ],
 };

@@ -13,9 +13,10 @@ import { PinoLogger } from "nestjs-pino";
 
 /**
  * ClerkAuthGuard
- *
- * Verifies the Clerk-issued JWT from the `Authorization: Bearer <token>` header.
- * Attaches the verified payload to `request.auth` for downstream use via @CurrentUser().
+ * 
+ * Intercepts incoming HTTP requests to verify the Clerk-issued JWT.
+ * It ensures the user is authenticated and attaches the verified user info
+ * to the request object for use in controllers.
  */
 @Injectable()
 export class ClerkAuthGuard implements CanActivate {
@@ -24,84 +25,111 @@ export class ClerkAuthGuard implements CanActivate {
     private readonly configService: ConfigService,
   ) {}
 
+  /**
+   * Main entry point for the guard. Orchestrates token extraction, verification,
+   * and user data attachment.
+   */
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
 
+    // 1. Extract the bearer token from the Authorization header
     const token = this.extractBearerToken(request);
     if (!token) {
-      throw new UnauthorizedException(
-        "Missing or malformed Authorization header.",
-      );
+      throw new UnauthorizedException("Missing or malformed Authorization header.");
     }
 
-    const secretKey = this.configService.get<string>("CLERK_SECRET_KEY");
-
-    if (!secretKey) {
-      this.logger.error("ClerkAuthGuard: CLERK_SECRET_KEY is MISSING in environment variables.");
-      throw new UnauthorizedException("Internal authentication configuration error.");
-    }
-
-    if (secretKey.startsWith("sk_")) {
-      this.logger.debug(`ClerkAuthGuard: CLERK_SECRET_KEY is present and starts with 'sk_'. Length: ${secretKey.length}`);
-    } else {
-      this.logger.error(`ClerkAuthGuard: CLERK_SECRET_KEY does not start with 'sk_'. It might be a publishable key or malformed. Length: ${secretKey.length}`);
-    }
+    // 2. Validate environment configuration
+    const secretKey = this.validateConfiguration();
 
     try {
-      // 1. Verify the JWT cryptographically locally without a network request
-      // We add clockSkewInMs to handle potential drift between server and Clerk's auth servers
-      const payload = await verifyToken(token, {
-        secretKey,
-        clockSkewInMs: 10000, // 10 seconds of tolerance
-      });
+      // 3. Verify the JWT cryptographically
+      const payload = await this.verifySession(token, secretKey);
 
-      const userId = payload.sub;
-      // Clerk JWT stores custom metadata under publicMetadata (camelCase)
-      // Note: top-level `internalId` check kept as a fallback for dev tokens
-      const meta = (payload as any).publicMetadata ?? (payload as any).public_metadata;
-      const internalId: string | undefined =
-        (payload as any).internalId ?? meta?.internalId;
-
-      if (!internalId) {
-        this.logger.warn(
-          `ClerkAuthGuard: internalId missing from JWT for user ${userId}. ` +
-          'User may not have been synced via webhook yet.',
-        );
-      }
-
-      // 2. Attach to request so @CurrentUser() can read it
-      // Note: Clerk templates might return the literal string "null" if mapping fails
-      const verifiedInternalId = 
-        internalId && internalId !== "null" && internalId !== "undefined" 
-          ? internalId 
-          : "";
-
-      (request as Request & { auth: ClerkUser }).auth = {
-        userId,
-        internalId: verifiedInternalId,
-        sessionId: payload.sid,
-        email: (payload as any).email || (payload as any).email_address,
-      };
-
-      this.logger.debug(`ClerkAuthGuard: User ${userId} authenticated with internalId: ${verifiedInternalId || 'MISSING'}`);
+      // 4. Process the payload and attach verified user info to the request
+      (request as Request & { auth: ClerkUser }).auth = this.processPayload(payload);
 
       return true;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      this.logger.error(`Clerk auth verification failed: ${errorMessage}`);
-      
-      // If we're in development, providing a bit more detail in the log can help
-      if (process.env.NODE_ENV !== 'production') {
-        this.logger.debug(`Failed token (first 10 chars): ${token.substring(0, 10)}...`);
-        this.logger.debug(`Secret Key starts with: ${secretKey.substring(0, 7)}...`);
-      }
-
-      throw new UnauthorizedException(
-        "Invalid or expired Clerk session token.",
-      );
+      this.handleVerificationError(err, token, secretKey);
+      throw new UnauthorizedException("Invalid or expired Clerk session token.");
     }
   }
 
+  /**
+   * Validates that the necessary Clerk configuration is present.
+   * @returns The Clerk secret key.
+   */
+  private validateConfiguration(): string {
+    const secretKey = this.configService.get<string>("CLERK_SECRET_KEY");
+
+    if (!secretKey) {
+      this.logger.error("ClerkAuthGuard: CLERK_SECRET_KEY is MISSING.");
+      throw new UnauthorizedException("Internal authentication configuration error.");
+    }
+
+    if (!secretKey.startsWith("sk_")) {
+      this.logger.error("ClerkAuthGuard: CLERK_SECRET_KEY is malformed (should start with sk_).");
+    }
+
+    return secretKey;
+  }
+
+  /**
+   * Verifies the token against Clerk's backend logic.
+   * Includes a 10s clock skew tolerance for distributed systems.
+   */
+  private async verifySession(token: string, secretKey: string) {
+    return await verifyToken(token, {
+      secretKey,
+      clockSkewInMs: 10000,
+    });
+  }
+
+  /**
+   * Transforms the raw JWT payload into a clean ClerkUser object.
+   * Handles metadata extraction and internal ID resolution.
+   */
+  private processPayload(payload: any): ClerkUser {
+    const userId = payload.sub;
+    
+    // Attempt to extract internalId from various metadata locations
+    const meta = payload.publicMetadata ?? payload.public_metadata;
+    const internalId: string | undefined = payload.internalId ?? meta?.internalId;
+
+    if (!internalId) {
+      this.logger.warn(`ClerkAuthGuard: internalId missing for user ${userId}. Sync might be pending.`);
+    }
+
+    // Sanitize the internalId (handle potential stringified nulls from templates)
+    const verifiedInternalId = 
+      internalId && internalId !== "null" && internalId !== "undefined" 
+        ? internalId 
+        : "";
+
+    return {
+      userId,
+      internalId: verifiedInternalId,
+      sessionId: payload.sid,
+      email: payload.email || payload.email_address,
+    };
+  }
+
+  /**
+   * Logs verification failures with context for debugging.
+   */
+  private handleVerificationError(err: any, token: string, secretKey: string) {
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    this.logger.error(`Clerk auth verification failed: ${errorMessage}`);
+    
+    if (process.env.NODE_ENV !== 'production') {
+      this.logger.debug(`Failed token (prefix): ${token.substring(0, 10)}...`);
+      this.logger.debug(`Secret Key (prefix): ${secretKey.substring(0, 7)}...`);
+    }
+  }
+
+  /**
+   * Helper to extract the token from the Authorization header.
+   */
   private extractBearerToken(request: Request): string | null {
     const authHeader = request.headers.authorization;
     if (!authHeader?.startsWith("Bearer ")) return null;
