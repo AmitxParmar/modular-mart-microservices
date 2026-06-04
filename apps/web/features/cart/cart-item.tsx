@@ -15,9 +15,9 @@ export function CartItem({ product, quantity }: CartItemProps) {
   return (
     <div className="flex items-center gap-4 py-3 border-b border-border last:border-0">
       {/* Image placeholder */}
-      <div className="w-16 h-16 bg-muted rounded-md flex items-center justify-center shrink-0">
+      <div className="size-16 bg-muted rounded-md flex items-center justify-center shrink-0">
         <div className="text-muted-foreground/30">
-          <svg viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8">
+          <svg viewBox="0 0 24 24" fill="currentColor" className="size-8">
             <path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
         </div>
@@ -40,11 +40,12 @@ export function CartItem({ product, quantity }: CartItemProps) {
             ))}
           </select>
           <button
+            type="button"
             onClick={() => removeItem(product.id)}
             className="text-muted-foreground hover:text-destructive p-1 transition-colors"
             title="Remove item"
           >
-            <Trash className="w-4 h-4" />
+            <Trash className="size-4" />
           </button>
         </div>
       </div>

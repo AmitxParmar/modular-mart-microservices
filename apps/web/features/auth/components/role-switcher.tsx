@@ -16,9 +16,9 @@ import { useRouter } from "next/navigation";
 
 
 const ROLE_ICONS: Record<UserRole, React.ReactNode> = {
-  ADMIN: <Shield className="w-4 h-4" />,
-  SELLER: <Store className="w-4 h-4" />,
-  CUSTOMER: <User className="w-4 h-4" />,
+  ADMIN: <Shield className="size-4" />,
+  SELLER: <Store className="size-4" />,
+  CUSTOMER: <User className="size-4" />,
 };
 
 const ROLE_LABELS: Record<UserRole, string> = {
@@ -59,7 +59,7 @@ export function RoleSwitcher() {
             <span className="text-sm font-medium">
               {activeRole ? ROLE_LABELS[activeRole] : "Select Role"}
             </span>
-            <ChevronDown className="w-4 h-4 text-muted-foreground" />
+            <ChevronDown className="size-4 text-muted-foreground" />
           </Button>
         )}
       />

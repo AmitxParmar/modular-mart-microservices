@@ -30,7 +30,7 @@ export default function CustomerDashboard() {
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col sm:flex-row items-center gap-6 p-6 rounded-2xl border border-border/40 bg-muted/20">
-        <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center border-4 border-background shadow-xl overflow-hidden">
+        <div className="size-20 rounded-full bg-primary/10 flex items-center justify-center border-4 border-background shadow-xl overflow-hidden">
           {user?.imageUrl ? (
             <Image
               width={100}
@@ -40,7 +40,7 @@ export default function CustomerDashboard() {
               className="w-full h-full object-cover"
             />
           ) : (
-            <User className="w-10 h-10 text-primary" />
+            <User className="size-10 text-primary" />
           )}
         </div>
         <div className="text-center sm:text-left">
@@ -57,8 +57,8 @@ export default function CustomerDashboard() {
         <Card className="border-border/40 shadow-sm hover:shadow-md transition-all group">
           <Link href="/customer/orders">
             <CardHeader>
-              <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary mb-2 group-hover:scale-110 transition-transform">
-                <Package className="w-5 h-5" />
+              <div className="size-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary mb-2 group-hover:scale-110 transition-transform">
+                <Package className="size-5" />
               </div>
               <CardTitle className="text-lg flex items-center justify-between">
                 My Orders
@@ -74,7 +74,7 @@ export default function CustomerDashboard() {
                 View your order history, track shipments, and request returns.
               </p>
               <div className="flex items-center text-primary text-sm font-bold gap-1">
-                View History <ArrowRight className="w-4 h-4" />
+                View History <ArrowRight className="size-4" />
               </div>
             </CardContent>
           </Link>
@@ -83,8 +83,8 @@ export default function CustomerDashboard() {
         <Card className="border-border/40 shadow-sm hover:shadow-md transition-all group">
           <Link href="/dashboard/customer/addresses">
             <CardHeader>
-              <div className="w-10 h-10 bg-emerald-500/10 rounded-lg flex items-center justify-center text-emerald-500 mb-2 group-hover:scale-110 transition-transform">
-                <MapPin className="w-5 h-5" />
+              <div className="size-10 bg-emerald-500/10 rounded-lg flex items-center justify-center text-emerald-500 mb-2 group-hover:scale-110 transition-transform">
+                <MapPin className="size-5" />
               </div>
               <CardTitle className="text-lg flex items-center justify-between">
                 Address Book
@@ -100,7 +100,7 @@ export default function CustomerDashboard() {
                 Manage your shipping and billing addresses for faster checkout.
               </p>
               <div className="flex items-center text-emerald-500 text-sm font-bold gap-1">
-                Manage Addresses <ArrowRight className="w-4 h-4" />
+                Manage Addresses <ArrowRight className="size-4" />
               </div>
             </CardContent>
           </Link>
@@ -109,8 +109,8 @@ export default function CustomerDashboard() {
         <Card className="border-border/40 shadow-sm hover:shadow-md transition-all group">
           <Link href="/dashboard/customer/settings">
             <CardHeader>
-              <div className="w-10 h-10 bg-amber-500/10 rounded-lg flex items-center justify-center text-amber-500 mb-2 group-hover:scale-110 transition-transform">
-                <Settings className="w-5 h-5" />
+              <div className="size-10 bg-amber-500/10 rounded-lg flex items-center justify-center text-amber-500 mb-2 group-hover:scale-110 transition-transform">
+                <Settings className="size-5" />
               </div>
               <CardTitle className="text-lg">Account Settings</CardTitle>
             </CardHeader>
@@ -120,7 +120,7 @@ export default function CustomerDashboard() {
                 preferences.
               </p>
               <div className="flex items-center text-amber-500 text-sm font-bold gap-1">
-                Edit Profile <ArrowRight className="w-4 h-4" />
+                Edit Profile <ArrowRight className="size-4" />
               </div>
             </CardContent>
           </Link>
@@ -139,7 +139,7 @@ export default function CustomerDashboard() {
                   "gap-1 text-primary",
                 )}
               >
-                View all <ArrowRight className="w-3 h-3" />
+                View all <ArrowRight className="size-3" />
               </Link>
             )}
           </CardHeader>
@@ -157,8 +157,8 @@ export default function CustomerDashboard() {
                     className="flex items-center justify-between p-4 rounded-xl border border-border/40 bg-muted/10"
                   >
                     <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-primary/5 rounded-lg flex items-center justify-center text-primary">
-                        <ShoppingCart className="w-5 h-5" />
+                      <div className="size-10 bg-primary/5 rounded-lg flex items-center justify-center text-primary">
+                        <ShoppingCart className="size-5" />
                       </div>
                       <div>
                         <p className="text-sm font-bold uppercase tracking-tight">
@@ -181,8 +181,8 @@ export default function CustomerDashboard() {
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-12 text-center">
-                <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
-                  <ShoppingCart className="w-8 h-8 text-muted-foreground/40" />
+                <div className="size-16 bg-muted rounded-full flex items-center justify-center mb-4">
+                  <ShoppingCart className="size-8 text-muted-foreground/40" />
                 </div>
                 <h3 className="font-medium">No recent orders found</h3>
                 <p className="text-sm text-muted-foreground mt-1 mb-6">
@@ -244,7 +244,7 @@ export default function CustomerDashboard() {
                     "w-full rounded-full gap-2",
                   )}
                 >
-                  <MapPin className="w-4 h-4" />
+                  <MapPin className="size-4" />
                   Add Address
                 </Link>
               </div>

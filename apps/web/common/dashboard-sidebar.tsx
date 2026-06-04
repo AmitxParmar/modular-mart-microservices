@@ -24,25 +24,25 @@ interface SidebarItem {
 
 const DASHBOARD_LINKS: Record<UserRole, SidebarItem[]> = {
   ADMIN: [
-    { title: "Overview", href: "/dashboard/admin", icon: <LayoutDashboard className="w-4 h-4" /> },
-    { title: "Users", href: "/dashboard/admin/users", icon: <Users className="w-4 h-4" /> },
-    { title: "Products Approval", href: "/dashboard/admin/products", icon: <Package className="w-4 h-4" /> },
-    { title: "Service Health", href: "/dashboard/admin/health", icon: <Activity className="w-4 h-4" /> },
-    { title: "Platform Stats", href: "/dashboard/admin/analytics", icon: <BarChart3 className="w-4 h-4" /> },
+    { title: "Overview", href: "/dashboard/admin", icon: <LayoutDashboard className="size-4" /> },
+    { title: "Users", href: "/dashboard/admin/users", icon: <Users className="size-4" /> },
+    { title: "Products Approval", href: "/dashboard/admin/products", icon: <Package className="size-4" /> },
+    { title: "Service Health", href: "/dashboard/admin/health", icon: <Activity className="size-4" /> },
+    { title: "Platform Stats", href: "/dashboard/admin/analytics", icon: <BarChart3 className="size-4" /> },
   ],
   SELLER: [
-    { title: "Dashboard", href: "/dashboard/seller", icon: <LayoutDashboard className="w-4 h-4" /> },
-    { title: "My Products", href: "/dashboard/seller/products", icon: <Package className="w-4 h-4" /> },
-    { title: "Add Product", href: "/dashboard/seller/products/new", icon: <PlusCircle className="w-4 h-4" /> },
-    { title: "Orders", href: "/dashboard/seller/orders", icon: <ShoppingCart className="w-4 h-4" /> },
-    { title: "Shipping", href: "/dashboard/seller/shipping", icon: <Truck className="w-4 h-4" /> },
-    { title: "Earnings", href: "/dashboard/seller/analytics", icon: <BarChart3 className="w-4 h-4" /> },
+    { title: "Dashboard", href: "/dashboard/seller", icon: <LayoutDashboard className="size-4" /> },
+    { title: "My Products", href: "/dashboard/seller/products", icon: <Package className="size-4" /> },
+    { title: "Add Product", href: "/dashboard/seller/products/new", icon: <PlusCircle className="size-4" /> },
+    { title: "Orders", href: "/dashboard/seller/orders", icon: <ShoppingCart className="size-4" /> },
+    { title: "Shipping", href: "/dashboard/seller/shipping", icon: <Truck className="size-4" /> },
+    { title: "Earnings", href: "/dashboard/seller/analytics", icon: <BarChart3 className="size-4" /> },
   ],
   CUSTOMER: [
-    { title: "My Account", href: "/dashboard/customer", icon: <LayoutDashboard className="w-4 h-4" /> },
-    { title: "Order History", href: "/dashboard/customer/orders", icon: <ShoppingCart className="w-4 h-4" /> },
-    { title: "Address Book", href: "/dashboard/customer/addresses", icon: <Package className="w-4 h-4" /> },
-    { title: "Settings", href: "/dashboard/customer/settings", icon: <Settings className="w-4 h-4" /> },
+    { title: "My Account", href: "/dashboard/customer", icon: <LayoutDashboard className="size-4" /> },
+    { title: "Order History", href: "/dashboard/customer/orders", icon: <ShoppingCart className="size-4" /> },
+    { title: "Address Book", href: "/dashboard/customer/addresses", icon: <Package className="size-4" /> },
+    { title: "Settings", href: "/dashboard/customer/settings", icon: <Settings className="size-4" /> },
   ],
 };
 
@@ -93,7 +93,7 @@ export default function DashboardSidebar() {
             href="/settings"
             className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-all"
           >
-            <Settings className="w-4 h-4" />
+            <Settings className="size-4" />
             Account Preferences
           </Link>
         </div>

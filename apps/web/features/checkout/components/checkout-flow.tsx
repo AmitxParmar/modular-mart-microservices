@@ -188,10 +188,11 @@ function StepContainer({ title, status, onEdit, children }: StepContainerProps) 
 
         {status === "completed" && (
           <button
+            type="button"
             onClick={onEdit}
             className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-primary hover:text-primary/80 transition-colors"
           >
-            Edit <Check className="w-4 h-4" />
+            Edit <Check className="size-4" />
           </button>
         )}
       </div>

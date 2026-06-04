@@ -57,7 +57,7 @@ export default function CustomerOrderTrackingPage() {
             href="/customer/orders"
             className={buttonVariants({ variant: "ghost", size: "sm" })}
           >
-            <ArrowLeft className="w-4 h-4 mr-2" /> Back to Orders
+            <ArrowLeft className="size-4 mr-2" /> Back to Orders
           </Link>
           <h1 className="text-3xl font-bold tracking-tight">Track Order</h1>
           <p className="text-muted-foreground">Order #{order.id}</p>
@@ -75,7 +75,7 @@ export default function CustomerOrderTrackingPage() {
         <Card className="md:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Truck className="w-5 h-5 text-blue-600" />
+              <Truck className="size-5 text-blue-600" />
               Live Tracking
             </CardTitle>
             <CardDescription>
@@ -91,7 +91,7 @@ export default function CustomerOrderTrackingPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
-                <MapPin className="w-4 h-4 text-slate-500" />
+                <MapPin className="size-4 text-slate-500" />
                 Shipping To
               </CardTitle>
             </CardHeader>
@@ -121,7 +121,7 @@ export default function CustomerOrderTrackingPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
-                <Package className="w-4 h-4 text-slate-500" />
+                <Package className="size-4 text-slate-500" />
                 Order Summary
               </CardTitle>
             </CardHeader>

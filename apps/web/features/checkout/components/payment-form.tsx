@@ -106,9 +106,9 @@ export function PaymentForm({ shippingAddressSnapshot }: Readonly<PaymentFormPro
 
   if (isSuccess) {
     return (
-      <div className="py-12 flex flex-col items-center justify-center text-center space-y-6 animate-in fade-in zoom-in duration-500">
-        <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center">
-          <CheckCircle2 className="w-10 h-10 text-emerald-600" />
+      <div className="py-12 flex flex-col items-center justify-center text-center gap-y-6 animate-in fade-in zoom-in duration-500">
+        <div className="size-20 rounded-full bg-emerald-100 flex items-center justify-center">
+          <CheckCircle2 className="size-10 text-emerald-600" />
         </div>
         <div className="space-y-2">
           <h3 className="text-2xl font-bold tracking-tight">Order Placed Successfully!</h3>
@@ -150,7 +150,7 @@ export function PaymentForm({ shippingAddressSnapshot }: Readonly<PaymentFormPro
       >
         {isLoading ? (
           <>
-            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+            <Loader2 className="mr-2 size-5 animate-spin" />
             Processing...
           </>
         ) : (

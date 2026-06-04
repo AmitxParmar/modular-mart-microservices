@@ -37,7 +37,7 @@ export default function SellerAnalyticsPage() {
         <Card className="border-border/40">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-xs font-medium text-muted-foreground uppercase">Total Revenue</CardTitle>
-            <DollarSign className="w-4 h-4 text-emerald-500" />
+            <DollarSign className="size-4 text-emerald-500" />
           </CardHeader>
           <CardContent>
             {isLoading ? <Skeleton className="h-7 w-20" /> : <div className="text-2xl font-bold">${Number(stats?.totalEarnings).toLocaleString()}</div>}
@@ -46,7 +46,7 @@ export default function SellerAnalyticsPage() {
         <Card className="border-border/40">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-xs font-medium text-muted-foreground uppercase">Recent Revenue (30d)</CardTitle>
-            <TrendingUp className="w-4 h-4 text-blue-500" />
+            <TrendingUp className="size-4 text-blue-500" />
           </CardHeader>
           <CardContent>
             {isLoading ? <Skeleton className="h-7 w-20" /> : <div className="text-2xl font-bold">${Number(stats?.recentEarnings).toLocaleString()}</div>}
@@ -55,7 +55,7 @@ export default function SellerAnalyticsPage() {
         <Card className="border-border/40">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-xs font-medium text-muted-foreground uppercase">Total Orders</CardTitle>
-            <ShoppingBag className="w-4 h-4 text-amber-500" />
+            <ShoppingBag className="size-4 text-amber-500" />
           </CardHeader>
           <CardContent>
             {isLoading ? <Skeleton className="h-7 w-20" /> : <div className="text-2xl font-bold">{stats?.totalOrders}</div>}
@@ -64,7 +64,7 @@ export default function SellerAnalyticsPage() {
         <Card className="border-border/40">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-xs font-medium text-muted-foreground uppercase">Fulfilled Orders</CardTitle>
-            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+            <CheckCircle2 className="size-4 text-emerald-500" />
           </CardHeader>
           <CardContent>
             {isLoading ? <Skeleton className="h-7 w-20" /> : <div className="text-2xl font-bold">{stats?.orderStatusBreakdown.delivered}</div>}

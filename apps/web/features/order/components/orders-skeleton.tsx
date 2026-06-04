@@ -1,8 +1,8 @@
 export function OrdersSkeleton() {
   return (
-    <div className="flex flex-col space-y-8">
+    <div className="flex flex-col gap-y-8">
       {/* Breadcrumb Skeleton */}
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center gap-x-2">
         <div className="h-4 w-20 bg-muted animate-pulse rounded" />
         <span className="text-muted-foreground/40">/</span>
         <div className="h-4 w-24 bg-muted animate-pulse rounded" />
@@ -40,7 +40,7 @@ export function OrdersSkeleton() {
                 {/* Items Skeleton */}
                 <div className="space-y-4">
                   <div className="flex gap-4">
-                    <div className="w-20 h-20 bg-muted animate-pulse rounded shrink-0" />
+                    <div className="size-20 bg-muted animate-pulse rounded shrink-0" />
                     <div className="flex-1 space-y-2">
                       <div className="h-4 w-3/4 bg-muted animate-pulse rounded" />
                       <div className="h-3 w-1/4 bg-muted/60 animate-pulse rounded" />

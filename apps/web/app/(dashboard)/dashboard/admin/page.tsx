@@ -18,10 +18,10 @@ export default function AdminDashboard() {
   const { data: stats, isLoading } = useAdminStats();
 
   const dashboardStats = [
-    { title: "Total Users", value: stats?.totalUsers?.toLocaleString() || "0", change: `${stats?.trends.users}%`, trend: (stats?.trends.users || 0) >= 0 ? "up" : "down", icon: <Users className="w-4 h-4" /> },
-    { title: "Active Products", value: stats?.activeProducts?.toLocaleString() || "0", change: `${stats?.trends.products}%`, trend: (stats?.trends.products || 0) >= 0 ? "up" : "down", icon: <Package className="w-4 h-4" /> },
-    { title: "Total Orders", value: stats?.totalOrders?.toLocaleString() || "0", change: `${stats?.trends.orders}%`, trend: (stats?.trends.orders || 0) >= 0 ? "up" : "down", icon: <ShoppingCart className="w-4 h-4" /> },
-    { title: "System Uptime", value: stats?.uptime || "99.9%", change: "Stable", trend: "neutral", icon: <Activity className="w-4 h-4" /> },
+    { title: "Total Users", value: stats?.totalUsers?.toLocaleString() || "0", change: `${stats?.trends.users}%`, trend: (stats?.trends.users || 0) >= 0 ? "up" : "down", icon: <Users className="size-4" /> },
+    { title: "Active Products", value: stats?.activeProducts?.toLocaleString() || "0", change: `${stats?.trends.products}%`, trend: (stats?.trends.products || 0) >= 0 ? "up" : "down", icon: <Package className="size-4" /> },
+    { title: "Total Orders", value: stats?.totalOrders?.toLocaleString() || "0", change: `${stats?.trends.orders}%`, trend: (stats?.trends.orders || 0) >= 0 ? "up" : "down", icon: <ShoppingCart className="size-4" /> },
+    { title: "System Uptime", value: stats?.uptime || "99.9%", change: "Stable", trend: "neutral", icon: <Activity className="size-4" /> },
   ];
 
   return (
@@ -34,7 +34,7 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {dashboardStats.map((stat) => (
           <Card key={stat.title} className="border-border/40 shadow-sm hover:shadow-md transition-all">
-            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                 {stat.title}
               </CardTitle>
@@ -49,8 +49,8 @@ export default function AdminDashboard() {
                 <div className="text-2xl font-bold">{stat.value}</div>
               )}
               <div className="flex items-center gap-1 mt-1 text-xs">
-                {stat.trend === "up" && <ArrowUpRight className="w-3 h-3 text-emerald-500" />}
-                {stat.trend === "down" && <ArrowDownRight className="w-3 h-3 text-destructive" />}
+                {stat.trend === "up" && <ArrowUpRight className="size-3 text-emerald-500" />}
+                {stat.trend === "down" && <ArrowDownRight className="size-3 text-destructive" />}
                 <span className={
                   stat.trend === "up" ? "text-emerald-500" : 
                   stat.trend === "down" ? "text-destructive" : 
@@ -81,7 +81,7 @@ export default function AdminDashboard() {
             <div className="space-y-6">
               {[1, 2, 3].map((i) => (
                 <div key={i} className="flex gap-4">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-2 shrink-0" />
+                  <div className="size-1.5 rounded-full bg-emerald-500 mt-2 shrink-0" />
                   <div>
                     <p className="text-sm font-medium">Backup completed successfully</p>
                     <p className="text-xs text-muted-foreground">User-Service Database • 2 hours ago</p>

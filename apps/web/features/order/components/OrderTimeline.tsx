@@ -9,14 +9,14 @@ interface OrderTimelineProps {
 }
 
 const statusConfig: Record<string, { icon: React.ReactNode; color: string; label: string }> = {
-  PENDING: { icon: <Clock className="w-5 h-5" />, color: 'text-yellow-500', label: 'Order Placed' },
-  PAID: { icon: <CheckCircle2 className="w-5 h-5" />, color: 'text-green-500', label: 'Payment Confirmed' },
-  APPROVED: { icon: <CheckCircle2 className="w-5 h-5" />, color: 'text-blue-500', label: 'Order Approved' },
-  REJECTED: { icon: <XCircle className="w-5 h-5" />, color: 'text-red-500', label: 'Order Rejected' },
-  PROCESSING: { icon: <Package className="w-5 h-5" />, color: 'text-blue-500', label: 'Processing' },
-  SHIPPED: { icon: <Truck className="w-5 h-5" />, color: 'text-purple-500', label: 'Shipped' },
-  DELIVERED: { icon: <CheckCircle2 className="w-5 h-5" />, color: 'text-green-600', label: 'Delivered' },
-  CANCELLED: { icon: <AlertCircle className="w-5 h-5" />, color: 'text-gray-500', label: 'Cancelled' },
+  PENDING: { icon: <Clock className="size-5" />, color: 'text-yellow-500', label: 'Order Placed' },
+  PAID: { icon: <CheckCircle2 className="size-5" />, color: 'text-green-500', label: 'Payment Confirmed' },
+  APPROVED: { icon: <CheckCircle2 className="size-5" />, color: 'text-blue-500', label: 'Order Approved' },
+  REJECTED: { icon: <XCircle className="size-5" />, color: 'text-red-500', label: 'Order Rejected' },
+  PROCESSING: { icon: <Package className="size-5" />, color: 'text-blue-500', label: 'Processing' },
+  SHIPPED: { icon: <Truck className="size-5" />, color: 'text-purple-500', label: 'Shipped' },
+  DELIVERED: { icon: <CheckCircle2 className="size-5" />, color: 'text-green-600', label: 'Delivered' },
+  CANCELLED: { icon: <AlertCircle className="size-5" />, color: 'text-gray-500', label: 'Cancelled' },
 };
 
 export function OrderTimeline({ history }: Readonly<OrderTimelineProps>) {
@@ -24,7 +24,7 @@ export function OrderTimeline({ history }: Readonly<OrderTimelineProps>) {
     <div className="space-y-8 relative before:absolute before:inset-0 before:left-2.5 before:h-full before:w-0.5 before:bg-slate-200 before:content-[''] ml-4">
       {history.map((item) => {
         const config = statusConfig[item.status] || {
-          icon: <Circle className="w-5 h-5" />,
+          icon: <Circle className="size-5" />,
           color: 'text-slate-400',
           label: item.status,
         };
@@ -33,7 +33,7 @@ export function OrderTimeline({ history }: Readonly<OrderTimelineProps>) {
           <div key={item.id} className="relative pl-8">
             <div
               className={cn(
-                'absolute left-0 top-0 flex h-6 w-6 -translate-x-1/2 items-center justify-center rounded-full bg-white ring-4 ring-white',
+                'absolute left-0 top-0 flex size-6 -translate-x-1/2 items-center justify-center rounded-full bg-white ring-4 ring-white',
                 config.color
               )}
             >
