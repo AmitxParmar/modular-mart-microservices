@@ -3,6 +3,13 @@
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": "src",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "baseUrl": ".",
+    "paths": {
+      "@repo/common": ["../common/dist"],
+      "@repo/common/*": ["../common/dist/*"]
+    },
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true
   },

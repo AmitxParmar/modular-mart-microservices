@@ -30,6 +30,7 @@
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/typeorm": "^11.0.0",
     "@repo/auth": "workspace:^",
+    "@repo/common": "workspace:^",
     "zod": "^4.3.6",
     "@repo/contracts": "workspace:*",
     "@repo/database": "workspace:^",
