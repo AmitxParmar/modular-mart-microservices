@@ -8,6 +8,7 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
+// fallow-ignore-next-line circular-dependency
 import { Notification } from './notification.entity';
 import { NotificationChannelType } from '../enums/notification-channel.enum';
 import { ChannelStatus } from '../enums/channel-status.enum';

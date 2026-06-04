@@ -1,5 +1,6 @@
 import { Entity, Column, OneToMany } from 'typeorm';
 import { BaseEntity } from '@repo/database';
+// fallow-ignore-next-line circular-dependency
 import { Product } from './product.entity';
 
 @Entity('categories')
