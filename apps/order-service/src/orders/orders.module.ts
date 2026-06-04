@@ -10,10 +10,24 @@ import { ProcessedMessage } from './entities/processed-message.entity';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { OutboxProcessorService } from './outbox-processor.service';
+import { OrderCreationService } from './services/order-creation.service';
+import { OrderValidationService } from './services/order-validation.service';
+import { OrderAnalyticsService } from './services/order-analytics.service';
+import { OrderEventsService } from './services/order-events.service';
 
+/**
+ * Module for handling all order-related operations.
+ * Coordinates between catalog, payments, and auth services via RabbitMQ.
+ */
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Order, OrderItem, OrderStatusHistory, OutboxEvent, ProcessedMessage]),
+    TypeOrmModule.forFeature([
+      Order, 
+      OrderItem, 
+      OrderStatusHistory, 
+      OutboxEvent, 
+      ProcessedMessage
+    ]),
     ClientsModule.registerAsync([
       {
         name: 'CATALOG_SERVICE',
@@ -52,7 +66,14 @@ import { OutboxProcessorService } from './outbox-processor.service';
     ]),
   ],
   controllers: [OrdersController],
-  providers: [OrdersService, OutboxProcessorService],
+  providers: [
+    OrdersService, 
+    OutboxProcessorService,
+    OrderCreationService,
+    OrderValidationService,
+    OrderAnalyticsService,
+    OrderEventsService,
+  ],
   exports: [OrdersService],
 })
 export class OrdersModule {}
