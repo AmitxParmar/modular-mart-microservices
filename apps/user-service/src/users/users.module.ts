@@ -9,11 +9,24 @@ import { UsersController } from './users.controller';
 import { AddressesController } from './addresses.controller';
 import { AdminUsersController } from './admin-users.controller';
 import { ClerkAuthGuard, RolesGuard } from '@repo/auth';
+import { ClerkSyncService } from './services/clerk-sync.service';
 
+/**
+ * Module for managing user identity, profiles, and roles.
+ */
 @Module({
   imports: [TypeOrmModule.forFeature([User, Address, Role, Seller])],
-  providers: [UsersService, ClerkAuthGuard, RolesGuard],
-  controllers: [UsersController, AddressesController, AdminUsersController],
+  providers: [
+    UsersService, 
+    ClerkSyncService,
+    ClerkAuthGuard, 
+    RolesGuard
+  ],
+  controllers: [
+    UsersController, 
+    AddressesController, 
+    AdminUsersController
+  ],
   exports: [TypeOrmModule, UsersService],
 })
 export class UsersModule {}
