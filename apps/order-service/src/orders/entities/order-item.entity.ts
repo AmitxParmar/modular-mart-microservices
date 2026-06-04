@@ -1,5 +1,6 @@
 import { Entity, Column, Index, ManyToOne, JoinColumn } from 'typeorm';
 import { BaseEntity } from '@repo/database';
+// fallow-ignore-next-line circular-dependency
 import { Order } from './order.entity';
 
 @Entity('order_items')

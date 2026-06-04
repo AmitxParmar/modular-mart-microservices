@@ -60,7 +60,7 @@ export default function SellerOrderDetailPage() {
               className="mt-4"
               onClick={() => router.back()}
             >
-              <ArrowLeft className="w-4 h-4 mr-2" /> Back
+              <ArrowLeft className="size-4 mr-2" /> Back
             </Button>
           </CardContent>
         </Card>
@@ -106,14 +106,14 @@ export default function SellerOrderDetailPage() {
               disabled={isUpdating}
               className="bg-green-600 hover:bg-green-700"
             >
-              <Check className="w-4 h-4 mr-2" /> Approve Order
+              <Check className="size-4 mr-2" /> Approve Order
             </Button>
             <Button
               variant="destructive"
               onClick={() => setShowRejectInput(!showRejectInput)}
               disabled={isUpdating}
             >
-              <X className="w-4 h-4 mr-2" /> Reject Order
+              <X className="size-4 mr-2" /> Reject Order
             </Button>
           </div>
         );
@@ -123,7 +123,7 @@ export default function SellerOrderDetailPage() {
             onClick={() => handleStatusUpdate("PROCESSING")}
             disabled={isUpdating}
           >
-            <Package className="w-4 h-4 mr-2" /> Start Processing
+            <Package className="size-4 mr-2" /> Start Processing
           </Button>
         );
       case "PROCESSING":
@@ -132,7 +132,7 @@ export default function SellerOrderDetailPage() {
             onClick={() => handleStatusUpdate("SHIPPED")}
             disabled={isUpdating}
           >
-            <Truck className="w-4 h-4 mr-2" /> Mark as Shipped
+            <Truck className="size-4 mr-2" /> Mark as Shipped
           </Button>
         );
       case "SHIPPED":
@@ -141,7 +141,7 @@ export default function SellerOrderDetailPage() {
             onClick={() => handleStatusUpdate("DELIVERED")}
             disabled={isUpdating}
           >
-            <CheckCircle2 className="w-4 h-4 mr-2" /> Mark as Delivered
+            <CheckCircle2 className="size-4 mr-2" /> Mark as Delivered
           </Button>
         );
       default:
@@ -155,7 +155,7 @@ export default function SellerOrderDetailPage() {
         <Button
           render={
             <Link href="/dashboard/seller/orders">
-              <ArrowLeft className="w-5 h-5" />
+              <ArrowLeft className="size-5" />
             </Link>
           }
           variant="ghost"
@@ -185,8 +185,8 @@ export default function SellerOrderDetailPage() {
                   className="flex items-center justify-between"
                 >
                   <div className="flex gap-4 items-center">
-                    <div className="w-12 h-12 bg-slate-100 rounded flex items-center justify-center">
-                      <Package className="w-6 h-6 text-slate-400" />
+                    <div className="size-12 bg-slate-100 rounded flex items-center justify-center">
+                      <Package className="size-6 text-slate-400" />
                     </div>
                     <div>
                       <p className="font-medium text-sm">

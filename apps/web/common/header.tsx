@@ -90,7 +90,7 @@ export default function Header() {
         <div className="flex items-center gap-2 sm:gap-4">
           {/* Search Input */}
           <div className="hidden lg:flex relative items-center mr-2">
-            <Search className="absolute left-3 w-4 h-4 text-muted-foreground" />
+            <Search className="absolute left-3 size-4 text-muted-foreground" />
             <Input
               type="text"
               placeholder="Search products..."

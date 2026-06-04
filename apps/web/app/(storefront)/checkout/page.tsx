@@ -3,6 +3,11 @@ import { ArrowLeft } from "lucide-react";
 
 import { CheckoutFlow, OrderSummary, StripeProvider, CheckoutAuthGuard } from "@/features/checkout";
 
+export const metadata = {
+  title: 'Checkout | ModularMart',
+  description: 'Secure checkout for your ModularMart order.',
+};
+
 export default function CheckoutPage() {
   return (
     <div className="min-h-screen bg-background">
@@ -14,7 +19,7 @@ export default function CheckoutPage() {
               href="/"
               className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
             >
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft className="size-4" />
               Back to Shopping
             </Link>
             <Link href="/" className="text-xl font-bold tracking-tight text-foreground">

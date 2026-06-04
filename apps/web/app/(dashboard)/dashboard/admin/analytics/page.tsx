@@ -12,7 +12,7 @@ export default function AdminAnalyticsPage() {
   const sections = [
     {
       title: "Revenue Performance",
-      icon: <DollarSign className="w-4 h-4" />,
+      icon: <DollarSign className="size-4" />,
       value: `$${analytics?.revenue.total.toLocaleString()}`,
       growth: analytics?.revenue.growth,
       data: analytics?.revenue.data,
@@ -21,7 +21,7 @@ export default function AdminAnalyticsPage() {
     },
     {
       title: "Active Users",
-      icon: <Users className="w-4 h-4" />,
+      icon: <Users className="size-4" />,
       value: analytics?.users.active.toLocaleString(),
       growth: analytics?.users.growth,
       data: analytics?.users.data,
@@ -30,7 +30,7 @@ export default function AdminAnalyticsPage() {
     },
     {
       title: "Order Volume",
-      icon: <ShoppingCart className="w-4 h-4" />,
+      icon: <ShoppingCart className="size-4" />,
       value: analytics?.orders.total.toLocaleString(),
       growth: analytics?.orders.growth,
       data: analytics?.orders.data,
@@ -49,7 +49,7 @@ export default function AdminAnalyticsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {sections.map((section) => (
           <Card key={section.title} className="border-border/40 overflow-hidden">
-            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                 {section.title}
               </CardTitle>
@@ -65,9 +65,9 @@ export default function AdminAnalyticsPage() {
               )}
               <div className="flex items-center gap-1 mt-1 text-xs">
                 {(section.growth || 0) >= 0 ? (
-                  <ArrowUpRight className="w-3 h-3 text-emerald-500" />
+                  <ArrowUpRight className="size-3 text-emerald-500" />
                 ) : (
-                  <ArrowDownRight className="w-3 h-3 text-destructive" />
+                  <ArrowDownRight className="size-3 text-destructive" />
                 )}
                 <span className={cn(
                   (section.growth || 0) >= 0 ? "text-emerald-500" : "text-destructive"
@@ -107,7 +107,7 @@ export default function AdminAnalyticsPage() {
         <Card className="border-border/40">
           <CardHeader>
             <CardTitle className="text-sm font-bold flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-primary" />
+              <TrendingUp className="size-4 text-primary" />
               Daily Growth Metrics
             </CardTitle>
           </CardHeader>

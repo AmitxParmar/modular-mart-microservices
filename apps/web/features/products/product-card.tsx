@@ -40,7 +40,7 @@ export function ProductCard({ product, onAddToCart }: Readonly<ProductCardProps>
       {/* Image container */}
       <div className="relative aspect-[4/5] bg-muted/40 rounded-2xl overflow-hidden mb-4">
         <div className="absolute inset-0 flex items-center justify-center text-muted-foreground/20 group-hover:scale-105 transition-transform duration-500">
-          <svg viewBox="0 0 24 24" fill="currentColor" className="w-16 h-16">
+          <svg viewBox="0 0 24 24" fill="currentColor" className="size-16">
             <path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
         </div>
@@ -48,11 +48,12 @@ export function ProductCard({ product, onAddToCart }: Readonly<ProductCardProps>
         {/* Quick Add Overlay */}
         <div className="absolute bottom-0 left-0 right-0 p-4 translate-y-full opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
           <button
+            type="button"
             onClick={handleAddToCart}
             disabled={!inStock}
             className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold bg-background/95 backdrop-blur-md text-foreground rounded-xl shadow-lg hover:bg-foreground hover:text-background disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            <ShoppingCart className="w-4 h-4" />
+            <ShoppingCart className="size-4" />
             {inStock ? 'Quick Add' : 'Unavailable'}
           </button>
         </div>

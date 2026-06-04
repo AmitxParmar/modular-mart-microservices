@@ -24,7 +24,7 @@ export function CheckoutAuthGuard({ children }: Readonly<CheckoutAuthGuardProps>
   if (!isLoaded) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <Loader2 className="size-8 animate-spin text-primary" />
         <p className="mt-4 text-muted-foreground">Loading checkout...</p>
       </div>
     );
@@ -33,8 +33,8 @@ export function CheckoutAuthGuard({ children }: Readonly<CheckoutAuthGuardProps>
   if (!isSignedIn) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center bg-muted/30 border border-dashed border-border/60 rounded-3xl animate-in fade-in duration-500">
-        <div className="h-16 w-16 bg-primary/10 rounded-full flex items-center justify-center mb-6">
-          <Lock className="h-8 w-8 text-primary" />
+        <div className="size-16 bg-primary/10 rounded-full flex items-center justify-center mb-6">
+          <Lock className="size-8 text-primary" />
         </div>
         <h2 className="text-2xl font-bold tracking-tight mb-2">
           Authentication Required

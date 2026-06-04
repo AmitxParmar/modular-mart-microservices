@@ -11,8 +11,8 @@ export function OrdersAuthRequired() {
 
   return (
     <div className="flex flex-col items-center justify-center py-20 text-center bg-card border border-dashed border-border rounded-xl">
-      <div className="h-16 w-16 bg-primary/10 rounded-full flex items-center justify-center mb-6">
-        <Lock className="h-8 w-8 text-primary" />
+      <div className="size-16 bg-primary/10 rounded-full flex items-center justify-center mb-6">
+        <Lock className="size-8 text-primary" />
       </div>
       <h2 className="text-2xl font-bold tracking-tight mb-2">
         Authentication Required

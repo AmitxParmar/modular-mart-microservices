@@ -59,7 +59,7 @@ export default function SellerOrdersPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <ShoppingBag className="w-5 h-5" />
+            <ShoppingBag className="size-5" />
             Recent Orders
           </CardTitle>
         </CardHeader>
@@ -98,7 +98,7 @@ export default function SellerOrdersPage() {
                       <Button
                         render={
                           <Link href={`/dashboard/seller/orders/${order.id}`}>
-                            <Eye className="w-4 h-4 mr-2" />
+                            <Eye className="size-4 mr-2" />
                             Details
                           </Link>
                         }

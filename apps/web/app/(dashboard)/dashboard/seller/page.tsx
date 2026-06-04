@@ -26,28 +26,28 @@ export default function SellerDashboard() {
     {
       title: "Total Revenue",
       value: stats ? `$${Number(stats.totalEarnings).toLocaleString()}` : "$0",
-      icon: <DollarSign className="w-4 h-4" />,
+      icon: <DollarSign className="size-4" />,
       color: "text-emerald-500",
       isLoading: isStatsLoading,
     },
     {
       title: "Active Products",
       value: products ? products.filter(p => p.status === 'APPROVED').length.toString() : "0",
-      icon: <Package className="w-4 h-4" />,
+      icon: <Package className="size-4" />,
       color: "text-blue-500",
       isLoading: isProductsLoading,
     },
     {
       title: "Pending Orders",
       value: stats ? stats.pendingOrders.toString() : "0",
-      icon: <ShoppingCart className="w-4 h-4" />,
+      icon: <ShoppingCart className="size-4" />,
       color: "text-amber-500",
       isLoading: isStatsLoading,
     },
     {
       title: "Recent Earnings (30d)",
       value: stats ? `$${Number(stats.recentEarnings).toLocaleString()}` : "$0",
-      icon: <TrendingUp className="w-4 h-4" />,
+      icon: <TrendingUp className="size-4" />,
       color: "text-indigo-500",
       isLoading: isStatsLoading,
     },
@@ -66,7 +66,7 @@ export default function SellerDashboard() {
           href="/dashboard/seller/products/new"
           className={cn(buttonVariants({ variant: "default" }), "rounded-full gap-2 shadow-lg shadow-primary/20")}
         >
-          <PlusCircle className="w-4 h-4" />
+          <PlusCircle className="size-4" />
           New Product
         </Link>
       </div>
@@ -74,7 +74,7 @@ export default function SellerDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {SELLER_STATS.map((stat) => (
           <Card key={stat.title} className="border-border/40 shadow-sm">
-            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                 {stat.title}
               </CardTitle>
@@ -101,7 +101,7 @@ export default function SellerDashboard() {
               href="/dashboard/seller/orders"
               className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "gap-1 text-primary")}
             >
-              View all <ArrowRight className="w-3 h-3" />
+              View all <ArrowRight className="size-3" />
             </Link>
           </CardHeader>
           <CardContent>
@@ -120,8 +120,8 @@ export default function SellerDashboard() {
                     className="flex items-center justify-between p-3 rounded-lg border border-border/40 hover:bg-muted/10 transition-colors"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-muted rounded flex items-center justify-center">
-                        <Package className="w-5 h-5 text-muted-foreground" />
+                      <div className="size-10 bg-muted rounded flex items-center justify-center">
+                        <Package className="size-5 text-muted-foreground" />
                       </div>
                       <div>
                         <p className="text-sm font-medium">
@@ -161,7 +161,7 @@ export default function SellerDashboard() {
               href="/dashboard/seller/products"
               className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "gap-1 text-primary")}
             >
-              Inventory <ArrowRight className="w-3 h-3" />
+              Inventory <ArrowRight className="size-3" />
             </Link>
           </CardHeader>
           <CardContent>
@@ -179,7 +179,7 @@ export default function SellerDashboard() {
                     className="flex items-center justify-between p-3 rounded-lg border border-border/40"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-muted rounded overflow-hidden">
+                      <div className="size-10 bg-muted rounded overflow-hidden">
                         <div className="w-full h-full bg-linear-to-br from-primary/10 to-primary/30" />
                       </div>
                       <div>

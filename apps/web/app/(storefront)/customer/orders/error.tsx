@@ -18,8 +18,8 @@ export default function OrdersError({
   return (
     <div className="max-w-5xl mx-auto py-20 px-4">
       <div className="flex flex-col items-center justify-center text-center bg-destructive/5 border border-destructive/10 rounded-xl p-8 sm:p-12">
-        <div className="h-16 w-16 bg-destructive/10 rounded-full flex items-center justify-center mb-6">
-          <AlertCircle className="h-8 w-8 text-destructive" />
+        <div className="size-16 bg-destructive/10 rounded-full flex items-center justify-center mb-6">
+          <AlertCircle className="size-8 text-destructive" />
         </div>
         
         <h2 className="text-2xl font-bold tracking-tight mb-2">

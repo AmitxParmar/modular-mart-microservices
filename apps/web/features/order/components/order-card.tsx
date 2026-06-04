@@ -8,8 +8,10 @@ interface OrderCardProps {
   order: Order;
 }
 
+const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+
 function formatCurrency(amount: number) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+  return currencyFormatter.format(amount);
 }
 
 function formatDate(iso: string) {
@@ -77,8 +79,8 @@ export function OrderCard({ order }: OrderCardProps) {
           <div className="space-y-4">
             {order.items.map((item) => (
               <div key={item.id} className="flex gap-4">
-                <div className="w-20 h-20 bg-muted rounded flex items-center justify-center shrink-0 border border-border">
-                  <Package className="w-8 h-8 text-muted-foreground/40" />
+                <div className="size-20 bg-muted rounded flex items-center justify-center shrink-0 border border-border">
+                  <Package className="size-8 text-muted-foreground/40" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-primary hover:underline line-clamp-2 cursor-pointer">
@@ -90,7 +92,7 @@ export function OrderCard({ order }: OrderCardProps) {
                   <p className="text-sm font-bold mt-1">
                     {formatCurrency(Number(item.unitPrice))}
                   </p>
-                  <button className="mt-2 text-xs bg-primary/10 text-primary hover:bg-primary/20 px-3 py-1 rounded-full font-medium transition-colors">
+                  <button type="button" className="mt-2 text-xs bg-primary/10 text-primary hover:bg-primary/20 px-3 py-1 rounded-full font-medium transition-colors">
                     Buy it again
                   </button>
                 </div>
@@ -101,16 +103,16 @@ export function OrderCard({ order }: OrderCardProps) {
 
         {/* Action Buttons */}
         <div className="sm:w-48 flex flex-col gap-2 shrink-0">
-          <button className="w-full py-2 px-4 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors shadow-sm">
+          <button type="button" className="w-full py-2 px-4 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors shadow-sm">
             Track package
           </button>
-          <button className="w-full py-2 px-4 bg-secondary text-secondary-foreground rounded-lg text-sm font-medium hover:bg-secondary/80 transition-colors border border-border shadow-sm">
+          <button type="button" className="w-full py-2 px-4 bg-secondary text-secondary-foreground rounded-lg text-sm font-medium hover:bg-secondary/80 transition-colors border border-border shadow-sm">
             Return or replace items
           </button>
-          <button className="w-full py-2 px-4 bg-secondary text-secondary-foreground rounded-lg text-sm font-medium hover:bg-secondary/80 transition-colors border border-border shadow-sm">
+          <button type="button" className="w-full py-2 px-4 bg-secondary text-secondary-foreground rounded-lg text-sm font-medium hover:bg-secondary/80 transition-colors border border-border shadow-sm">
             Share gift receipt
           </button>
-          <button className="w-full py-2 px-4 bg-secondary text-secondary-foreground rounded-lg text-sm font-medium hover:bg-secondary/80 transition-colors border border-border shadow-sm">
+          <button type="button" className="w-full py-2 px-4 bg-secondary text-secondary-foreground rounded-lg text-sm font-medium hover:bg-secondary/80 transition-colors border border-border shadow-sm">
             Write a product review
           </button>
         </div>
@@ -119,11 +121,11 @@ export function OrderCard({ order }: OrderCardProps) {
       {/* Footer / Status Timeline link */}
       <div className="px-4 py-3 sm:px-6 bg-muted/10 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
         <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
           <span>Last updated {formatDate(order.updatedAt)}</span>
         </div>
-        <button className="flex items-center gap-1 hover:text-foreground transition-colors">
-          Problem with order? <ExternalLink className="w-3 h-3" />
+        <button type="button" className="flex items-center gap-1 hover:text-foreground transition-colors">
+          Problem with order? <ExternalLink className="size-3" />
         </button>
       </div>
     </div>

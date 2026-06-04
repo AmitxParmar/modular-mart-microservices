@@ -23,7 +23,7 @@ export default function SellerProductsPage() {
           href="/dashboard/seller/products/new"
           className={cn(buttonVariants({ variant: "default" }), "rounded-full gap-2")}
         >
-          <PlusCircle className="w-4 h-4" />
+          <PlusCircle className="size-4" />
           Add Product
         </Link>
       </div>
@@ -42,7 +42,7 @@ export default function SellerProductsPage() {
               ))
             ) : !products || products.length === 0 ? (
               <div className="text-center py-12 border-2 border-dashed border-border/40 rounded-xl">
-                <Package className="w-12 h-12 text-muted-foreground/20 mx-auto mb-4" />
+                <Package className="size-12 text-muted-foreground/20 mx-auto mb-4" />
                 <p className="text-muted-foreground">You haven't added any products yet.</p>
                 <Link 
                   href="/dashboard/seller/products/new"
@@ -57,8 +57,8 @@ export default function SellerProductsPage() {
                   key={product.id}
                   className="flex flex-col md:flex-row gap-6 p-4 rounded-xl border border-border/40 bg-muted/10 hover:bg-muted/20 transition-all"
                 >
-                  <div className="w-full md:w-32 h-32 bg-muted rounded-lg shrink-0 flex items-center justify-center">
-                    <Package className="w-8 h-8 text-muted-foreground/40" />
+                  <div className="w-full md:size-32 bg-muted rounded-lg shrink-0 flex items-center justify-center">
+                    <Package className="size-8 text-muted-foreground/40" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-4">
@@ -88,9 +88,9 @@ export default function SellerProductsPage() {
                         <Link 
                           href={`/products/${product.slug}`}
                           target="_blank"
-                          className={cn(buttonVariants({ variant: "outline", size: "sm" }), "h-8 w-8 p-0")}
+                          className={cn(buttonVariants({ variant: "outline", size: "sm" }), "size-8 p-0")}
                         >
-                          <ExternalLink className="w-4 h-4" />
+                          <ExternalLink className="size-4" />
                         </Link>
                       </div>
                     </div>

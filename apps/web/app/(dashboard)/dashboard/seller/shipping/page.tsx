@@ -48,7 +48,7 @@ export default function SellerShippingPage() {
         ) : !shippingOrders || shippingOrders.length === 0 ? (
           <Card className="border-dashed border-2 border-border/40">
             <CardContent className="flex flex-col items-center justify-center py-12">
-              <Truck className="w-12 h-12 text-muted-foreground/20 mb-4" />
+              <Truck className="size-12 text-muted-foreground/20 mb-4" />
               <p className="text-muted-foreground">No orders currently in the shipping pipeline.</p>
             </CardContent>
           </Card>
@@ -58,8 +58,8 @@ export default function SellerShippingPage() {
               <CardContent className="p-6">
                 <div className="flex flex-col md:flex-row justify-between gap-6">
                   <div className="flex gap-4">
-                    <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center shrink-0">
-                      <Package className="w-6 h-6 text-muted-foreground" />
+                    <div className="size-12 bg-muted rounded-full flex items-center justify-center shrink-0">
+                      <Package className="size-6 text-muted-foreground" />
                     </div>
                     <div>
                       <div className="flex items-center gap-2 mb-1">
@@ -83,7 +83,7 @@ export default function SellerShippingPage() {
                   <div className="flex items-center gap-3 shrink-0">
                     <Link href={`/dashboard/seller/orders/${order.id}`}>
                       <Button variant="outline" size="sm" className="gap-2">
-                        Details <ArrowRight className="w-3 h-3" />
+                        Details <ArrowRight className="size-3" />
                       </Button>
                     </Link>
                     
@@ -94,7 +94,7 @@ export default function SellerShippingPage() {
                         onClick={() => handleShipOrder(order.id)}
                         disabled={isPending}
                       >
-                        <Truck className="w-4 h-4" />
+                        <Truck className="size-4" />
                         Mark as Shipped
                       </Button>
                     ) : order.status === 'SHIPPED' ? (
@@ -105,7 +105,7 @@ export default function SellerShippingPage() {
                         onClick={() => handleDeliverOrder(order.id)}
                         disabled={isPending}
                       >
-                        <Check className="w-4 h-4" />
+                        <Check className="size-4" />
                         Mark as Delivered
                       </Button>
                     ) : null}

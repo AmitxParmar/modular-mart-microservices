@@ -38,9 +38,9 @@ const Cart = () => {
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger className="relative p-2 text-muted-foreground hover:text-foreground hover:bg-accent/50 rounded-full transition-colors cursor-pointer outline-none">
-        <ShoppingCartIcon className="h-5 w-5" />
+        <ShoppingCartIcon className="size-5" />
         {cartQuantity > 0 && (
-          <span className="absolute 0 top-0 right-0 h-4 w-4 rounded-full bg-primary text-[10px] font-bold text-primary-foreground flex items-center justify-center shadow-sm">
+          <span className="absolute 0 top-0 right-0 size-4 rounded-full bg-primary text-[10px] font-bold text-primary-foreground flex items-center justify-center shadow-sm">
             {cartQuantity}
           </span>
         )}
@@ -55,10 +55,11 @@ const Cart = () => {
 
         <div className="flex-1 overflow-y-auto px-6 py-4">
           {!isMounted || items.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-center text-muted-foreground space-y-4">
-              <ShoppingCartIcon className="w-12 h-12 opacity-20" />
+            <div className="h-full flex flex-col items-center justify-center text-center text-muted-foreground gap-y-4">
+              <ShoppingCartIcon className="size-12 opacity-20" />
               <p className="text-sm font-medium">Your cart is empty.</p>
               <button 
+                type="button"
                 onClick={() => setIsOpen(false)}
                 className="text-primary hover:underline text-sm"
               >
