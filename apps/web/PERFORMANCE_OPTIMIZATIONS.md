@@ -38,3 +38,30 @@ This document summarizes the performance and maintainability optimizations appli
 - **Location:** `apps/web/components/ui/navigation-menu.tsx`
 - **Change:** Refactored non-component exports (styles) into a pattern that preserves React Fast Refresh.
 - **Benefit:** While not a direct user-facing optimization, fixing Fast Refresh significantly increases developer velocity by allowing instant feedback without full page reloads, leading to higher-quality code iterations.
+
+## 8. Resilient Server-Side Prefetching
+- **Location:** `apps/web/app/(storefront)/page.tsx`
+- **Change:** Implemented server-side prefetching for product data using TanStack Query with a 1.5-second `Promise.race` timeout cap.
+- **Benefit:** Eliminates the initial loading skeleton for the product grid while ensuring that slow or failing backend services do not block the Time to First Byte (TTFB). This stabilizes LCP and improves perceived performance under various network conditions.
+
+## 9. SSR & Component Boundary Optimization
+- **Location:** `apps/web/app/(storefront)/layout.tsx`, `apps/web/app/(dashboard)/layout.tsx`
+- **Change:** Removed unnecessary `"use client"` directives from layout components.
+- **Benefit:** Enables Server-Side Rendering (SSR) for the application's structural shell. This allows the browser to receive and render critical content (like the Hero section) much earlier in the loading sequence, directly improving FCP and LCP.
+
+## 10. Targeted Font Loading
+- **Location:** `apps/web/app/layout.tsx`, `apps/web/app/(dashboard)/layout.tsx`
+- **Change:** Moved `JetBrains_Mono` and `Geist_Mono` from the root layout to specific route groups (Dashboard) where they are required.
+- **Benefit:** Reduces the number of critical font files preloaded for storefront users. By only loading the necessary `Geist_Sans` font for the storefront, we reduce the "element render delay" for LCP text elements.
+
+## 11. Bundle Size Reduction (Lazy Loading)
+- **Location:** `apps/web/app/layout.tsx`
+- **Change:** Refactored `AuthDialog` and `Toaster` to use `next/dynamic` for client-side lazy loading.
+- **Benefit:** Removes non-critical components and their heavy dependencies (like Clerk) from the initial JavaScript bundle. This reduces main-thread blocking time during hydration, allowing the page to become interactive faster.
+
+## 12. Connectivity & API Resilience
+- **Location:** `apps/web/app/layout.tsx`, `apps/web/lib/api-client.ts`
+- **Change:** 
+    - Added `<link rel="preconnect">` for the Clerk authentication origin.
+    - Configured a global 5-second timeout for all Axios API requests.
+- **Benefit:** Preconnecting reduces latency for critical third-party resources. The API timeout ensures the frontend server remains responsive and can quickly fallback to cached or empty states if microservices are unreachable, preventing cascading performance failures.
