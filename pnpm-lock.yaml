@@ -94,9 +94,6 @@ importers:
       jest:
         specifier: ^30.0.0
         version: 30.4.2(@types/node@22.19.19)(ts-node@10.9.2(@types/node@22.19.19)(typescript@5.9.2))
-      pino-pretty:
-        specifier: ^13.1.3
-        version: 13.1.3
       prettier:
         specifier: ^3.4.2
         version: 3.8.3
@@ -206,9 +203,6 @@ importers:
       jest:
         specifier: ^30.0.0
         version: 30.4.2(@types/node@22.19.19)(ts-node@10.9.2(@types/node@22.19.19)(typescript@5.9.2))
-      pino-pretty:
-        specifier: ^13.1.3
-        version: 13.1.3
       prettier:
         specifier: ^3.4.2
         version: 3.8.3
@@ -303,6 +297,9 @@ importers:
       '@repo/auth':
         specifier: workspace:^
         version: link:../../packages/auth
+      '@repo/common':
+        specifier: workspace:^
+        version: link:../../packages/common
       '@repo/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
@@ -376,9 +373,6 @@ importers:
       jest:
         specifier: ^30.0.0
         version: 30.4.2(@types/node@22.19.19)(ts-node@10.9.2(@types/node@22.19.19)(typescript@5.9.2))
-      pino-pretty:
-        specifier: ^13.1.3
-        version: 13.1.3
       prettier:
         specifier: ^3.4.2
         version: 3.8.3
@@ -491,9 +485,6 @@ importers:
       jest:
         specifier: ^30.0.0
         version: 30.4.2(@types/node@22.19.19)(ts-node@10.9.2(@types/node@22.19.19)(typescript@5.9.2))
-      pino-pretty:
-        specifier: ^13.1.3
-        version: 13.1.3
       prettier:
         specifier: ^3.4.2
         version: 3.8.3
@@ -606,9 +597,6 @@ importers:
       jest:
         specifier: ^30.0.0
         version: 30.4.2(@types/node@22.19.19)(ts-node@10.9.2(@types/node@22.19.19)(typescript@5.9.2))
-      pino-pretty:
-        specifier: ^13.1.3
-        version: 13.1.3
       prettier:
         specifier: ^3.4.2
         version: 3.8.3
@@ -724,9 +712,6 @@ importers:
       jest:
         specifier: ^30.0.0
         version: 30.4.2(@types/node@22.19.19)(ts-node@10.9.2(@types/node@22.19.19)(typescript@5.9.2))
-      pino-pretty:
-        specifier: ^13.1.3
-        version: 13.1.3
       prettier:
         specifier: ^3.4.2
         version: 3.8.3

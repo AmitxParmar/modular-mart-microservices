@@ -9,7 +9,7 @@ import {
   Get,
   Param,
 } from '@nestjs/common';
-import { MessagePattern, Payload } from '@nestjs/microservices';
+import { Payload } from '@nestjs/microservices';
 import { PaymentsService } from './payments.service';
 import { ClerkAuthGuard, CurrentUser } from '@repo/auth';
 import type { ClerkUser } from '@repo/auth';
