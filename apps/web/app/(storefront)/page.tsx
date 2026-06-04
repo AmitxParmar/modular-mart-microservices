@@ -19,7 +19,7 @@ export default async function Home() {
   // or slow, the rest of the page still renders quickly (TTFB is not blocked).
   try {
     const prefetchPromise = queryClient.prefetchInfiniteQuery({
-      queryKey: productKeys.list({ limit: 8 }),
+      queryKey: productKeys.list(),
       queryFn: () => fetchProducts({ limit: 8 }),
       initialPageParam: undefined,
     });
