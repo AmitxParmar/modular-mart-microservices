@@ -22,6 +22,7 @@ export function setTokenGetter(fn: (options?: { skipCache?: boolean }) => Promis
 export const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api",
   headers: { "Content-Type": "application/json" },
+  timeout: 5000, // 5 second timeout
 });
 
 api.interceptors.request.use(async (config) => {

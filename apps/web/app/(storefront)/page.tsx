@@ -1,66 +1,94 @@
 import { ProductsSection } from '@/features/products/products-section';
 import Link from 'next/link';
 import { ArrowRight, ShieldCheck, Truck, RotateCcw } from 'lucide-react';
+import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
+import { getQueryClient } from '@/lib/query-client';
+import { fetchProducts } from '@/features/products/api';
+import { productKeys } from '@/features/products/keys';
 
 export const metadata = {
   title: 'Home | ModularMart',
   description: 'Elevate your everyday essentials with ModularMart.',
 };
 
-export default function Home() {
+export default async function Home() {
+  const queryClient = getQueryClient();
+
+  // Prefetch the first page of products (matching the limit in ProductsSection)
+  // We wrap this in a try-catch and use a timeout to ensure that if the catalog service is down
+  // or slow, the rest of the page still renders quickly (TTFB is not blocked).
+  try {
+    const prefetchPromise = queryClient.prefetchInfiniteQuery({
+      queryKey: productKeys.list({ limit: 8 }),
+      queryFn: () => fetchProducts({ limit: 8 }),
+      initialPageParam: undefined,
+    });
+
+    // Don't wait longer than 1.5s for the prefetch
+    await Promise.race([
+      prefetchPromise,
+      new Promise((resolve) => setTimeout(resolve, 1500)),
+    ]);
+  } catch (error) {
+    console.error('Failed to prefetch products:', error);
+  }
+
   return (
-    <div className="flex flex-col gap-y-16 pb-16">
-      {/* Hero Section */}
-      <section className="relative rounded-3xl overflow-hidden bg-muted/30 border border-border/40 p-8 md:p-16 lg:p-24 flex flex-col justify-center items-start">
-        <div className="max-w-2xl z-10 space-y-6">
-          <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-foreground leading-tight">
-            Elevate Your Everyday <span className="text-primary">Essentials.</span>
-          </h1>
-          <p className="text-lg md:text-xl text-muted-foreground font-medium leading-relaxed max-w-xl">
-            Discover a curated collection of thoughtfully designed products that blend seamlessly into your modern lifestyle.
-          </p>
-          <div className="pt-4">
-            <Link
-              href="#products"
-              className="inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground px-8 py-4 rounded-full font-semibold text-base transition-transform hover:scale-105 shadow-md hover:shadow-lg"
-            >
-              Shop New Arrivals
-              <ArrowRight className="size-5" />
-            </Link>
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <div className="flex flex-col gap-y-16 pb-16">
+        {/* Hero Section */}
+        <section className="relative rounded-3xl overflow-hidden bg-muted/30 border border-border/40 p-8 md:p-16 lg:p-24 flex flex-col justify-center items-start">
+          <div className="max-w-2xl z-10 space-y-6">
+            <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-foreground leading-tight">
+              Elevate Your Everyday <span className="text-primary">Essentials.</span>
+            </h1>
+            <p className="text-lg md:text-xl text-muted-foreground font-medium leading-relaxed max-w-xl">
+              Discover a curated collection of thoughtfully designed products that blend seamlessly into your modern lifestyle.
+            </p>
+            <div className="pt-4">
+              <Link
+                href="#products"
+                className="inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground px-8 py-4 rounded-full font-semibold text-base transition-transform hover:scale-105 shadow-md hover:shadow-lg"
+              >
+                Shop New Arrivals
+                <ArrowRight className="size-5" />
+              </Link>
+            </div>
           </div>
-        </div>
-        {/* Abstract decorative background shapes could go here if needed */}
-      </section>
+          {/* Abstract decorative background shapes could go here if needed */}
+        </section>
 
-      {/* Trust Signals */}
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-6 border-y border-border/40 py-8">
-        <div className="flex items-center gap-4 text-muted-foreground">
-          <Truck className="size-8 text-primary" />
-          <div>
-            <h4 className="font-bold text-foreground text-sm tracking-wide">Free Shipping</h4>
-            <p className="text-xs">On all orders over $100</p>
+        {/* Trust Signals */}
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-6 border-y border-border/40 py-8">
+          <div className="flex items-center gap-4 text-muted-foreground">
+            <Truck className="size-8 text-primary" />
+            <div>
+              <h4 className="font-bold text-foreground text-sm tracking-wide">Free Shipping</h4>
+              <p className="text-xs">On all orders over $100</p>
+            </div>
           </div>
-        </div>
-        <div className="flex items-center gap-4 text-muted-foreground">
-          <ShieldCheck className="size-8 text-primary" />
-          <div>
-            <h4 className="font-bold text-foreground text-sm tracking-wide">Secure Checkout</h4>
-            <p className="text-xs">100% protected payments</p>
+          <div className="flex items-center gap-4 text-muted-foreground">
+            <ShieldCheck className="size-8 text-primary" />
+            <div>
+              <h4 className="font-bold text-foreground text-sm tracking-wide">Secure Checkout</h4>
+              <p className="text-xs">100% protected payments</p>
+            </div>
           </div>
-        </div>
-        <div className="flex items-center gap-4 text-muted-foreground">
-          <RotateCcw className="size-8 text-primary" />
-          <div>
-            <h4 className="font-bold text-foreground text-sm tracking-wide">Easy Returns</h4>
-            <p className="text-xs">30-day money back guarantee</p>
+          <div className="flex items-center gap-4 text-muted-foreground">
+            <RotateCcw className="size-8 text-primary" />
+            <div>
+              <h4 className="font-bold text-foreground text-sm tracking-wide">Easy Returns</h4>
+              <p className="text-xs">30-day money back guarantee</p>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Products Grid */}
-      <div id="products" className="scroll-mt-32">
-        <ProductsSection />
+        {/* Products Grid */}
+        <div id="products" className="scroll-mt-32">
+          <ProductsSection />
+        </div>
       </div>
-    </div>
+    </HydrationBoundary>
   );
 }
+
