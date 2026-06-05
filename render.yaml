@@ -18,9 +18,49 @@ envVarGroups:
         value: "REPLACE_ME"
       - key: STRIPE_WEBHOOK_SECRET
         value: "REPLACE_ME"
+      - key: GATEWAY_INTERNAL_SECRET
+        value: "REPLACE_ME" # Secret used to verify requests originate from Kong
 
 services:
-  # API Gateway
+  # Kong API Gateway (OSS)
+  - type: web
+    name: kong-gateway
+    runtime: docker
+    dockerContext: .
+    dockerfilePath: apps/kong-gateway/Dockerfile
+    plan: free
+    region: singapore
+    autoDeployTrigger: commit
+    healthCheckPath: /health/live # Note: Kong doesn't have /health/live by default, 
+                                  # but we can use status port or add a route.
+                                  # For now, let's assume we use the status plugin.
+    buildFilter:
+      paths:
+        - apps/kong-gateway/**
+    envVars:
+      - key: KONG_DATABASE
+        value: "off"
+      - key: KONG_DECLARATIVE_CONFIG
+        value: /etc/kong/kong.yml
+      - key: KONG_PROXY_LISTEN
+        value: 0.0.0.0:8000
+      - key: KONG_ADMIN_LISTEN
+        value: 127.0.0.1:8001
+      - key: REDIS_HOST
+        sync: false
+      - key: REDIS_PORT
+        sync: false
+      - key: REDIS_PASSWORD
+        sync: false
+      - key: REDIS_SSL
+        value: "true"
+      - fromGroup: shared-infra
+      - key: CLERK_ISSUER_URL
+        sync: false
+      - key: CLERK_JWT_PUBLIC_KEY
+        sync: false
+
+  # Legacy API Gateway (Deprecated)
   - type: web
     name: api-gateway
     runtime: docker

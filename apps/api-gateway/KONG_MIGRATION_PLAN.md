@@ -664,6 +664,13 @@ REDIS_PASSWORD=your-secure-password
 - [x] Verify Admin API is restricted.
 - [x] Validate Render internal networking.
 
+### Phase 5: Security + Full Migration (Week 5-6)
+- [x] Add security headers via `response-transformer`.
+- [x] Configure CORS properly.
+- [x] Add request size limiting.
+- [x] Run Contract Tests against Kong to verify parity.
+- [x] Deploy Kong to Render.
+
 **Reusable Code Added:**
 - Created `@repo/shared-types` package (`packages/shared-types`) to centralize `AuthContext`, `RequestContext`, `HealthResponse`, `EventMetadata`, and `LogContext` types.
 - Scaffolded `apps/kong-gateway` with `kong.yml`, `Dockerfile`, and `docker-compose.yml`.
@@ -674,6 +681,7 @@ REDIS_PASSWORD=your-secure-password
 - Configured `proxy-cache` for high-traffic catalog routes with a 5-minute TTL.
 - Enabled full observability in Kong: Prometheus for metrics, OpenTelemetry for tracing (Jaeger), and HTTP Log for log aggregation (Loki).
 - Configured active health checks for all upstreams to ensure automatic failover and protection.
+- Updated `render.yaml` to include the new `kong-gateway` service and `GATEWAY_INTERNAL_SECRET` for secure inter-service communication.
 
 ### Week 2: Core Migration & Built-in Auth
 - [x] Configure `jwt` plugin for routes requiring auth.
