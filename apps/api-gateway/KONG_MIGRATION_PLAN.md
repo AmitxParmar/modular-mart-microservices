@@ -672,6 +672,8 @@ REDIS_PASSWORD=your-secure-password
 - Applied `ServiceTrustMiddleware` to all microservices (User, Catalog, Order, Payment).
 - Configured global (100/min) and per-service (50/min for orders, 30/min for payments) rate limiting using shared Redis.
 - Configured `proxy-cache` for high-traffic catalog routes with a 5-minute TTL.
+- Enabled full observability in Kong: Prometheus for metrics, OpenTelemetry for tracing (Jaeger), and HTTP Log for log aggregation (Loki).
+- Configured active health checks for all upstreams to ensure automatic failover and protection.
 
 ### Week 2: Core Migration & Built-in Auth
 - [x] Configure `jwt` plugin for routes requiring auth.
@@ -683,8 +685,16 @@ REDIS_PASSWORD=your-secure-password
 - [x] Verify 429 responses and state persistence across environments.
 - [x] Enable `proxy-cache` (memory strategy).
 
-### Week 4-6: Full Migration & Learning
-- [ ] Complete Observability, Security, and Rollback phases.
+### Week 4: Upstream Protection + Observability
+- [x] Configure active health checks on all upstreams.
+- [x] Test failure scenario: stop a service, watch Kong remove it.
+- [x] Configure `opentelemetry` plugin → Jaeger.
+- [x] Configure `http-log` plugin → Loki.
+- [x] Configure `prometheus` plugin.
+- [x] Create Grafana dashboard.
+
+### Week 5-6: Full Migration & Learning
+- [ ] Complete Security and Rollback phases.
 - [ ] Deploy to Render.
 - [ ] **Phase 6**: Start building custom Lua plugin to extract nested JWT claims.
 

@@ -46,6 +46,26 @@ upstreams:
   healthchecks:
     active:
       http_path: /health/ready
+      healthy:
+        interval: 10
+        successes: 2
+      unhealthy:
+        interval: 5
+        http_failures: 3
+
+- name: notification-service-upstream
+  algorithm: round-robin
+  targets:
+  - target: notification-service:3005
+  healthchecks:
+    active:
+      http_path: /health/ready
+      healthy:
+        interval: 10
+        successes: 2
+      unhealthy:
+        interval: 5
+        http_failures: 3
 
 # ─────────────────────────────────────
 # SERVICES & ROUTES: API Definition
@@ -146,6 +166,27 @@ services:
       redis_ssl: true
       minute: 30  # Strictest for high-risk payment routes
   - name: jwt # Payments always require authentication
+    config:
+      key_claim_name: iss
+
+- name: notification-service
+  host: notification-service-upstream
+  port: 3005
+  routes:
+  - name: notification-routes
+    paths:
+    - /api/notifications
+    strip_path: false
+  plugins:
+  - name: rate-limiting
+    config:
+      policy: redis
+      redis_host: ${REDIS_HOST}
+      redis_port: ${REDIS_PORT}
+      redis_password: ${REDIS_PASSWORD}
+      redis_ssl: true
+      minute: 100
+  - name: jwt # Notifications require authentication
     config:
       key_claim_name: iss
 
