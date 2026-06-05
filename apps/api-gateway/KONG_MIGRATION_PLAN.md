@@ -670,6 +670,8 @@ REDIS_PASSWORD=your-secure-password
 - Implemented `ServiceTrustMiddleware` in `@repo/common` to enforce the gateway trust boundary.
 - Configured Kong `jwt` plugin and `request-transformer` to inject `X-Gateway-Secret`.
 - Applied `ServiceTrustMiddleware` to all microservices (User, Catalog, Order, Payment).
+- Configured global (100/min) and per-service (50/min for orders, 30/min for payments) rate limiting using shared Redis.
+- Configured `proxy-cache` for high-traffic catalog routes with a 5-minute TTL.
 
 ### Week 2: Core Migration & Built-in Auth
 - [x] Configure `jwt` plugin for routes requiring auth.
@@ -677,9 +679,9 @@ REDIS_PASSWORD=your-secure-password
 - [x] Establish service trust boundary (internal network).
 
 ### Week 3: Rate Limiting & Caching
-- [ ] Enable `rate-limiting` plugin with shared Redis.
-- [ ] Verify 429 responses and state persistence across environments.
-- [ ] Enable `proxy-cache` (memory strategy).
+- [x] Enable `rate-limiting` plugin with shared Redis.
+- [x] Verify 429 responses and state persistence across environments.
+- [x] Enable `proxy-cache` (memory strategy).
 
 ### Week 4-6: Full Migration & Learning
 - [ ] Complete Observability, Security, and Rollback phases.

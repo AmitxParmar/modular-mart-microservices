@@ -165,6 +165,18 @@ consumers:
 # Applied to ALL requests entering the gateway.
 # ─────────────────────────────────────
 plugins:
+# Global Rate Limiting: 100 requests per minute per IP
+- name: rate-limiting
+  config:
+    policy: redis
+    redis_host: ${REDIS_HOST}
+    redis_port: ${REDIS_PORT}
+    redis_password: ${REDIS_PASSWORD}
+    redis_ssl: true
+    minute: 100
+    fault_tolerant: true
+    hide_client_headers: false
+
 # Correlation ID: Vital for tracking requests across the microservice mesh
 - name: correlation-id
   config:
