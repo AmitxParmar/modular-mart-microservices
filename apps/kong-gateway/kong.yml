@@ -73,6 +73,12 @@ services:
       redis_password: ${REDIS_PASSWORD}
       redis_ssl: true
       minute: 100
+  - name: jwt # Protect user routes with JWT
+    config:
+      header_names: [Authorization]
+      uri_param_names: [jwt]
+      key_claim_name: iss # Clerk uses 'iss' to identify the issuer
+      claims_to_verify: [exp]
 
 - name: catalog-service
   host: catalog-service-upstream
@@ -99,6 +105,7 @@ services:
       content_type: ["application/json"]
       cache_ttl: 300
       request_method: ["GET"]
+  # Note: Catalog is public, but we might protect /api/cart in a real scenario
 
 - name: order-service
   host: order-service-upstream
@@ -117,6 +124,9 @@ services:
       redis_password: ${REDIS_PASSWORD}
       redis_ssl: true
       minute: 50  # Stricter for sensitive order creation
+  - name: jwt # Orders always require authentication
+    config:
+      key_claim_name: iss
 
 - name: payment-service
   host: payment-service-upstream
@@ -135,6 +145,20 @@ services:
       redis_password: ${REDIS_PASSWORD}
       redis_ssl: true
       minute: 30  # Strictest for high-risk payment routes
+  - name: jwt # Payments always require authentication
+    config:
+      key_claim_name: iss
+
+# ─────────────────────────────────────
+# CONSUMERS: Authentication Credentials
+# We define consumers to hold the JWT public keys for Clerk.
+# ─────────────────────────────────────
+consumers:
+- username: clerk-auth
+  jwt_secrets:
+  - key: ${CLERK_ISSUER_URL} # e.g., https://clerk.example.com
+    algorithm: RS256
+    rsa_public_key: ${CLERK_JWT_PUBLIC_KEY} # Injected from environment
 
 # ─────────────────────────────────────
 # GLOBAL PLUGINS: Cross-cutting Concerns
@@ -163,6 +187,13 @@ plugins:
       - "X-Frame-Options: DENY"
       - "X-Content-Type-Options: nosniff"
       - "Strict-Transport-Security: max-age=31536000"
+
+# Service Trust: Inject secret header to verify gateway origin
+- name: request-transformer
+  config:
+    add:
+      headers:
+      - "X-Gateway-Secret: ${GATEWAY_INTERNAL_SECRET}"
 
 # CORS: Configures Cross-Origin Resource Sharing
 - name: cors

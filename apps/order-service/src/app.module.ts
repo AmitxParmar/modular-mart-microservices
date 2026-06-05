@@ -12,6 +12,7 @@ import {
   SentryModule,
   HttpExceptionFilter,
   CorrelationMiddleware,
+  ServiceTrustMiddleware,
 } from '@repo/common';
 // TypeOrmModule removed — no standalone forFeature registrations needed at root
 import { OrdersModule } from './orders/orders.module';
@@ -43,6 +44,6 @@ import { ScheduleModule } from '@nestjs/schedule';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(CorrelationMiddleware).forRoutes('*');
+    consumer.apply(CorrelationMiddleware, ServiceTrustMiddleware).forRoutes('*');
   }
 }

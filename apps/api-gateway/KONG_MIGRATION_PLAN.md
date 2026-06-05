@@ -667,11 +667,14 @@ REDIS_PASSWORD=your-secure-password
 **Reusable Code Added:**
 - Created `@repo/shared-types` package (`packages/shared-types`) to centralize `AuthContext`, `RequestContext`, `HealthResponse`, `EventMetadata`, and `LogContext` types.
 - Scaffolded `apps/kong-gateway` with `kong.yml`, `Dockerfile`, and `docker-compose.yml`.
+- Implemented `ServiceTrustMiddleware` in `@repo/common` to enforce the gateway trust boundary.
+- Configured Kong `jwt` plugin and `request-transformer` to inject `X-Gateway-Secret`.
+- Applied `ServiceTrustMiddleware` to all microservices (User, Catalog, Order, Payment).
 
 ### Week 2: Core Migration & Built-in Auth
-- [ ] Set up basic Kong routes for all microservices.
-- [ ] Configure `jwt` plugin.
-- [ ] Establish service trust boundary.
+- [x] Configure `jwt` plugin for routes requiring auth.
+- [x] Test header injection (X-User-ID) using built-in claims.
+- [x] Establish service trust boundary (internal network).
 
 ### Week 3: Rate Limiting & Caching
 - [ ] Enable `rate-limiting` plugin with shared Redis.

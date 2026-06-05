@@ -13,6 +13,7 @@ import {
   SentryModule,
   HttpExceptionFilter,
   CorrelationMiddleware,
+  ServiceTrustMiddleware,
 } from '@repo/common';
 
 @Module({
@@ -37,7 +38,8 @@ import {
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    // Apply correlation ID middleware to all routes
-    consumer.apply(CorrelationMiddleware).forRoutes('*');
+    // Apply correlation ID and Service Trust middleware to all routes.
+    // ServiceTrustMiddleware ensures requests come from the API Gateway.
+    consumer.apply(CorrelationMiddleware, ServiceTrustMiddleware).forRoutes('*');
   }
 }

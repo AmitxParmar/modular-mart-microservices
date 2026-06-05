@@ -9,6 +9,7 @@ export type { ErrorResponse } from "./filters/http-exception.filter";
 
 // Middlewares
 export { CorrelationMiddleware } from "./middlewares/correlation.middleware";
+export { ServiceTrustMiddleware } from "./middlewares/service-trust.middleware";
 
 // Health
 export { HealthController } from "./health/health.controller";
