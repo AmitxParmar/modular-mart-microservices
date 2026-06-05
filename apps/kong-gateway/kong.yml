@@ -1,0 +1,195 @@
+_format_version: "3.0"
+
+# ─────────────────────────────────────
+# UPSTREAMS: Health-based Load Balancing
+# We group targets into upstreams to allow for zero-downtime 
+# rollouts and automatic health-aware failover.
+# ─────────────────────────────────────
+upstreams:
+- name: user-service-upstream
+  algorithm: round-robin
+  targets:
+  - target: user-service:3001
+  healthchecks:
+    active:
+      http_path: /health/ready # Probe target's readiness
+      healthy:
+        interval: 10
+        successes: 2
+      unhealthy:
+        interval: 5
+        http_failures: 3
+
+- name: catalog-service-upstream
+  algorithm: round-robin
+  targets:
+  - target: catalog-service:3005
+  healthchecks:
+    active:
+      http_path: /health/ready
+      healthy:
+        interval: 10
+        successes: 2
+
+- name: order-service-upstream
+  algorithm: round-robin
+  targets:
+  - target: order-service:3002
+  healthchecks:
+    active:
+      http_path: /health/ready
+
+- name: payment-service-upstream
+  algorithm: round-robin
+  targets:
+  - target: payment-service:3004
+  healthchecks:
+    active:
+      http_path: /health/ready
+
+# ─────────────────────────────────────
+# SERVICES & ROUTES: API Definition
+# Maps public paths to internal service upstreams.
+# ─────────────────────────────────────
+services:
+- name: user-service
+  host: user-service-upstream # Point to the upstream, not the direct host
+  port: 3001
+  protocol: http
+  connect_timeout: 5000
+  read_timeout: 15000
+  write_timeout: 15000
+  routes:
+  - name: user-routes
+    paths:
+    - /api/users
+    strip_path: false
+  plugins:
+  - name: rate-limiting
+    config:
+      policy: redis # Distributed rate limiting using shared external Redis
+      redis_host: ${REDIS_HOST}
+      redis_port: ${REDIS_PORT}
+      redis_password: ${REDIS_PASSWORD}
+      redis_ssl: true
+      minute: 100
+
+- name: catalog-service
+  host: catalog-service-upstream
+  port: 3005
+  routes:
+  - name: catalog-routes
+    paths:
+    - /api/catalog
+    - /api/products
+    - /api/cart
+    strip_path: false
+  plugins:
+  - name: rate-limiting
+    config:
+      policy: redis
+      redis_host: ${REDIS_HOST}
+      redis_port: ${REDIS_PORT}
+      redis_password: ${REDIS_PASSWORD}
+      redis_ssl: true
+      minute: 100
+  - name: proxy-cache
+    config:
+      strategy: memory # Local RAM caching for high-traffic listing routes
+      content_type: ["application/json"]
+      cache_ttl: 300
+      request_method: ["GET"]
+
+- name: order-service
+  host: order-service-upstream
+  port: 3002
+  routes:
+  - name: order-routes
+    paths:
+    - /api/orders
+    strip_path: false
+  plugins:
+  - name: rate-limiting
+    config:
+      policy: redis
+      redis_host: ${REDIS_HOST}
+      redis_port: ${REDIS_PORT}
+      redis_password: ${REDIS_PASSWORD}
+      redis_ssl: true
+      minute: 50  # Stricter for sensitive order creation
+
+- name: payment-service
+  host: payment-service-upstream
+  port: 3004
+  routes:
+  - name: payment-routes
+    paths:
+    - /api/payments
+    strip_path: false
+  plugins:
+  - name: rate-limiting
+    config:
+      policy: redis
+      redis_host: ${REDIS_HOST}
+      redis_port: ${REDIS_PORT}
+      redis_password: ${REDIS_PASSWORD}
+      redis_ssl: true
+      minute: 30  # Strictest for high-risk payment routes
+
+# ─────────────────────────────────────
+# GLOBAL PLUGINS: Cross-cutting Concerns
+# Applied to ALL requests entering the gateway.
+# ─────────────────────────────────────
+plugins:
+# Correlation ID: Vital for tracking requests across the microservice mesh
+- name: correlation-id
+  config:
+    header_name: x-request-id
+    generator: uuid
+    echo_downstream: true
+
+# Prometheus: Exposes metrics at :8001/metrics for Grafana visualization
+- name: prometheus
+  config:
+    per_consumer: false
+    status_code_metrics: true
+    latency_metrics: true
+
+# Security Headers: Hardens the API against common web vulnerabilities
+- name: response-transformer
+  config:
+    add:
+      headers:
+      - "X-Frame-Options: DENY"
+      - "X-Content-Type-Options: nosniff"
+      - "Strict-Transport-Security: max-age=31536000"
+
+# CORS: Configures Cross-Origin Resource Sharing
+- name: cors
+  config:
+    origins:
+    - http://localhost:3000
+    - http://localhost:4000
+    credentials: true
+    exposed_headers:
+    - x-request-id
+
+# Request Size Limiting: Protects against large payload/DoS attacks
+- name: request-size-limiting
+  config:
+    allowed_payload_size: 10
+    size_unit: megabytes
+
+# OpenTelemetry: Tracing integration for Jaeger/Honeycomb
+- name: opentelemetry
+  config:
+    endpoint: http://jaeger:4318/v1/traces
+    resource_attributes:
+      service.name: kong-gateway
+
+# HTTP Log: Forwards gateway access logs to Loki for aggregation
+- name: http-log
+  config:
+    http_endpoint: http://loki:3100/loki/api/v1/push
+    method: POST
+    content_type: application/json

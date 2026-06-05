@@ -17,7 +17,7 @@ Learning-focused migration from NestJS API Gateway to **Kong Gateway OSS**. Focu
 ### Learning Objectives
 
 - Custom authentication plugins (Lua)
-- Redis-backed distributed rate limiting
+- Redis-backed distributed rate limiting (Shared External Instance)
 - Response caching strategies
 - Circuit breaker patterns
 - Health-based load balancing
@@ -48,12 +48,39 @@ Microservices
 └─ Payment Service (:3004)
 ```
 
+### Future Architecture (Target State)
+
+```text
+       Client
+          ↓
+    Kong Gateway (OSS)
+    ├─ JWT Verification (Clerk)
+    ├─ Rate Limiting (Shared External Redis)
+    ├─ Proxy Caching (Catalog)
+    ├─ Correlation IDs (X-Request-ID)
+    ├─ Prometheus Metrics
+    └─ Upstream Health Checks
+
+          ↓ (Internal Network)
+
+   ┌──────────────┬──────────────┬──────────────┐
+   ↓              ↓              ↓              ↓
+User Service   Catalog        Order          Payment
+               Service        Service        Service
+
+   └──────────────┴──────────────┴──────────────┘
+          ↓              ↓              ↓
+    Infrastructure (Shared Redis, RabbitMQ, PostgreSQL)
+          ↓
+    Observability (Prometheus, Grafana, Loki, Jaeger)
+```
+
 ### Current Features & Gaps
 
 | Feature | Current | Limitation | Kong Solution |
 |---------|---------|------------|---------------|
 | **Authentication** | Clerk JWT in Node.js | Coupled to app code | Custom Lua plugin |
-| **Rate Limiting** | In-memory | Not distributed | Redis-backed plugin |
+| **Rate Limiting** | In-memory | Not distributed | Shared External Redis plugin |
 | **Caching** | ❌ None | Repeated backend calls | Proxy cache plugin |
 | **Circuit Breaking** | ❌ None | Cascading failures | Health checks + timeouts |
 | **Load Balancing** | ❌ None | Single upstream | Round-robin / health-aware |
@@ -90,22 +117,20 @@ const internalId = payload.publicMetadata?.internalId;
 request.auth = { userId, internalId, email };
 ```
 
-**Kong Approach**: Custom Lua plugin
-- Verify JWT signature using Clerk JWKS
-- Extract `publicMetadata.internalId`
-- Inject headers: `X-User-ID`, `X-User-Internal-ID`, `X-User-Email`
-- Handle missing metadata gracefully
+**Kong Approach**: Start with Built-in Plugins
+- **Phase 1**: Use Kong's built-in JWT/OIDC plugins for token verification and route protection.
+- **Phase 2 (Optional)**: Only build a custom Lua plugin to extract `publicMetadata.internalId` if the built-in plugins cannot be configured to map these claims to headers. Building a custom auth plugin before completing the baseline migration adds significant risk.
 
-**Why Custom Plugin?**: Kong's built-in JWT plugin can't extract nested `publicMetadata`.
+**Security Warning (Trust Boundary)**:
+Kong will inject headers (e.g., `X-User-ID`) to downstream services. **Services must reject requests that bypass Kong.** You must ensure services are on an internal network only, remove direct public exposure, and document this trust boundary, otherwise attackers can spoof these headers.
 
-### 2. Rate Limiting & Throttling
+### 2. Rate Limiting & Throttling (Shared Redis)
 
 **Requirements**:
 - 100 requests/minute per IP (global default)
 - 50 requests/minute for order creation
-- 30 requests/minute for payment processing
-- Distributed state (Redis)
-- Return `429 Too Many Requests` with retry-after header
+- Distributed state via **Shared External Redis** (e.g., Upstash, Redis Cloud, or Render Managed Redis).
+- **Strategy**: Use the same Redis instance and URL for both local development and production to maintain consistency and simplify management.
 
 **Kong Plugin**: `rate-limiting` (OSS) with Redis policy
 
@@ -115,8 +140,10 @@ plugins:
 - name: rate-limiting
   config:
     policy: redis
-    redis_host: redis
-    redis_port: 6379
+    redis_host: ${REDIS_HOST}
+    redis_port: ${REDIS_PORT}
+    redis_password: ${REDIS_PASSWORD}
+    redis_ssl: true # Required for most online services
     minute: 100
     fault_tolerant: true
 ```
@@ -135,14 +162,20 @@ plugins:
 - `prometheus` plugin → expose metrics at `:8001/metrics`
 - `correlation-id` plugin → propagate `X-Request-ID`
 
-### 4. Circuit Breaker
+**Important**: Services *must* log this `X-Request-ID`, propagate it in all outbound API calls, and attach it to messaging events (e.g., RabbitMQ). Otherwise, tracing breaks at service boundaries.
 
-**Pattern**: Prevent cascading failures when downstream services are unhealthy
+**Plugin Verification Warning**: Before designing around these plugins (like `opentelemetry` and Redis-backed `rate-limiting`), verify their availability and exact feature sets in the **Kong OSS 3.x** version you are deploying. Some tutorials mix Enterprise and OSS features.
+
+### 4. Health-Based Failover & Upstream Protection
+
+*Note: This is failover and health-based routing, not a true circuit breaker (which opens, rejects requests, tracks failures, and retries according to state transitions).*
+
+**Pattern**: Prevent cascading failures when downstream services are unhealthy by removing them from the load balancer pool.
 
 **Kong Approach**:
 - Health checks on upstreams (active probing)
 - Automatic removal of unhealthy targets
-- Timeouts: `connect_timeout`, `read_timeout`, `write_timeout`
+- Timeouts: sensible `connect_timeout`, `read_timeout`, `write_timeout`
 
 **Configuration**:
 ```yaml
@@ -171,6 +204,8 @@ upstreams:
 - Vary by query parameters
 - TTL: 300s (5 minutes) for product lists
 - Cache-Control header awareness
+
+**Limitation**: The `memory` strategy stores cache in the local Kong instance's RAM. If you scale Kong to multiple instances (Kong A and Kong B), they will not share the cache. For this learning project, we use `memory` strategy to keep it simple, but note that production scaling would use the shared Redis instance.
 
 **Configuration**:
 ```yaml
@@ -217,12 +252,13 @@ plugins:
 
 ## 📅 Migration Phases
 
-### Phase 1: Setup Kong Locally (Week 1)
+### Phase 1: Setup Kong & External Redis (Week 1)
 
-**Goal**: Get Kong running with basic routing
+**Goal**: Get Kong running locally using the shared online Redis service.
 
 **Tasks**:
-1. Create `docker-compose.kong.yml`:
+1. Provision an online Redis instance (e.g., Upstash, Render Redis).
+2. Create `docker-compose.kong.yml` (Note: No local Redis service):
    ```yaml
    services:
      kong:
@@ -231,203 +267,108 @@ plugins:
          KONG_DATABASE: "off"
          KONG_DECLARATIVE_CONFIG: /etc/kong/kong.yml
          KONG_PROXY_LISTEN: 0.0.0.0:8000
-         KONG_ADMIN_LISTEN: 0.0.0.0:8001
+         KONG_ADMIN_LISTEN: 127.0.0.1:8001 # CRITICAL: NEVER expose Admin API publicly
+         # Use External Redis Env Vars
+         REDIS_HOST: ${REDIS_HOST}
+         REDIS_PORT: ${REDIS_PORT}
+         REDIS_PASSWORD: ${REDIS_PASSWORD}
        volumes:
          - ./kong/kong.yml:/etc/kong/kong.yml
        ports:
          - "8000:8000"
          - "8001:8001"
-     
-     redis:
-       image: redis:7-alpine
-       ports:
-         - "6379:6379"
    ```
 
-2. Create basic `kong/kong.yml` with one service (Catalog)
+2. Create basic `kong/kong.yml` using `${REDIS_HOST}` environment variable substitution.
 3. Test routing: `curl http://localhost:8000/api/catalog/products`
-4. Verify admin API: `curl http://localhost:8001/services`
+4. Verify admin API: `curl http://localhost:8001/services` (from host)
+5. **Validation**: Verify internal service-to-service communication on Render before migration.
 
-**Learning**: Kong declarative config, DB-less mode
+**Learning**: Kong declarative config, Environment variable injection, External service management.
 
 ---
 
-### Phase 2: Authentication Plugin (Week 2)
+### Phase 2: Core Migration & Built-in Auth (Week 2)
 
-**Goal**: Build custom Clerk authentication plugin
+**Goal**: Migrate routes and use built-in Kong JWT protection.
 
 **Tasks**:
-1. Create plugin structure:
-   ```
-   kong/plugins/clerk-auth/
-   ├── handler.lua
-   ├── schema.lua
-   └── access.lua
-   ```
+1. Configure `jwt` plugin for routes requiring auth.
+2. Test header injection (X-User-ID) using built-in claims.
+3. Establish service trust boundary (internal network).
+4. **Optional**: Only if built-in extraction fails for `publicMetadata`, begin planning custom Lua plugin.
 
-2. Implement JWT verification with Clerk JWKS
-3. Extract `publicMetadata.internalId`
-4. Inject headers for downstream services
-5. Test with real Clerk tokens
-
-**Plugin Code** (simplified):
-```lua
--- kong/plugins/clerk-auth/handler.lua
-local jwt = require "resty.jwt"
-local http = require "resty.http"
-
-local ClerkAuthHandler = {
-  PRIORITY = 1000,
-  VERSION = "1.0.0",
-}
-
-function ClerkAuthHandler:access(conf)
-  local auth_header = kong.request.get_header("Authorization")
-  if not auth_header then
-    return kong.response.exit(401, {message = "Missing auth"})
-  end
-
-  local token = auth_header:match("Bearer%s+(.+)")
-  if not token then
-    return kong.response.exit(401, {message = "Invalid format"})
-  end
-
-  -- Verify JWT (use Clerk's JWKS endpoint)
-  local jwt_obj = jwt:verify(conf.clerk_secret_key, token)
-  
-  if not jwt_obj.verified then
-    return kong.response.exit(401, {message = "Invalid token"})
-  end
-
-  -- Extract metadata
-  local claims = jwt_obj.payload
-  local internal_id = claims.publicMetadata and claims.publicMetadata.internalId or ""
-
-  -- Inject headers
-  kong.service.request.set_header("X-User-ID", claims.sub)
-  kong.service.request.set_header("X-User-Internal-ID", internal_id)
-  kong.service.request.set_header("X-User-Email", claims.email or "")
-end
-
-return ClerkAuthHandler
-```
-
-**Learning**: Kong plugin architecture, Lua basics, JWT verification
+**Learning**: Kong built-in auth, network security.
 
 ---
 
 ### Phase 3: Rate Limiting + Caching (Week 3)
 
-**Goal**: Add distributed rate limiting and response caching
+**Goal**: Add distributed rate limiting using the **shared external Redis**.
 
 **Tasks**:
-1. Configure `rate-limiting` plugin with Redis
-2. Test rate limiting: send 101 requests, verify 429
-3. Configure `proxy-cache` plugin for catalog endpoints
-4. Measure cache hit ratio
-5. Test cache invalidation
+1. Configure `rate-limiting` plugin with the shared Redis URL.
+2. Test rate limiting: send 101 requests from local machine, verify 429.
+3. Configure `proxy-cache` plugin for catalog endpoints.
+4. Measure cache hit ratio.
+5. Test cache invalidation.
 
-**Kong Config**:
-```yaml
-services:
-- name: catalog-service
-  url: http://catalog-service:3005
-  routes:
-  - name: catalog-routes
-    paths:
-    - /api/catalog
-    - /api/products
-  plugins:
-  - name: rate-limiting
-    config:
-      policy: redis
-      redis_host: redis
-      minute: 100
-      fault_tolerant: true
-  
-  - name: proxy-cache
-    config:
-      strategy: memory
-      content_type: ["application/json"]
-      cache_ttl: 300
-      request_method: ["GET"]
-      response_code: [200, 404]
-```
-
-**Learning**: Distributed rate limiting, HTTP caching strategies
+**Learning**: Distributed state management, Shared resource strategies.
 
 ---
 
-### Phase 4: Circuit Breaking + Observability (Week 4)
+### Phase 4: Upstream Protection + Observability (Week 4)
 
-**Goal**: Add health checks and integrate with LGTM stack
+**Goal**: Add health checks and integrate with LGTM stack.
 
 **Tasks**:
-1. Configure active health checks on all upstreams
-2. Test failure scenario: stop a service, watch Kong remove it
-3. Configure `opentelemetry` plugin → Jaeger
-4. Configure `http-log` plugin → Loki
-5. Configure `prometheus` plugin
-6. Create Grafana dashboard
+1. Configure active health checks on all upstreams.
+2. Test failure scenario: stop a service, watch Kong remove it.
+3. Configure `opentelemetry` plugin → Jaeger.
+4. Configure `http-log` plugin → Loki.
+5. Configure `prometheus` plugin.
+6. Create Grafana dashboard.
 
-**Health Check Config**:
-```yaml
-upstreams:
-- name: user-service-upstream
-  targets:
-  - target: user-service:3001
-  healthchecks:
-    active:
-      http_path: /health/ready
-      healthy:
-        interval: 10
-        successes: 2
-      unhealthy:
-        interval: 5
-        http_failures: 3
-        timeouts: 2
-```
+**Learning**: Health-based routing, observability integration.
 
-**Learning**: Circuit breaker patterns, health-based routing, observability integration
+---
+
+### Phase 4.5: Contract Testing & Rollback Strategy
+
+**Goal**: Ensure we can verify the migration and safely revert if needed.
+
+**Tasks**:
+1. **Contract Testing**: Before removing the Nest gateway, capture current API behavior.
+2. **Rollback Strategy**: Define the DNS or Render routing switch.
 
 ---
 
 ### Phase 5: Security + Full Migration (Week 5-6)
 
-**Goal**: Add security features and migrate all services
+**Goal**: Add security features and migrate all services.
 
 **Tasks**:
-1. Add security headers via `response-transformer`
-2. Configure CORS properly
-3. Add request size limiting
-4. Migrate remaining services (User, Order, Payment)
-5. Test entire flow end-to-end
-6. Deploy to Render
+1. Add security headers via `response-transformer`.
+2. Configure CORS properly.
+3. Add request size limiting.
+4. Run Contract Tests against Kong to verify parity.
+5. Deploy Kong to Render.
 
-**Security Config**:
-```yaml
-plugins:
-- name: response-transformer
-  config:
-    add:
-      headers:
-      - "X-Frame-Options: DENY"
-      - "X-Content-Type-Options: nosniff"
-      - "Strict-Transport-Security: max-age=31536000"
+**Learning**: Security best practices, production deployment.
 
-- name: cors
-  config:
-    origins: ["http://localhost:3000"]
-    credentials: true
-    exposed_headers: ["x-request-id"]
+---
 
-- name: request-size-limiting
-  config:
-    allowed_payload_size: 10
-    size_unit: megabytes
-```
+### Phase 6: Post-Migration Learning (Custom Plugin Focus)
 
-**Learning**: Security best practices, production deployment
+**Goal**: Deepen understanding of Kong internals by building the custom Clerk auth plugin.
+
+**Tasks**:
+1. Build custom Clerk auth plugin (Lua) to extract nested `publicMetadata`.
+2. Implement custom header injection for downstream services.
+3. Compare performance and maintainability against Phase 2's built-in JWT approach.
+4. Benchmark impact of custom Lua logic on request latency.
+
+**Learning**: Lua plugin development, Kong PDK, advanced performance tuning.
 
 ---
 
@@ -491,20 +432,22 @@ services:
   host: user-service-upstream
   port: 3001
   protocol: http
-  connect_timeout: 45000
-  read_timeout: 45000
-  write_timeout: 45000
+  connect_timeout: 5000
+  read_timeout: 15000
+  write_timeout: 15000
   routes:
   - name: user-routes
     paths:
     - /api/users
     strip_path: false
   plugins:
-  - name: clerk-auth  # Custom plugin
   - name: rate-limiting
     config:
       policy: redis
-      redis_host: redis
+      redis_host: ${REDIS_HOST}
+      redis_port: ${REDIS_PORT}
+      redis_password: ${REDIS_PASSWORD}
+      redis_ssl: true
       minute: 100
 
 - name: catalog-service
@@ -521,7 +464,10 @@ services:
   - name: rate-limiting
     config:
       policy: redis
-      redis_host: redis
+      redis_host: ${REDIS_HOST}
+      redis_port: ${REDIS_PORT}
+      redis_password: ${REDIS_PASSWORD}
+      redis_ssl: true
       minute: 100
   - name: proxy-cache
     config:
@@ -539,11 +485,13 @@ services:
     - /api/orders
     strip_path: false
   plugins:
-  - name: clerk-auth
   - name: rate-limiting
     config:
       policy: redis
-      redis_host: redis
+      redis_host: ${REDIS_HOST}
+      redis_port: ${REDIS_PORT}
+      redis_password: ${REDIS_PASSWORD}
+      redis_ssl: true
       minute: 50  # Stricter for orders
 
 - name: payment-service
@@ -555,11 +503,13 @@ services:
     - /api/payments
     strip_path: false
   plugins:
-  - name: clerk-auth
   - name: rate-limiting
     config:
       policy: redis
-      redis_host: redis
+      redis_host: ${REDIS_HOST}
+      redis_port: ${REDIS_PORT}
+      redis_password: ${REDIS_PASSWORD}
+      redis_ssl: true
       minute: 30  # Strictest for payments
 
 # ─────────────────────────────────────
@@ -625,14 +575,9 @@ plugins:
 ```dockerfile
 FROM kong:3.4-alpine
 
-# Copy custom plugins
-COPY kong/plugins/clerk-auth /usr/local/share/lua/5.1/kong/plugins/clerk-auth
-
 # Copy declarative config
 COPY kong/kong.yml /etc/kong/kong.yml
 
-# Enable custom plugin
-ENV KONG_PLUGINS=bundled,clerk-auth
 ENV KONG_DATABASE=off
 ENV KONG_DECLARATIVE_CONFIG=/etc/kong/kong.yml
 
@@ -656,16 +601,14 @@ services:
       - key: KONG_PROXY_LISTEN
         value: 0.0.0.0:8000
       - key: KONG_ADMIN_LISTEN
-        value: 0.0.0.0:8001
-      - key: CLERK_SECRET_KEY
-        sync: false  # Add manually in dashboard
+        value: 127.0.0.1:8001 # CRITICAL: NEVER expose Admin API publicly
+      - key: REDIS_HOST
+        sync: false # Add from online service
+      - key: REDIS_PORT
+        sync: false
+      - key: REDIS_PASSWORD
+        sync: false
     healthCheckPath: /health/live
-
-  # Redis for rate limiting
-  - type: redis
-    name: kong-redis
-    plan: starter
-    ipAllowList: []
 
   # Existing microservices
   - type: web
@@ -683,298 +626,76 @@ services:
 
 ### Environment Variables
 
-**Required for Kong**:
+**Required for Kong (derived from shared REDIS_URL)**:
 ```bash
 KONG_DATABASE=off
 KONG_DECLARATIVE_CONFIG=/etc/kong/kong.yml
 KONG_PROXY_LISTEN=0.0.0.0:8000
-KONG_ADMIN_LISTEN=0.0.0.0:8001
-KONG_PLUGINS=bundled,clerk-auth
+KONG_ADMIN_LISTEN=127.0.0.1:8001 # CRITICAL: Admin API must not be public
 
-# Custom plugin config
-CLERK_SECRET_KEY=sk_live_xxxxx
-
-# Redis connection
-REDIS_HOST=kong-redis.internal
+# Shared External Redis (Same for Local & Prod)
+REDIS_HOST=your-redis-host.com
 REDIS_PORT=6379
-
-# Observability
-JAEGER_ENDPOINT=http://jaeger:4318/v1/traces
-LOKI_ENDPOINT=http://loki:3100/loki/api/v1/push
+REDIS_PASSWORD=your-secure-password
 ```
-
-### Deployment Steps
-
-1. **Build locally**:
-   ```bash
-   docker build -f apps/api-gateway/Dockerfile.kong -t kong-gateway .
-   docker run -p 8000:8000 -p 8001:8001 kong-gateway
-   ```
-
-2. **Test locally**:
-   ```bash
-   # Health check
-   curl http://localhost:8001/status
-   
-   # Test routing
-   curl http://localhost:8000/api/catalog/products
-   ```
-
-3. **Deploy to Render**:
-   ```bash
-   # Via Render dashboard or CLI
-   render-cli deploy --blueprint render.yaml
-   ```
-
-4. **Verify deployment**:
-   ```bash
-   curl https://kong-gateway.onrender.com/health/live
-   ```
-
----
-
-## 💡 Suggested Improvements
-
-### Short-Term (Next 2-4 weeks)
-
-1. **Request/Response Transformation**
-   - Use `request-transformer` to standardize API contracts
-   - Transform legacy endpoints to new formats
-   - Add versioning headers automatically
-
-2. **Advanced Caching**
-   - Implement cache warming strategies
-   - Add surrogate keys for fine-grained invalidation
-   - Use Redis for distributed cache (Kong Enterprise feature, but can implement custom)
-
-3. **Better Error Handling**
-   - Custom error templates
-   - Structured error responses with correlation IDs
-   - Error rate alerting via Prometheus
-
-4. **API Documentation**
-   - Auto-generate OpenAPI spec from Kong routes
-   - Deploy Swagger UI endpoint
-   - Kong Developer Portal (Enterprise) or custom solution
-
-5. **GraphQL Support**
-   - Add `graphql-proxy-cache-advanced` plugin
-   - Query complexity limiting
-   - Persisted queries
-
-### Mid-Term (1-3 months)
-
-6. **API Versioning Strategy**
-   - Path-based: `/v1/api/users`, `/v2/api/users`
-   - Header-based: `Accept: application/vnd.api.v2+json`
-   - Gradual deprecation of old versions
-
-7. **Service Mesh Integration**
-   - Evaluate Kong for Kubernetes (KIC)
-   - mTLS between services
-   - Service-to-service authentication
-
-8. **Advanced Rate Limiting**
-   - Per-user rate limits (not just per-IP)
-   - Tiered rate limits (free/pro/enterprise users)
-   - Quota management
-
-9. **Webhooks Gateway**
-   - Dedicated Kong instance for outbound webhooks
-   - Retry logic with exponential backoff
-   - Webhook signature verification
-
-10. **Multi-Region Setup**
-    - Deploy Kong in multiple regions
-    - Geo-routing for low latency
-    - Cross-region rate limit synchronization
-
-### Long-Term (3-6 months)
-
-11. **API Analytics**
-    - Custom analytics plugin
-    - Track API usage patterns
-    - Business metrics (revenue per endpoint)
-
-12. **Advanced Security**
-    - Bot detection plugin
-    - CAPTCHA integration for suspicious traffic
-    - DDoS protection with Cloudflare integration
-
-13. **Policy-as-Code**
-    - OPA (Open Policy Agent) plugin
-    - Centralized authorization rules
-    - Dynamic policy updates
-
-14. **Blue-Green for Services**
-    - Use Kong for traffic splitting
-    - Canary deployments per service
-    - A/B testing capabilities
-
-15. **Kong Enterprise Features**
-    - Evaluate if worth upgrading
-    - Dev Portal for API consumers
-    - RBAC for Kong Admin API
-    - Advanced analytics
 
 ---
 
 ## 🎓 Key Learning Concepts
 
-### 1. Plugin Development
-- Lua basics and OpenResty
-- Kong plugin lifecycle (init, access, header_filter, etc.)
-- Testing Kong plugins with `pongo`
+### 1. External Resource Management
+- Managing shared state across environments.
+- Security implications of online Redis services (SSL, Authentication).
+- Tradeoffs of single-instance vs. multi-instance Redis.
 
 ### 2. Distributed Systems
-- CAP theorem in rate limiting (consistency vs availability)
-- Circuit breaker patterns
-- Health check strategies
-
-### 3. API Gateway Patterns
-- Backend for Frontend (BFF)
-- API composition
-- Request/response transformation
-
-### 4. Security
-- JWT verification flows
-- CORS deep dive
-- Security headers (CSP, HSTS, etc.)
-- Defense in depth
-
-### 5. Observability
-- Distributed tracing (Jaeger/OTLP)
-- Structured logging (Loki)
-- Metrics collection (Prometheus)
-- Dashboard design (Grafana)
-
-### 6. Performance
-- HTTP caching strategies (ETags, Cache-Control)
-- Connection pooling
-- Load balancing algorithms
-- NGINX tuning
+- Distributed rate limiting consistency.
+- Shared infrastructure in microservices.
 
 ---
 
 ## 📋 Task List
 
-### Week 1: Local Setup
-- [ ] Install Kong locally via Docker
-- [ ] Create `docker-compose.kong.yml`
-- [ ] Create basic `kong/kong.yml` with catalog service
-- [ ] Test basic routing (`/api/catalog/*` → catalog-service)
-- [ ] Verify Kong Admin API working
-- [ ] Read Kong documentation (declarative config)
+### Week 1: Setup Shared Redis & Local Kong
+- [x] Provision a single shared online Redis instance.
+- [x] Configure `.env` with `REDIS_HOST`, `REDIS_PORT`, and `REDIS_PASSWORD`.
+- [x] Create basic `kong/kong.yml` with environment variable substitution.
+- [x] Test local Kong routing using the online Redis instance.
+- [x] Verify Admin API is restricted.
+- [x] Validate Render internal networking.
 
-### Week 2: Authentication Plugin
-- [ ] Set up plugin development environment
-- [ ] Create `kong/plugins/clerk-auth/` structure
-- [ ] Implement `handler.lua` with JWT verification
-- [ ] Implement `schema.lua` for config validation
-- [ ] Test plugin with real Clerk tokens
-- [ ] Handle missing `internalId` gracefully
-- [ ] Write unit tests for plugin (optional)
-- [ ] Document plugin configuration
+**Reusable Code Added:**
+- Created `@repo/shared-types` package (`packages/shared-types`) to centralize `AuthContext`, `RequestContext`, `HealthResponse`, `EventMetadata`, and `LogContext` types.
+- Scaffolded `apps/kong-gateway` with `kong.yml`, `Dockerfile`, and `docker-compose.yml`.
+
+### Week 2: Core Migration & Built-in Auth
+- [ ] Set up basic Kong routes for all microservices.
+- [ ] Configure `jwt` plugin.
+- [ ] Establish service trust boundary.
 
 ### Week 3: Rate Limiting & Caching
-- [ ] Deploy Redis locally
-- [ ] Configure `rate-limiting` plugin with Redis policy
-- [ ] Test rate limiting (send 101 requests, verify 429)
-- [ ] Verify rate limit state persists across Kong restarts
-- [ ] Configure `proxy-cache` plugin for catalog
-- [ ] Test cache: verify cache headers, hit/miss ratio
-- [ ] Measure performance improvement
-- [ ] Document caching strategy
+- [ ] Enable `rate-limiting` plugin with shared Redis.
+- [ ] Verify 429 responses and state persistence across environments.
+- [ ] Enable `proxy-cache` (memory strategy).
 
-### Week 4: Circuit Breaking & Observability
-- [ ] Configure active health checks on all upstreams
-- [ ] Test health check: stop catalog service, verify removal
-- [ ] Configure `opentelemetry` plugin → Jaeger
-- [ ] Verify traces show complete request flow
-- [ ] Configure `http-log` plugin → Loki
-- [ ] Configure `prometheus` plugin
-- [ ] Create Grafana dashboard for Kong metrics
-- [ ] Set up alerts (error rate, latency)
-
-### Week 5: Security & Full Migration
-- [ ] Add security headers via `response-transformer`
-- [ ] Configure CORS with proper origins
-- [ ] Add `request-size-limiting` plugin
-- [ ] Test CORS preflight requests
-- [ ] Migrate user-service routes to Kong
-- [ ] Migrate order-service routes to Kong
-- [ ] Migrate payment-service routes to Kong
-- [ ] End-to-end integration tests
-- [ ] Load testing (k6 or similar)
-
-### Week 6: Production Deployment
-- [ ] Create `Dockerfile.kong` with custom plugin
-- [ ] Create `render.yaml` blueprint
-- [ ] Test Docker build locally
-- [ ] Deploy Kong to Render (staging)
-- [ ] Configure environment variables in Render
-- [ ] Update frontend to point to Kong URL
-- [ ] Test in staging thoroughly
-- [ ] Deploy to production
-- [ ] Monitor for 48 hours
-- [ ] Document operational procedures
-
-### Post-Deployment
-- [ ] Create Kong operational runbook
-- [ ] Document plugin maintenance procedures
-- [ ] Set up monitoring alerts
-- [ ] Plan next improvements (see suggestions above)
-- [ ] Write blog post about learnings (optional)
-
----
-
-## 📚 Resources
-
-### Kong Official
-- [Kong Gateway Docs](https://docs.konghq.com/gateway/latest/)
-- [Plugin Development Guide](https://docs.konghq.com/gateway/latest/plugin-development/)
-- [Declarative Config](https://docs.konghq.com/deck/latest/)
-
-### Clerk Integration
-- [Clerk JWT Structure](https://clerk.com/docs/backend-requests/making/jwt-templates)
-- [Verifying Clerk Tokens](https://clerk.com/docs/backend-requests/handling/manual-jwt)
-
-### Lua & OpenResty
-- [Lua Quick Start](https://www.lua.org/start.html)
-- [OpenResty Best Practices](https://openresty.org/en/getting-started.html)
-- [lua-resty-jwt](https://github.com/SkyLothar/lua-resty-jwt)
-
-### Patterns & Best Practices
-- [API Gateway Pattern](https://microservices.io/patterns/apigateway.html)
-- [Circuit Breaker Pattern](https://martinfowler.com/bliki/CircuitBreaker.html)
-- [Rate Limiting Algorithms](https://www.quinbay.com/blog/rate-limiting-algorithms)
+### Week 4-6: Full Migration & Learning
+- [ ] Complete Observability, Security, and Rollback phases.
+- [ ] Deploy to Render.
+- [ ] **Phase 6**: Start building custom Lua plugin to extract nested JWT claims.
 
 ---
 
 ## 🤔 Discussion Points
 
-### Why Not Stick with NestJS?
-- **Learning**: Kong exposes you to different paradigm (config-driven)
-- **Performance**: NGINX core vs Node.js event loop
-- **Industry Standard**: Kong/NGINX used widely in production
-- **Separation of Concerns**: Gateway logic decoupled from application code
+### Shared Redis for All Services?
+- **Tradeoff**: Simplifies management and reduces cost for a learning project.
+- **Risk**: Single point of failure (SPOF) and potential "noisy neighbor" issues if one service floods Redis.
+- **Production Pattern**: In a large-scale system, critical services might get their own Redis clusters or use logical database separation (though DB indices are deprecated in some Redis versions/configurations).
 
-### Kong OSS vs Enterprise?
-- **OSS**: Free, sufficient for learning and small projects
-- **Enterprise**: Dev Portal, RBAC, advanced analytics ($$$)
-- **Recommendation**: Start with OSS, evaluate Enterprise later
-
-### Why Lua for Plugins?
-- **Integration**: Native to OpenResty/NGINX
-- **Performance**: Compiled to LuaJIT bytecode
-- **Simplicity**: Easier than C modules
-- **Alternative**: Kong 3.0+ supports Go plugins (experimental)
-
-### Redis Single Point of Failure?
-- **For Learning**: Single Redis instance is fine
-- **Production**: Redis Sentinel or Cluster
-- **Fallback**: `fault_tolerant: true` allows requests when Redis is down
+### Same Redis URL for Local & Prod?
+- **Benefits**: Perfect parity in behavior and configuration.
+- **Risk**: Accidentally flushing production data from a local environment. **Mitigation**: Use different Redis databases or keyspace prefixes if supported, or maintain separate instances for true production isolation in non-learning projects.
 
 ---
 
-**Next Steps**: Start with Week 1 tasks. Focus on understanding each concept before moving forward. Don't rush—this is about learning production patterns, not just completing a migration.
+**Next Steps**: Start with Week 1 tasks. Provision your online Redis instance first.
