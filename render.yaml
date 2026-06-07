@@ -47,6 +47,23 @@ services:
         value: 127.0.0.1:8001
       - key: KONG_STATUS_LISTEN
         value: 0.0.0.0:8100
+      # ─────────────────────────────────────
+      # MEMORY OPTIMIZATIONS (Render Free 512MB)
+      # ─────────────────────────────────────
+      - key: KONG_NGINX_WORKER_PROCESSES
+        value: "1" # Default is 'auto' (one per core), each worker consumes ~60-100MB
+      - key: KONG_MEM_CACHE_SIZE
+        value: "32m" # Reduce internal memory cache
+      - key: KONG_LUA_PACKAGE_PATH
+        value: "./?.lua;./?/init.lua;;"
+      - key: KONG_NGINX_HTTP_CLIENT_BODY_BUFFER_SIZE
+        value: "128k" # Reduce request buffering RAM
+      - key: KONG_NGINX_HTTP_CLIENT_MAX_BODY_SIZE
+        value: "10m"
+      - key: KONG_UPSTREAM_KEEPALIVE_POOL_SIZE
+        value: "32"
+      - key: KONG_DNS_RESOLVER
+        value: "8.8.8.8" # Avoid local DNS resolver complexity
       - fromGroup: shared-infra
 
   # ─── User Service ─────────────────────────────────────────────────────────────
