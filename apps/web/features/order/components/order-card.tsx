@@ -2,7 +2,8 @@
 
 import type { Order } from '@/types/api';
 import { OrderStatusBadge } from './order-status-badge';
-import { Package, ExternalLink } from 'lucide-react';
+import { Package, ExternalLink, CreditCard } from 'lucide-react';
+import Link from 'next/link';
 
 interface OrderCardProps {
   order: Order;
@@ -103,6 +104,15 @@ export function OrderCard({ order }: OrderCardProps) {
 
         {/* Action Buttons */}
         <div className="sm:w-48 flex flex-col gap-2 shrink-0">
+          {order.status === 'PAYMENT_PENDING' && (
+            <Link
+              href={`/checkout/retry/${order.id}`}
+              className="w-full py-2 px-4 bg-yellow-500 text-white rounded-lg text-sm font-bold hover:bg-yellow-600 transition-colors shadow-sm flex items-center justify-center gap-2 mb-2"
+            >
+              <CreditCard className="size-4" />
+              Retry Payment
+            </Link>
+          )}
           <button type="button" className="w-full py-2 px-4 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors shadow-sm">
             Track package
           </button>

@@ -17,9 +17,17 @@ import { useUser } from "@clerk/nextjs";
 interface PaymentFormProps {
   /** Shipping address snapshot collected from the checkout form */
   shippingAddressSnapshot?: ShippingAddressSnapshot;
+  /** Existing order details for retry payment flow */
+  existingOrderId?: string;
+  /** Existing order total amount for retry payment flow */
+  existingAmount?: number;
 }
 
-export function PaymentForm({ shippingAddressSnapshot }: Readonly<PaymentFormProps>) {
+export function PaymentForm({ 
+  shippingAddressSnapshot,
+  existingOrderId,
+  existingAmount
+}: Readonly<PaymentFormProps>) {
   const stripe = useStripe();
   const elements = useElements();
   const { items, clearCart } = useCart();
@@ -36,7 +44,7 @@ export function PaymentForm({ shippingAddressSnapshot }: Readonly<PaymentFormPro
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 
-    if (!stripe || !elements || items.length === 0 || !isPaymentComplete) return;
+    if (!stripe || !elements || (!existingOrderId && items.length === 0) || !isPaymentComplete) return;
 
     setIsLoading(true);
     setErrorMessage(null);
@@ -50,30 +58,38 @@ export function PaymentForm({ shippingAddressSnapshot }: Readonly<PaymentFormPro
         return;
       }
 
-      // 2. Create order — shipping snapshot is included directly in the payload,
-      //    no cross-service HTTP calls needed on the backend side.
-      // If internalId is missing from the current local user object, we force a token refresh
-      // to ensure the backend sees the latest metadata synced from user-service.
-      const hasInternalId = !!clerkUser?.publicMetadata?.internalId;
-      
-      const order = await createOrder.mutateAsync({
-        data: {
-          items: items.map((item) => ({
-            productId: item.product.id,
-            quantity: item.quantity,
-          })),
-          shippingAddressSnapshot,
-          userId: clerkUser?.publicMetadata?.internalId as string,
-        },
-        options: {
-          skipTokenCache: !hasInternalId
-        }
-      });
+      let orderId = existingOrderId;
+      let totalAmount = existingAmount;
 
-      // 3. Create PaymentIntent tied to the new order
+      if (!orderId) {
+        // 2. Create order — shipping snapshot is included directly in the payload,
+        //    no cross-service HTTP calls needed on the backend side.
+        // If internalId is missing from the current local user object, we force a token refresh
+        // to ensure the backend sees the latest metadata synced from user-service.
+        const hasInternalId = !!clerkUser?.publicMetadata?.internalId;
+        
+        const order = await createOrder.mutateAsync({
+          data: {
+            items: items.map((item) => ({
+              productId: item.product.id,
+              quantity: item.quantity,
+            })),
+            shippingAddressSnapshot,
+            userId: clerkUser?.publicMetadata?.internalId as string,
+          },
+          options: {
+            skipTokenCache: !hasInternalId
+          }
+        });
+        
+        orderId = order.id;
+        totalAmount = Number(order.totalAmount);
+      }
+
+      // 3. Create PaymentIntent tied to the order
       const { clientSecret } = await createPaymentIntent.mutateAsync({
-        orderId: order.id,
-        amount: Number(order.totalAmount),
+        orderId: orderId!,
+        amount: Number(totalAmount),
       });
 
       // 4. Confirm payment with Stripe
@@ -90,7 +106,9 @@ export function PaymentForm({ shippingAddressSnapshot }: Readonly<PaymentFormPro
         setErrorMessage(confirmError.message ?? "Payment confirmation failed.");
       } else {
         setIsSuccess(true);
-        clearCart();
+        if (!existingOrderId) {
+          clearCart();
+        }
       }
     } catch (err: unknown) {
       console.error("Checkout error:", err);
@@ -145,7 +163,7 @@ export function PaymentForm({ shippingAddressSnapshot }: Readonly<PaymentFormPro
 
       <Button
         type="submit"
-        disabled={isLoading || !stripe || !elements || items.length === 0 || !isPaymentComplete}
+        disabled={isLoading || !stripe || !elements || (!existingOrderId && items.length === 0) || !isPaymentComplete}
         className="w-full h-14 rounded-full text-lg font-bold shadow-lg hover:shadow-xl transition-all disabled:opacity-50"
       >
         {isLoading ? (
@@ -154,7 +172,7 @@ export function PaymentForm({ shippingAddressSnapshot }: Readonly<PaymentFormPro
             Processing...
           </>
         ) : (
-          "Place Order"
+          existingOrderId ? "Pay Now" : "Place Order"
         )}
       </Button>
 

@@ -1,11 +1,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ShoppingCart, ArrowRight } from "lucide-react";
+import { ShoppingCart, ArrowRight, CreditCard } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { OrderStatusBadge } from "@/features/order/components/order-status-badge";
 import { format } from "date-fns";
+import { OrderStatus } from "@/types/api";
 
 interface RecentOrdersCardProps {
   orders: any[] | undefined;
@@ -62,11 +63,20 @@ export function RecentOrdersCard({ orders, isLoading }: RecentOrdersCardProps) {
                     </p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm font-bold mb-1">
+                <div className="text-right flex flex-col items-end gap-1">
+                  <p className="text-sm font-bold">
                     ${Number(order.totalAmount).toFixed(2)}
                   </p>
                   <OrderStatusBadge status={order.status} />
+                  {order.status === OrderStatus.PAYMENT_PENDING && (
+                    <Link
+                      href={`/checkout/retry/${order.id}`}
+                      className="text-[10px] font-bold uppercase tracking-wider text-primary hover:underline flex items-center gap-1 mt-1"
+                    >
+                      <CreditCard className="size-3" />
+                      Pay Now
+                    </Link>
+                  )}
                 </div>
               </div>
             ))}

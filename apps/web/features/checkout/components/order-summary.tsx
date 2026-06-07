@@ -3,8 +3,20 @@
 import { useCart } from "@/hooks/use-cart";
 import { useEffect, useState } from "react";
 
-export function OrderSummary() {
-  const { items } = useCart();
+interface OrderSummaryProps {
+  items?: {
+    product: {
+      id: string;
+      name: string;
+      price: number;
+    };
+    quantity: number;
+  }[];
+  totalAmount?: number;
+}
+
+export function OrderSummary({ items: propItems, totalAmount }: Readonly<OrderSummaryProps>) {
+  const { items: cartItems } = useCart();
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
@@ -13,13 +25,15 @@ export function OrderSummary() {
 
   if (!isMounted) return null;
 
+  const items = propItems || cartItems;
+
   const subtotal = items.reduce(
     (acc, item) => acc + Number(item.product.price) * item.quantity,
     0
   );
   
   const shipping = items.length > 0 ? 15 : 0; // Flat mock shipping rate
-  const total = subtotal + shipping;
+  const total = totalAmount ?? (subtotal + shipping);
 
   return (
     <div className="space-y-6">

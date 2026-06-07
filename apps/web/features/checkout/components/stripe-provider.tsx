@@ -10,18 +10,27 @@ const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "pk_test_TYooMQauvdEDq54NiTphI7jx"
 );
 
-export function StripeProvider({ children }: Readonly<{ children: React.ReactNode }>) {
+export function StripeProvider({ 
+  children,
+  totalAmount 
+}: Readonly<{ 
+  children: React.ReactNode;
+  totalAmount?: number;
+}>) {
   const { items } = useCart();
   
   // Calculate total for deferred mode
   const total = useMemo(() => {
+    if (totalAmount !== undefined) {
+      return Math.round(totalAmount * 100);
+    }
     const subtotal = items.reduce(
       (acc, item) => acc + Number(item.product.price) * item.quantity,
       0
     );
     const shipping = items.length > 0 ? 1500 : 0; // 15.00 in cents
     return Math.round(subtotal * 100) + shipping;
-  }, [items]);
+  }, [items, totalAmount]);
 
   // If cart is empty, we don't need Stripe elements yet or we show placeholder
   const options = {
