@@ -7,10 +7,10 @@ upstreams:
 - name: user-service-upstream
   algorithm: round-robin
   targets:
-  - target: user-service-ov6b:3001
+  - target: ${USER_SERVICE_HOST}:3001
   healthchecks:
     active:
-      http_path: /health/ready
+      http_path: /health/live
       healthy:
         interval: 10
         successes: 2
@@ -21,21 +21,24 @@ upstreams:
 - name: catalog-service-upstream
   algorithm: round-robin
   targets:
-  - target: catalog-service-rtyq:3005
+  - target: ${CATALOG_SERVICE_HOST}:3005
   healthchecks:
     active:
-      http_path: /health/ready
+      http_path: /health/live
       healthy:
         interval: 10
         successes: 2
+      unhealthy:
+        interval: 5
+        http_failures: 3
 
 - name: order-service-upstream
   algorithm: round-robin
   targets:
-  - target: order-service-j1or:3002
+  - target: ${ORDER_SERVICE_HOST}:3002
   healthchecks:
     active:
-      http_path: /health/ready
+      http_path: /health/live
       healthy:
         interval: 10
         successes: 2
@@ -46,10 +49,10 @@ upstreams:
 - name: payment-service-upstream
   algorithm: round-robin
   targets:
-  - target: payment-service-9rnf:3004
+  - target: ${PAYMENT_SERVICE_HOST}:3004
   healthchecks:
     active:
-      http_path: /health/ready
+      http_path: /health/live
       healthy:
         interval: 10
         successes: 2
@@ -60,10 +63,10 @@ upstreams:
 - name: notification-service-upstream
   algorithm: round-robin
   targets:
-  - target: notification-service-w0yp:3005
+  - target: ${NOTIFICATION_SERVICE_HOST}:3005
   healthchecks:
     active:
-      http_path: /health/ready
+      http_path: /health/live
       healthy:
         interval: 10
         successes: 2
@@ -75,8 +78,9 @@ upstreams:
 # SERVICES & ROUTES: API Definition
 # ─────────────────────────────────────
 services:
+# Health check shortcut — intercepted by request-termination before upstream is hit
 - name: gateway-health
-  url: http://localhost
+  url: http://localhost:8001
   routes:
   - name: gateway-health-route
     paths:
@@ -89,7 +93,6 @@ services:
 
 - name: user-service
   host: user-service-upstream
-  port: 3001
   protocol: http
   connect_timeout: 5000
   read_timeout: 15000
@@ -102,17 +105,16 @@ services:
   plugins:
   - name: rate-limiting
     config:
-      policy: local # Use local policy for dev to avoid Redis dependency errors
+      policy: local
       minute: 100
   - name: request-transformer
     config:
       add:
         headers:
-        - "X-Gateway-Secret: ecommerce-internal-trust-2026-xyz"
+        - "X-Gateway-Secret:${GATEWAY_INTERNAL_SECRET}"
 
 - name: catalog-service
   host: catalog-service-upstream
-  port: 3005
   protocol: http
   connect_timeout: 5000
   read_timeout: 15000
@@ -126,16 +128,15 @@ services:
   - name: rate-limiting
     config:
       policy: local
-      minute: 100
+      minute: 200
   - name: request-transformer
     config:
       add:
         headers:
-        - "X-Gateway-Secret: ecommerce-internal-trust-2026-xyz"
+        - "X-Gateway-Secret:${GATEWAY_INTERNAL_SECRET}"
 
 - name: order-service
   host: order-service-upstream
-  port: 3002
   protocol: http
   connect_timeout: 5000
   read_timeout: 15000
@@ -154,11 +155,10 @@ services:
     config:
       add:
         headers:
-        - "X-Gateway-Secret: ecommerce-internal-trust-2026-xyz"
+        - "X-Gateway-Secret:${GATEWAY_INTERNAL_SECRET}"
 
 - name: payment-service
   host: payment-service-upstream
-  port: 3004
   protocol: http
   connect_timeout: 5000
   read_timeout: 15000
@@ -177,11 +177,10 @@ services:
     config:
       add:
         headers:
-        - "X-Gateway-Secret: ecommerce-internal-trust-2026-xyz"
+        - "X-Gateway-Secret:${GATEWAY_INTERNAL_SECRET}"
 
 - name: notification-service
   host: notification-service-upstream
-  port: 3005
   protocol: http
   connect_timeout: 5000
   read_timeout: 15000
@@ -200,7 +199,7 @@ services:
     config:
       add:
         headers:
-        - "X-Gateway-Secret: ecommerce-internal-trust-2026-xyz"
+        - "X-Gateway-Secret:${GATEWAY_INTERNAL_SECRET}"
 
 # ─────────────────────────────────────
 # GLOBAL PLUGINS
@@ -222,9 +221,9 @@ plugins:
   config:
     add:
       headers:
-      - "X-Frame-Options: DENY"
-      - "X-Content-Type-Options: nosniff"
-      - "Strict-Transport-Security: max-age=31536000"
+      - "X-Frame-Options:DENY"
+      - "X-Content-Type-Options:nosniff"
+      - "Strict-Transport-Security:max-age=31536000"
 
 - name: cors
   config:
