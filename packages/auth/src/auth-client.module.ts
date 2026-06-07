@@ -47,9 +47,9 @@ import { createRmqOptions } from '@repo/common/messaging';
           transport: Transport.RMQ,
           options: createRmqOptions({
             urls: [configService.get<string>('RABBITMQ_URL') ?? ''],
-            queue: 'auth_queue',
+            queue: 'user.auth_queue',
             deadLetterExchange: 'dlx_exchange',
-            deadLetterRoutingKey: 'dlq_auth_queue',
+            deadLetterRoutingKey: 'dlq_user.auth_queue',
           }),
         }),
         inject: [ConfigService],

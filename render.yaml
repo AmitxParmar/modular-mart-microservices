@@ -5,35 +5,34 @@ envVarGroups:
         value: production
       - key: LOG_LEVEL
         value: info
-      # SHARED SECRETS: Paste these once in Render Dashboard -> Env Groups
+      # SHARED SECRETS: Set these in Render Dashboard -> Env Groups
       - key: RABBITMQ_URL
-        value: "REPLACE_ME"
+        sync: false
       - key: CLERK_PUBLISHABLE_KEY
-        value: "REPLACE_ME"
+        sync: false
       - key: CLERK_SECRET_KEY
-        value: "REPLACE_ME"
+        sync: false
       - key: SENTRY_DSN
-        value: "REPLACE_ME"
+        sync: false
       - key: STRIPE_SECRET_KEY
-        value: "REPLACE_ME"
+        sync: false
       - key: STRIPE_WEBHOOK_SECRET
-        value: "REPLACE_ME"
+        sync: false
       - key: GATEWAY_INTERNAL_SECRET
-        value: "REPLACE_ME" # Secret used to verify requests originate from Kong
+        sync: false
 
 services:
-  # Kong API Gateway (OSS)
+  # ─── Kong API Gateway ────────────────────────────────────────────────────────
   - type: web
     name: kong-gateway
     runtime: docker
-    dockerContext: .
+    dockerContext: apps/kong-gateway
     dockerfilePath: apps/kong-gateway/Dockerfile
     plan: free
     region: singapore
     autoDeployTrigger: commit
-    healthCheckPath: /health/live # Note: Kong doesn't have /health/live by default, 
-                                  # but we can use status port or add a route.
-                                  # For now, let's assume we use the status plugin.
+    # Kong's built-in status endpoint — does NOT require a route in kong.yml
+    healthCheckPath: /status
     buildFilter:
       paths:
         - apps/kong-gateway/**
@@ -43,64 +42,14 @@ services:
       - key: KONG_DECLARATIVE_CONFIG
         value: /etc/kong/kong.yml
       - key: KONG_PROXY_LISTEN
-        value: 0.0.0.0:8000
+        value: 0.0.0.0:10000
       - key: KONG_ADMIN_LISTEN
         value: 127.0.0.1:8001
-      - key: REDIS_HOST
-        sync: false
-      - key: REDIS_PORT
-        sync: false
-      - key: REDIS_PASSWORD
-        sync: false
-      - key: REDIS_SSL
-        value: "true"
+      - key: KONG_STATUS_LISTEN
+        value: 0.0.0.0:8100
       - fromGroup: shared-infra
-      - key: CLERK_ISSUER_URL
-        sync: false
-      - key: CLERK_JWT_PUBLIC_KEY
-        sync: false
 
-  # Legacy API Gateway (Deprecated)
-  - type: web
-    name: api-gateway
-    runtime: docker
-    dockerContext: .
-    dockerfilePath: apps/api-gateway/Dockerfile
-    plan: free
-    region: singapore
-    autoDeployTrigger: commit
-    healthCheckPath: /health/live
-    buildFilter:
-      paths:
-        - apps/api-gateway/**
-        - packages/**
-        - pnpm-lock.yaml
-    envVars:
-      - fromGroup: shared-infra
-      - key: PORT
-        value: 3000
-      - key: ALLOWED_ORIGINS
-        sync: false
-      - key: RATE_LIMIT_TTL
-        value: "60000"
-      - key: RATE_LIMIT_MAX
-        value: "100"
-      - key: USER_SERVICE_URL
-        value: http://user-service:3000
-      - key: PRODUCT_SERVICE_URL
-        value: http://catalog-service:3000
-      - key: CATALOG_SERVICE_URL
-        value: http://catalog-service:3000
-      - key: ORDER_SERVICE_URL
-        value: http://order-service:3000
-      - key: PAYMENT_SERVICE_URL
-        value: http://payment-service:3000
-      - key: CART_SERVICE_URL
-        value: http://catalog-service:3000
-      - key: CLERK_WEBHOOK_SECRET
-        sync: false
-
-  # User Service
+  # ─── User Service ─────────────────────────────────────────────────────────────
   - type: web
     name: user-service
     runtime: docker
@@ -118,13 +67,15 @@ services:
     envVars:
       - fromGroup: shared-infra
       - key: PORT
-        value: 3000
+        value: "3001"
       - key: DATABASE_URL
         sync: false
+      - key: DATABASE_SSL
+        value: "true"
       - key: CLERK_WEBHOOK_SECRET
         sync: false
 
-  # Catalog Service
+  # ─── Catalog Service ──────────────────────────────────────────────────────────
   - type: web
     name: catalog-service
     runtime: docker
@@ -142,11 +93,11 @@ services:
     envVars:
       - fromGroup: shared-infra
       - key: PORT
-        value: 3000
+        value: "3005"
       - key: DATABASE_URL
         sync: false
 
-  # Order Service
+  # ─── Order Service ────────────────────────────────────────────────────────────
   - type: web
     name: order-service
     runtime: docker
@@ -164,13 +115,14 @@ services:
     envVars:
       - fromGroup: shared-infra
       - key: PORT
-        value: 3000
+        value: "3002"
       - key: DATABASE_URL
         sync: false
       - key: USER_SERVICE_URL
-        value: http://user-service:3000
+        # Internal Render URL — replace with actual Render service URL after first deploy
+        value: https://user-service.onrender.com
 
-  # Payment Service
+  # ─── Payment Service ──────────────────────────────────────────────────────────
   - type: web
     name: payment-service
     runtime: docker
@@ -188,13 +140,14 @@ services:
     envVars:
       - fromGroup: shared-infra
       - key: PORT
-        value: 3000
+        value: "3004"
       - key: DATABASE_URL
         sync: false
       - key: ORDER_SERVICE_URL
-        value: http://order-service:3000
+        # Internal Render URL — replace with actual Render service URL after first deploy
+        value: https://order-service.onrender.com
 
-  # Notification Service
+  # ─── Notification Service ─────────────────────────────────────────────────────
   - type: web
     name: notification-service
     runtime: docker
@@ -212,7 +165,7 @@ services:
     envVars:
       - fromGroup: shared-infra
       - key: PORT
-        value: 3005
+        value: "3005"
       - key: DATABASE_URL
         sync: false
       - key: SMTP_HOST
@@ -225,13 +178,9 @@ services:
         sync: false
       - key: SMTP_FROM
         sync: false
-      - key: RABBITMQ_URL
-        sync: false
       - key: TWILIO_ACCOUNT_SID
         sync: false
       - key: TWILIO_AUTH_TOKEN
         sync: false
       - key: TWILIO_PHONE_NUMBER
         sync: false
-
-

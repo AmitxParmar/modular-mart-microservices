@@ -15,6 +15,11 @@ export class ServiceTrustMiddleware implements NestMiddleware {
   use(req: Request, res: Response, next: NextFunction): void {
     const gatewaySecret = this.configService.get<string>('GATEWAY_INTERNAL_SECRET');
     const incomingSecret = req.headers['x-gateway-secret'];
+    // Allow health and metrics routes to bypass the secret check
+    const path = req.originalUrl || req.url;
+    if (path.startsWith('/health/') || path.startsWith('/api/health/') || path === '/metrics' || path === '/api/metrics') {
+      return next();
+    }
 
     // In production, we enforce the secret check to establish a trust boundary.
     // In development, it's optional unless GATEWAY_INTERNAL_SECRET is set.

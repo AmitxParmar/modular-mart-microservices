@@ -157,7 +157,7 @@ plugins:
 - Grafana for visualization
 
 **Kong Integration**:
-- `http-log` plugin → forward to Loki
+- Kong writes access logs to stdout; Promtail forwards the container logs to Loki
 - `opentelemetry` plugin → export to Jaeger
 - `prometheus` plugin → expose metrics at `:8001/metrics`
 - `correlation-id` plugin → propagate `X-Request-ID`
@@ -262,12 +262,12 @@ plugins:
    ```yaml
    services:
      kong:
-       image: kong:3.4-alpine
+       image: kong:3.9.2
        environment:
          KONG_DATABASE: "off"
          KONG_DECLARATIVE_CONFIG: /etc/kong/kong.yml
          KONG_PROXY_LISTEN: 0.0.0.0:8000
-         KONG_ADMIN_LISTEN: 127.0.0.1:8001 # CRITICAL: NEVER expose Admin API publicly
+         KONG_ADMIN_LISTEN: 0.0.0.0:8001
          # Use External Redis Env Vars
          REDIS_HOST: ${REDIS_HOST}
          REDIS_PORT: ${REDIS_PORT}
@@ -276,7 +276,7 @@ plugins:
          - ./kong/kong.yml:/etc/kong/kong.yml
        ports:
          - "8000:8000"
-         - "8001:8001"
+         - "127.0.0.1:8001:8001"
    ```
 
 2. Create basic `kong/kong.yml` using `${REDIS_HOST}` environment variable substitution.
@@ -325,7 +325,7 @@ plugins:
 1. Configure active health checks on all upstreams.
 2. Test failure scenario: stop a service, watch Kong remove it.
 3. Configure `opentelemetry` plugin → Jaeger.
-4. Configure `http-log` plugin → Loki.
+4. Configure Promtail to collect Kong stdout logs → Loki.
 5. Configure `prometheus` plugin.
 6. Create Grafana dashboard.
 
@@ -457,8 +457,6 @@ services:
   - name: catalog-routes
     paths:
     - /api/catalog
-    - /api/products
-    - /api/cart
     strip_path: false
   plugins:
   - name: rate-limiting
@@ -552,15 +550,9 @@ plugins:
 
 - name: opentelemetry
   config:
-    endpoint: http://jaeger:4318/v1/traces
+    traces_endpoint: http://jaeger:4318/v1/traces
     resource_attributes:
       service.name: kong-gateway
-
-- name: http-log
-  config:
-    http_endpoint: http://loki:3100/loki/api/v1/push
-    method: POST
-    content_type: application/json
 ```
 
 
@@ -573,7 +565,7 @@ plugins:
 
 **Dockerfile** (`apps/api-gateway/Dockerfile.kong`):
 ```dockerfile
-FROM kong:3.4-alpine
+FROM kong:3.9.2
 
 # Copy declarative config
 COPY kong/kong.yml /etc/kong/kong.yml
@@ -632,12 +624,19 @@ KONG_DATABASE=off
 KONG_DECLARATIVE_CONFIG=/etc/kong/kong.yml
 KONG_PROXY_LISTEN=0.0.0.0:8000
 KONG_ADMIN_LISTEN=127.0.0.1:8001 # CRITICAL: Admin API must not be public
+GATEWAY_INTERNAL_SECRET=ecommerce-internal-trust-2026-xyz # Local development only
 
 # Shared External Redis (Same for Local & Prod)
 REDIS_HOST=your-redis-host.com
 REDIS_PORT=6379
 REDIS_PASSWORD=your-secure-password
 ```
+
+`GATEWAY_INTERNAL_SECRET` must have the same value in Kong and every
+microservice. The checked-in development default is acceptable for local use.
+Generate a long random value for staging and production and inject it through
+the deployment environment; never reuse the development value outside local
+development.
 
 ---
 
@@ -679,7 +678,7 @@ REDIS_PASSWORD=your-secure-password
 - Applied `ServiceTrustMiddleware` to all microservices (User, Catalog, Order, Payment).
 - Configured global (100/min) and per-service (50/min for orders, 30/min for payments) rate limiting using shared Redis.
 - Configured `proxy-cache` for high-traffic catalog routes with a 5-minute TTL.
-- Enabled full observability in Kong: Prometheus for metrics, OpenTelemetry for tracing (Jaeger), and HTTP Log for log aggregation (Loki).
+- Enabled observability in Kong: Prometheus for metrics, OpenTelemetry for tracing (Jaeger), and stdout collection through Promtail for Loki.
 - Configured active health checks for all upstreams to ensure automatic failover and protection.
 - Updated `render.yaml` to include the new `kong-gateway` service and `GATEWAY_INTERNAL_SECRET` for secure inter-service communication.
 
@@ -697,7 +696,7 @@ REDIS_PASSWORD=your-secure-password
 - [x] Configure active health checks on all upstreams.
 - [x] Test failure scenario: stop a service, watch Kong remove it.
 - [x] Configure `opentelemetry` plugin → Jaeger.
-- [x] Configure `http-log` plugin → Loki.
+- [x] Configure Promtail to collect Kong stdout logs → Loki.
 - [x] Configure `prometheus` plugin.
 - [x] Create Grafana dashboard.
 

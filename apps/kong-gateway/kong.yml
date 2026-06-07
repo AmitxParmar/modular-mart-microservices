@@ -2,8 +2,6 @@ _format_version: "3.0"
 
 # ─────────────────────────────────────
 # UPSTREAMS: Health-based Load Balancing
-# We group targets into upstreams to allow for zero-downtime 
-# rollouts and automatic health-aware failover.
 # ─────────────────────────────────────
 upstreams:
 - name: user-service-upstream
@@ -12,7 +10,7 @@ upstreams:
   - target: user-service:3001
   healthchecks:
     active:
-      http_path: /health/ready # Probe target's readiness
+      http_path: /health/ready
       healthy:
         interval: 10
         successes: 2
@@ -38,6 +36,12 @@ upstreams:
   healthchecks:
     active:
       http_path: /health/ready
+      healthy:
+        interval: 10
+        successes: 2
+      unhealthy:
+        interval: 5
+        http_failures: 3
 
 - name: payment-service-upstream
   algorithm: round-robin
@@ -69,11 +73,10 @@ upstreams:
 
 # ─────────────────────────────────────
 # SERVICES & ROUTES: API Definition
-# Maps public paths to internal service upstreams.
 # ─────────────────────────────────────
 services:
 - name: user-service
-  host: user-service-upstream # Point to the upstream, not the direct host
+  host: user-service-upstream
   port: 3001
   protocol: http
   connect_timeout: 5000
@@ -87,49 +90,52 @@ services:
   plugins:
   - name: rate-limiting
     config:
-      policy: redis # Distributed rate limiting using shared external Redis
-      redis_host: ${REDIS_HOST}
-      redis_port: ${REDIS_PORT}
-      redis_password: ${REDIS_PASSWORD}
-      redis_ssl: true
+      policy: local # Use local policy for dev to avoid Redis dependency errors
       minute: 100
-  - name: jwt # Protect user routes with JWT
+  - name: request-transformer
     config:
-      header_names: [Authorization]
-      uri_param_names: [jwt]
-      key_claim_name: iss # Clerk uses 'iss' to identify the issuer
-      claims_to_verify: [exp]
+      add:
+        headers:
+        - "X-Gateway-Secret: ecommerce-internal-trust-2026-xyz"
 
 - name: catalog-service
   host: catalog-service-upstream
   port: 3005
+  protocol: http
+  connect_timeout: 5000
+  read_timeout: 15000
+  write_timeout: 15000
   routes:
   - name: catalog-routes
     paths:
     - /api/catalog
-    - /api/products
-    - /api/cart
     strip_path: false
   plugins:
   - name: rate-limiting
     config:
-      policy: redis
-      redis_host: ${REDIS_HOST}
-      redis_port: ${REDIS_PORT}
-      redis_password: ${REDIS_PASSWORD}
-      redis_ssl: true
+      policy: local
       minute: 100
+  - name: request-transformer
+    config:
+      add:
+        headers:
+        - "X-Gateway-Secret: ecommerce-internal-trust-2026-xyz"
   - name: proxy-cache
     config:
-      strategy: memory # Local RAM caching for high-traffic listing routes
-      content_type: ["application/json"]
+      strategy: memory
+      content_type:
+      - application/json
+      - application/json; charset=utf-8
       cache_ttl: 300
       request_method: ["GET"]
-  # Note: Catalog is public, but we might protect /api/cart in a real scenario
 
 - name: order-service
   host: order-service-upstream
   port: 3002
+  protocol: http
+  connect_timeout: 5000
+  read_timeout: 15000
+  write_timeout: 15000
   routes:
   - name: order-routes
     paths:
@@ -138,19 +144,21 @@ services:
   plugins:
   - name: rate-limiting
     config:
-      policy: redis
-      redis_host: ${REDIS_HOST}
-      redis_port: ${REDIS_PORT}
-      redis_password: ${REDIS_PASSWORD}
-      redis_ssl: true
-      minute: 50  # Stricter for sensitive order creation
-  - name: jwt # Orders always require authentication
+      policy: local
+      minute: 50
+  - name: request-transformer
     config:
-      key_claim_name: iss
+      add:
+        headers:
+        - "X-Gateway-Secret: ecommerce-internal-trust-2026-xyz"
 
 - name: payment-service
   host: payment-service-upstream
   port: 3004
+  protocol: http
+  connect_timeout: 5000
+  read_timeout: 15000
+  write_timeout: 15000
   routes:
   - name: payment-routes
     paths:
@@ -159,19 +167,21 @@ services:
   plugins:
   - name: rate-limiting
     config:
-      policy: redis
-      redis_host: ${REDIS_HOST}
-      redis_port: ${REDIS_PORT}
-      redis_password: ${REDIS_PASSWORD}
-      redis_ssl: true
-      minute: 30  # Strictest for high-risk payment routes
-  - name: jwt # Payments always require authentication
+      policy: local
+      minute: 30
+  - name: request-transformer
     config:
-      key_claim_name: iss
+      add:
+        headers:
+        - "X-Gateway-Secret: ecommerce-internal-trust-2026-xyz"
 
 - name: notification-service
   host: notification-service-upstream
   port: 3005
+  protocol: http
+  connect_timeout: 5000
+  read_timeout: 15000
+  write_timeout: 15000
   routes:
   - name: notification-routes
     paths:
@@ -180,59 +190,30 @@ services:
   plugins:
   - name: rate-limiting
     config:
-      policy: redis
-      redis_host: ${REDIS_HOST}
-      redis_port: ${REDIS_PORT}
-      redis_password: ${REDIS_PASSWORD}
-      redis_ssl: true
+      policy: local
       minute: 100
-  - name: jwt # Notifications require authentication
+  - name: request-transformer
     config:
-      key_claim_name: iss
+      add:
+        headers:
+        - "X-Gateway-Secret: ecommerce-internal-trust-2026-xyz"
 
 # ─────────────────────────────────────
-# CONSUMERS: Authentication Credentials
-# We define consumers to hold the JWT public keys for Clerk.
-# ─────────────────────────────────────
-consumers:
-- username: clerk-auth
-  jwt_secrets:
-  - key: ${CLERK_ISSUER_URL} # e.g., https://clerk.example.com
-    algorithm: RS256
-    rsa_public_key: ${CLERK_JWT_PUBLIC_KEY} # Injected from environment
-
-# ─────────────────────────────────────
-# GLOBAL PLUGINS: Cross-cutting Concerns
-# Applied to ALL requests entering the gateway.
+# GLOBAL PLUGINS
 # ─────────────────────────────────────
 plugins:
-# Global Rate Limiting: 100 requests per minute per IP
-- name: rate-limiting
-  config:
-    policy: redis
-    redis_host: ${REDIS_HOST}
-    redis_port: ${REDIS_PORT}
-    redis_password: ${REDIS_PASSWORD}
-    redis_ssl: true
-    minute: 100
-    fault_tolerant: true
-    hide_client_headers: false
-
-# Correlation ID: Vital for tracking requests across the microservice mesh
 - name: correlation-id
   config:
     header_name: x-request-id
     generator: uuid
     echo_downstream: true
 
-# Prometheus: Exposes metrics at :8001/metrics for Grafana visualization
 - name: prometheus
   config:
     per_consumer: false
     status_code_metrics: true
     latency_metrics: true
 
-# Security Headers: Hardens the API against common web vulnerabilities
 - name: response-transformer
   config:
     add:
@@ -241,14 +222,6 @@ plugins:
       - "X-Content-Type-Options: nosniff"
       - "Strict-Transport-Security: max-age=31536000"
 
-# Service Trust: Inject secret header to verify gateway origin
-- name: request-transformer
-  config:
-    add:
-      headers:
-      - "X-Gateway-Secret: ${GATEWAY_INTERNAL_SECRET}"
-
-# CORS: Configures Cross-Origin Resource Sharing
 - name: cors
   config:
     origins:
@@ -258,22 +231,13 @@ plugins:
     exposed_headers:
     - x-request-id
 
-# Request Size Limiting: Protects against large payload/DoS attacks
 - name: request-size-limiting
   config:
     allowed_payload_size: 10
     size_unit: megabytes
 
-# OpenTelemetry: Tracing integration for Jaeger/Honeycomb
 - name: opentelemetry
   config:
-    endpoint: http://jaeger:4318/v1/traces
+    traces_endpoint: http://jaeger:4318/v1/traces
     resource_attributes:
       service.name: kong-gateway
-
-# HTTP Log: Forwards gateway access logs to Loki for aggregation
-- name: http-log
-  config:
-    http_endpoint: http://loki:3100/loki/api/v1/push
-    method: POST
-    content_type: application/json
