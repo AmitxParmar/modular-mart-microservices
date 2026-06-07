@@ -120,14 +120,6 @@ services:
       add:
         headers:
         - "X-Gateway-Secret: ecommerce-internal-trust-2026-xyz"
-  - name: proxy-cache
-    config:
-      strategy: memory
-      content_type:
-      - application/json
-      - application/json; charset=utf-8
-      cache_ttl: 300
-      request_method: ["GET"]
 
 - name: order-service
   host: order-service-upstream
@@ -235,9 +227,3 @@ plugins:
   config:
     allowed_payload_size: 10
     size_unit: megabytes
-
-- name: opentelemetry
-  config:
-    traces_endpoint: http://jaeger:4318/v1/traces
-    resource_attributes:
-      service.name: kong-gateway

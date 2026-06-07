@@ -5,10 +5,13 @@ export const envSchema = z.object({
     .enum(['development', 'production', 'test'])
     .default('development'),
   PORT: z.coerce.number().default(3005),
-  DATABASE_URL: z.string().url(),
+  DATABASE_URL: z.url(),
   
   // RabbitMQ
-  RABBITMQ_URL: z.string().url(),
+  RABBITMQ_URL: z.preprocess(
+    (val) => (val === '' ? undefined : val),
+    z.url().default('amqp://localhost:5672'),
+  ),
   RABBITMQ_EXCHANGE: z.string().default('mart.events'),
 
   // Email (Nodemailer)
@@ -27,8 +30,8 @@ export const envSchema = z.object({
   FCM_SERVER_KEY: z.string().optional(),
 
   // Observability
-  JAEGER_ENDPOINT: z.string().url().optional().or(z.literal('')),
-  SENTRY_DSN: z.string().url().optional().or(z.literal('')),
+  JAEGER_ENDPOINT: z.url().optional().or(z.literal('')),
+  SENTRY_DSN: z.url().optional().or(z.literal('')),
 
   // Clerk
   CLERK_SECRET_KEY: z.string().min(1),
@@ -42,7 +45,7 @@ export function validateEnv(config: Record<string, unknown>) {
   if (!result.success) {
     console.error(
       '❌ Invalid environment variables:',
-      JSON.stringify(result.error.format(), null, 2),
+      JSON.stringify(z.treeifyError(result.error), null, 2),
     );
     throw new Error('Invalid environment variables');
   }

@@ -37,9 +37,7 @@ yarn-error.log*
 # Misc
 .DS_Store
 *.pem
-graphify-out
+
 .vscode
-.gemini
-GEMINI.md
 # Added by code-review-graph
 .code-review-graph/

@@ -1,56 +1,56 @@
 {
-  "hooks": {
-    "BeforeTool": [
-      {
-        "matcher": "read_file|list_directory",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python -c \"import sys,pathlib,json;e=pathlib.Path('graphify-out/graph.json').exists();d={'decision':'allow'};e and d.update({'additionalContext':'graphify: knowledge graph at graphify-out/. For focused questions, run `graphify query \"<question>\"` (scoped subgraph, usually much smaller than GRAPH_REPORT.md) instead of grepping raw files. Read GRAPH_REPORT.md only for broad architecture context.'});sys.stdout.write(json.dumps(d))\""
-          }
-        ]
-      }
-    ],
-    "SessionStart": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash .gemini/hooks/crg-session-start.sh",
-            "name": "code-review-graph status",
-            "timeout": 10000
-          }
-        ]
-      }
-    ],
-    "AfterTool": [
-      {
-        "matcher": "write_file|replace",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash .gemini/hooks/crg-update.sh",
-            "name": "code-review-graph update",
-            "timeout": 30000
-          }
-        ]
-      }
-    ]
-  },
-  "mcpServers": {
-    "code-review-graph": {
-      "command": "code-review-graph",
-      "args": [
-        "serve"
-      ],
-      "cwd": "C:\\projects\\e-commerce-microservices"
-    },
-    "render": {
-      "httpUrl": "https://mcp.render.com/mcp",
-      "headers": {
-        "Authorization": "Bearer ${RENDER_MCP_TOKEN}"
-      }
-    }
-  }
+    "hooks":  {
+                  "BeforeTool":  [
+                                     {
+                                         "matcher":  "read_file|list_directory",
+                                         "hooks":  [
+                                                       {
+                                                           "type":  "command",
+                                                           "command":  "python .gemini/hooks/graphify-context.py"
+                                                       }
+                                                   ]
+                                     }
+                                 ],
+                  "SessionStart":  [
+                                       {
+                                           "matcher":  "",
+                                           "hooks":  [
+                                                         {
+                                                             "type":  "command",
+                                                             "command":  "bash .gemini/hooks/crg-session-start.sh",
+                                                             "name":  "code-review-graph status",
+                                                             "timeout":  10000
+                                                         }
+                                                     ]
+                                       }
+                                   ],
+                  "AfterTool":  [
+                                    {
+                                        "matcher":  "write_file|replace",
+                                        "hooks":  [
+                                                      {
+                                                          "type":  "command",
+                                                          "command":  "bash .gemini/hooks/crg-update.sh",
+                                                          "name":  "code-review-graph update",
+                                                          "timeout":  30000
+                                                      }
+                                                  ]
+                                    }
+                                ]
+              },
+    "mcpServers":  {
+                       "code-review-graph":  {
+                                                 "command":  "code-review-graph",
+                                                 "args":  [
+                                                              "serve"
+                                                          ],
+                                                 "cwd":  "C:\\projects\\e-commerce-microservices"
+                                             },
+                       "render":  {
+                                      "httpUrl":  "https://mcp.render.com/mcp",
+                                      "headers":  {
+                                                      "Authorization":  "Bearer ${RENDER_MCP_TOKEN}"
+                                                  }
+                                  }
+                   }
 }
