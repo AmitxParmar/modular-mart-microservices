@@ -31,8 +31,8 @@ services:
     plan: free
     region: singapore
     autoDeployTrigger: commit
-    # Kong's built-in status endpoint — does NOT require a route in kong.yml
-    healthCheckPath: /status
+    # Custom health check route defined in kong.yml
+    healthCheckPath: /healthz
     buildFilter:
       paths:
         - apps/kong-gateway/**
@@ -62,8 +62,6 @@ services:
         value: "10m"
       - key: KONG_UPSTREAM_KEEPALIVE_POOL_SIZE
         value: "32"
-      - key: KONG_DNS_RESOLVER
-        value: "8.8.8.8" # Avoid local DNS resolver complexity
       - fromGroup: shared-infra
 
   # ─── User Service ─────────────────────────────────────────────────────────────

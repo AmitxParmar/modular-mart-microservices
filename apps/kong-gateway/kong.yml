@@ -75,6 +75,18 @@ upstreams:
 # SERVICES & ROUTES: API Definition
 # ─────────────────────────────────────
 services:
+- name: gateway-health
+  url: http://localhost
+  routes:
+  - name: gateway-health-route
+    paths:
+    - /healthz
+  plugins:
+  - name: request-termination
+    config:
+      status_code: 200
+      message: "Kong Gateway is healthy"
+
 - name: user-service
   host: user-service-upstream
   port: 3001
