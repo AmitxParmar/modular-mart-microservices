@@ -134,8 +134,8 @@ services:
       - key: DATABASE_URL
         sync: false
       - key: USER_SERVICE_URL
-        # Internal Render URL — replace with actual Render service URL after first deploy
-        value: https://user-service.onrender.com
+        # Internal Render URL
+        value: http://user-service-ov6b:3001
 
   # ─── Payment Service ──────────────────────────────────────────────────────────
   - type: web
@@ -159,8 +159,8 @@ services:
       - key: DATABASE_URL
         sync: false
       - key: ORDER_SERVICE_URL
-        # Internal Render URL — replace with actual Render service URL after first deploy
-        value: https://order-service.onrender.com
+        # Internal Render URL
+        value: http://order-service-j1or:3002
 
   # ─── Notification Service ─────────────────────────────────────────────────────
   - type: web

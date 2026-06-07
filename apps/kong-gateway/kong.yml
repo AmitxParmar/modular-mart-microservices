@@ -7,7 +7,7 @@ upstreams:
 - name: user-service-upstream
   algorithm: round-robin
   targets:
-  - target: user-service:3001
+  - target: user-service-ov6b:3001
   healthchecks:
     active:
       http_path: /health/ready
@@ -21,7 +21,7 @@ upstreams:
 - name: catalog-service-upstream
   algorithm: round-robin
   targets:
-  - target: catalog-service:3005
+  - target: catalog-service-rtyq:3005
   healthchecks:
     active:
       http_path: /health/ready
@@ -32,7 +32,7 @@ upstreams:
 - name: order-service-upstream
   algorithm: round-robin
   targets:
-  - target: order-service:3002
+  - target: order-service-j1or:3002
   healthchecks:
     active:
       http_path: /health/ready
@@ -46,7 +46,7 @@ upstreams:
 - name: payment-service-upstream
   algorithm: round-robin
   targets:
-  - target: payment-service:3004
+  - target: payment-service-9rnf:3004
   healthchecks:
     active:
       http_path: /health/ready
@@ -60,7 +60,7 @@ upstreams:
 - name: notification-service-upstream
   algorithm: round-robin
   targets:
-  - target: notification-service:3005
+  - target: notification-service-w0yp:3005
   healthchecks:
     active:
       http_path: /health/ready
