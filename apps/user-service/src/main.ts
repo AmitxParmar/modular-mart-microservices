@@ -24,7 +24,7 @@ async function bootstrap() {
   app.use(helmet());
 
   // Global route prefix — gateway forwards /api/* paths as-is
-  app.setGlobalPrefix('api', { exclude: ['health/(.*)', 'metrics'] });
+  app.setGlobalPrefix('api', { exclude: ['health/*path', 'metrics'] });
 
   // Enable CORS
 
@@ -46,9 +46,9 @@ async function bootstrap() {
     transport: Transport.RMQ,
     options: createRmqOptions({
       urls: [rabbitmqUrl],
-      queue: 'auth_queue',
+      queue: 'user.auth_queue',
       deadLetterExchange: 'dlx_exchange',
-      deadLetterRoutingKey: 'dlq_auth_queue',
+      deadLetterRoutingKey: 'dlq_user.auth_queue',
     }),
   });
 
@@ -58,7 +58,7 @@ async function bootstrap() {
     transport: Transport.RMQ,
     options: createRmqOptions({
       urls: [rabbitmqUrl],
-      queue: 'dlq_auth_queue',
+      queue: 'dlq_user.auth_queue',
     }),
   });
 

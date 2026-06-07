@@ -1,0 +1,243 @@
+_format_version: "3.0"
+
+# ─────────────────────────────────────
+# UPSTREAMS: Health-based Load Balancing
+# ─────────────────────────────────────
+upstreams:
+- name: user-service-upstream
+  algorithm: round-robin
+  targets:
+  - target: user-service:3001
+  healthchecks:
+    active:
+      http_path: /health/ready
+      healthy:
+        interval: 10
+        successes: 2
+      unhealthy:
+        interval: 5
+        http_failures: 3
+
+- name: catalog-service-upstream
+  algorithm: round-robin
+  targets:
+  - target: catalog-service:3005
+  healthchecks:
+    active:
+      http_path: /health/ready
+      healthy:
+        interval: 10
+        successes: 2
+
+- name: order-service-upstream
+  algorithm: round-robin
+  targets:
+  - target: order-service:3002
+  healthchecks:
+    active:
+      http_path: /health/ready
+      healthy:
+        interval: 10
+        successes: 2
+      unhealthy:
+        interval: 5
+        http_failures: 3
+
+- name: payment-service-upstream
+  algorithm: round-robin
+  targets:
+  - target: payment-service:3004
+  healthchecks:
+    active:
+      http_path: /health/ready
+      healthy:
+        interval: 10
+        successes: 2
+      unhealthy:
+        interval: 5
+        http_failures: 3
+
+- name: notification-service-upstream
+  algorithm: round-robin
+  targets:
+  - target: notification-service:3005
+  healthchecks:
+    active:
+      http_path: /health/ready
+      healthy:
+        interval: 10
+        successes: 2
+      unhealthy:
+        interval: 5
+        http_failures: 3
+
+# ─────────────────────────────────────
+# SERVICES & ROUTES: API Definition
+# ─────────────────────────────────────
+services:
+- name: user-service
+  host: user-service-upstream
+  port: 3001
+  protocol: http
+  connect_timeout: 5000
+  read_timeout: 15000
+  write_timeout: 15000
+  routes:
+  - name: user-routes
+    paths:
+    - /api/users
+    strip_path: false
+  plugins:
+  - name: rate-limiting
+    config:
+      policy: local # Use local policy for dev to avoid Redis dependency errors
+      minute: 100
+  - name: request-transformer
+    config:
+      add:
+        headers:
+        - "X-Gateway-Secret: ecommerce-internal-trust-2026-xyz"
+
+- name: catalog-service
+  host: catalog-service-upstream
+  port: 3005
+  protocol: http
+  connect_timeout: 5000
+  read_timeout: 15000
+  write_timeout: 15000
+  routes:
+  - name: catalog-routes
+    paths:
+    - /api/catalog
+    strip_path: false
+  plugins:
+  - name: rate-limiting
+    config:
+      policy: local
+      minute: 100
+  - name: request-transformer
+    config:
+      add:
+        headers:
+        - "X-Gateway-Secret: ecommerce-internal-trust-2026-xyz"
+  - name: proxy-cache
+    config:
+      strategy: memory
+      content_type:
+      - application/json
+      - application/json; charset=utf-8
+      cache_ttl: 300
+      request_method: ["GET"]
+
+- name: order-service
+  host: order-service-upstream
+  port: 3002
+  protocol: http
+  connect_timeout: 5000
+  read_timeout: 15000
+  write_timeout: 15000
+  routes:
+  - name: order-routes
+    paths:
+    - /api/orders
+    strip_path: false
+  plugins:
+  - name: rate-limiting
+    config:
+      policy: local
+      minute: 50
+  - name: request-transformer
+    config:
+      add:
+        headers:
+        - "X-Gateway-Secret: ecommerce-internal-trust-2026-xyz"
+
+- name: payment-service
+  host: payment-service-upstream
+  port: 3004
+  protocol: http
+  connect_timeout: 5000
+  read_timeout: 15000
+  write_timeout: 15000
+  routes:
+  - name: payment-routes
+    paths:
+    - /api/payments
+    strip_path: false
+  plugins:
+  - name: rate-limiting
+    config:
+      policy: local
+      minute: 30
+  - name: request-transformer
+    config:
+      add:
+        headers:
+        - "X-Gateway-Secret: ecommerce-internal-trust-2026-xyz"
+
+- name: notification-service
+  host: notification-service-upstream
+  port: 3005
+  protocol: http
+  connect_timeout: 5000
+  read_timeout: 15000
+  write_timeout: 15000
+  routes:
+  - name: notification-routes
+    paths:
+    - /api/notifications
+    strip_path: false
+  plugins:
+  - name: rate-limiting
+    config:
+      policy: local
+      minute: 100
+  - name: request-transformer
+    config:
+      add:
+        headers:
+        - "X-Gateway-Secret: ecommerce-internal-trust-2026-xyz"
+
+# ─────────────────────────────────────
+# GLOBAL PLUGINS
+# ─────────────────────────────────────
+plugins:
+- name: correlation-id
+  config:
+    header_name: x-request-id
+    generator: uuid
+    echo_downstream: true
+
+- name: prometheus
+  config:
+    per_consumer: false
+    status_code_metrics: true
+    latency_metrics: true
+
+- name: response-transformer
+  config:
+    add:
+      headers:
+      - "X-Frame-Options: DENY"
+      - "X-Content-Type-Options: nosniff"
+      - "Strict-Transport-Security: max-age=31536000"
+
+- name: cors
+  config:
+    origins:
+    - http://localhost:3000
+    - http://localhost:4000
+    credentials: true
+    exposed_headers:
+    - x-request-id
+
+- name: request-size-limiting
+  config:
+    allowed_payload_size: 10
+    size_unit: megabytes
+
+- name: opentelemetry
+  config:
+    traces_endpoint: http://jaeger:4318/v1/traces
+    resource_attributes:
+      service.name: kong-gateway

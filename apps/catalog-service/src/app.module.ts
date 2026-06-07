@@ -10,6 +10,7 @@ import {
   SentryModule,
   HttpExceptionFilter,
   CorrelationMiddleware,
+  ServiceTrustMiddleware,
 } from '@repo/common';
 import { CatalogModule } from './catalog/catalog.module';
 import { MessagingModule } from './messaging.module';
@@ -35,6 +36,6 @@ import { MessagingModule } from './messaging.module';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(CorrelationMiddleware).forRoutes('*');
+    consumer.apply(CorrelationMiddleware, ServiceTrustMiddleware).forRoutes('*');
   }
 }

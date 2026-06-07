@@ -1,0 +1,11 @@
+{
+  "name": "kong-gateway",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Kong API Gateway for E-Commerce Microservices",
+  "scripts": {
+    "start": "docker-compose up -d",
+    "stop": "docker-compose down",
+    "logs": "docker-compose logs -f"
+  }
+}
