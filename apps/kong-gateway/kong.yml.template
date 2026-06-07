@@ -2,15 +2,25 @@ _format_version: "3.0"
 
 # ─────────────────────────────────────
 # UPSTREAMS: Health-based Load Balancing
+#
+# TARGET format: host:port
+# - Docker/local: e.g. catalog-service:3005  (HTTP, internal Docker network)
+# - Render:       e.g. catalog-service-xxxx.onrender.com:443  (HTTPS, public)
+#
+# Env vars injected by entrypoint.sh envsubst:
+#   *_SERVICE_HOST  — hostname only  (set via docker-compose env / render.yaml fromService.host)
+#   *_SERVICE_PORT  — port number    (3005 locally, 443 on Render)
+#   UPSTREAM_PROTOCOL — http locally, https on Render
 # ─────────────────────────────────────
 upstreams:
 - name: user-service-upstream
   algorithm: round-robin
   targets:
-  - target: ${USER_SERVICE_HOST}:3001
+  - target: ${USER_SERVICE_HOST}:${USER_SERVICE_PORT}
   healthchecks:
     active:
       http_path: /health/live
+      https_verify_certificate: false
       healthy:
         interval: 10
         successes: 2
@@ -21,10 +31,11 @@ upstreams:
 - name: catalog-service-upstream
   algorithm: round-robin
   targets:
-  - target: ${CATALOG_SERVICE_HOST}:3005
+  - target: ${CATALOG_SERVICE_HOST}:${CATALOG_SERVICE_PORT}
   healthchecks:
     active:
       http_path: /health/live
+      https_verify_certificate: false
       healthy:
         interval: 10
         successes: 2
@@ -35,10 +46,11 @@ upstreams:
 - name: order-service-upstream
   algorithm: round-robin
   targets:
-  - target: ${ORDER_SERVICE_HOST}:3002
+  - target: ${ORDER_SERVICE_HOST}:${ORDER_SERVICE_PORT}
   healthchecks:
     active:
       http_path: /health/live
+      https_verify_certificate: false
       healthy:
         interval: 10
         successes: 2
@@ -49,10 +61,11 @@ upstreams:
 - name: payment-service-upstream
   algorithm: round-robin
   targets:
-  - target: ${PAYMENT_SERVICE_HOST}:3004
+  - target: ${PAYMENT_SERVICE_HOST}:${PAYMENT_SERVICE_PORT}
   healthchecks:
     active:
       http_path: /health/live
+      https_verify_certificate: false
       healthy:
         interval: 10
         successes: 2
@@ -63,10 +76,11 @@ upstreams:
 - name: notification-service-upstream
   algorithm: round-robin
   targets:
-  - target: ${NOTIFICATION_SERVICE_HOST}:3005
+  - target: ${NOTIFICATION_SERVICE_HOST}:${NOTIFICATION_SERVICE_PORT}
   healthchecks:
     active:
       http_path: /health/live
+      https_verify_certificate: false
       healthy:
         interval: 10
         successes: 2
@@ -93,10 +107,10 @@ services:
 
 - name: user-service
   host: user-service-upstream
-  protocol: http
-  connect_timeout: 5000
-  read_timeout: 15000
-  write_timeout: 15000
+  protocol: ${UPSTREAM_PROTOCOL}
+  connect_timeout: 10000
+  read_timeout: 30000
+  write_timeout: 30000
   routes:
   - name: user-routes
     paths:
@@ -115,10 +129,10 @@ services:
 
 - name: catalog-service
   host: catalog-service-upstream
-  protocol: http
-  connect_timeout: 5000
-  read_timeout: 15000
-  write_timeout: 15000
+  protocol: ${UPSTREAM_PROTOCOL}
+  connect_timeout: 10000
+  read_timeout: 30000
+  write_timeout: 30000
   routes:
   - name: catalog-routes
     paths:
@@ -137,10 +151,10 @@ services:
 
 - name: order-service
   host: order-service-upstream
-  protocol: http
-  connect_timeout: 5000
-  read_timeout: 15000
-  write_timeout: 15000
+  protocol: ${UPSTREAM_PROTOCOL}
+  connect_timeout: 10000
+  read_timeout: 30000
+  write_timeout: 30000
   routes:
   - name: order-routes
     paths:
@@ -159,10 +173,10 @@ services:
 
 - name: payment-service
   host: payment-service-upstream
-  protocol: http
-  connect_timeout: 5000
-  read_timeout: 15000
-  write_timeout: 15000
+  protocol: ${UPSTREAM_PROTOCOL}
+  connect_timeout: 10000
+  read_timeout: 30000
+  write_timeout: 30000
   routes:
   - name: payment-routes
     paths:
@@ -181,10 +195,10 @@ services:
 
 - name: notification-service
   host: notification-service-upstream
-  protocol: http
-  connect_timeout: 5000
-  read_timeout: 15000
-  write_timeout: 15000
+  protocol: ${UPSTREAM_PROTOCOL}
+  connect_timeout: 10000
+  read_timeout: 30000
+  write_timeout: 30000
   routes:
   - name: notification-routes
     paths:
