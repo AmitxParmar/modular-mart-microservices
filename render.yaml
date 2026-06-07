@@ -64,43 +64,34 @@ services:
         value: "32"
       # ─────────────────────────────────────
       # SERVICE HOSTNAMES + PORTS for envsubst in entrypoint.sh
-      # fromService.host → public .onrender.com hostname (HTTPS, port 443)
+      #
+      # Set these in the Render Dashboard → kong-gateway → Environment.
+      # Use the PUBLIC .onrender.com hostname for each service (without https://).
+      # Example: user-service-ov6b.onrender.com
+      #
+      # fromService.host returns the private cluster slug (user-service-ov6b)
+      # which is NOT DNS-resolvable on Render's free plan (no private networking).
       # ─────────────────────────────────────
       - key: UPSTREAM_PROTOCOL
         value: https
       - key: USER_SERVICE_HOST
-        fromService:
-          name: user-service
-          type: web
-          property: host
+        sync: false   # e.g. user-service-xxxx.onrender.com
       - key: USER_SERVICE_PORT
         value: "443"
       - key: CATALOG_SERVICE_HOST
-        fromService:
-          name: catalog-service
-          type: web
-          property: host
+        sync: false   # e.g. catalog-service-xxxx.onrender.com
       - key: CATALOG_SERVICE_PORT
         value: "443"
       - key: ORDER_SERVICE_HOST
-        fromService:
-          name: order-service
-          type: web
-          property: host
+        sync: false   # e.g. order-service-xxxx.onrender.com
       - key: ORDER_SERVICE_PORT
         value: "443"
       - key: PAYMENT_SERVICE_HOST
-        fromService:
-          name: payment-service
-          type: web
-          property: host
+        sync: false   # e.g. payment-service-xxxx.onrender.com
       - key: PAYMENT_SERVICE_PORT
         value: "443"
       - key: NOTIFICATION_SERVICE_HOST
-        fromService:
-          name: notification-service
-          type: web
-          property: host
+        sync: false   # e.g. notification-service-xxxx.onrender.com
       - key: NOTIFICATION_SERVICE_PORT
         value: "443"
       - fromGroup: shared-infra
