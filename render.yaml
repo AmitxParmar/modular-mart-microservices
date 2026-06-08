@@ -31,6 +31,7 @@ services:
     plan: free
     region: singapore
     maxmemoryPolicy: allkeys-lru   # evict oldest keys under pressure (safe for counters)
+    ipAllowList: []                # no external access; only Render-internal services connect
 
   # ─── Kong API Gateway ────────────────────────────────────────────────────────
   - type: web
@@ -85,24 +86,16 @@ services:
       - key: KONG_NGINX_HTTP_KEEPALIVE_TIMEOUT
         value: "30"
       # ─────────────────────────────────────
-      # Redis connection details (from the kong-rate-limit-redis service above)
-      # Used by the rate-limiting plugin (policy: redis).
+      # Redis connection string (from the kong-rate-limit-redis service above).
+      # entrypoint.sh parses this into REDIS_HOST / REDIS_PORT / REDIS_PASSWORD
+      # for use in kong.yml. Only connectionString, host, and port are valid
+      # fromService properties for Redis — password must come from connectionString.
       # ─────────────────────────────────────
-      - key: REDIS_HOST
+      - key: REDIS_CONNECTION_STRING
         fromService:
           name: kong-rate-limit-redis
           type: redis
-          property: host
-      - key: REDIS_PORT
-        fromService:
-          name: kong-rate-limit-redis
-          type: redis
-          property: port
-      - key: REDIS_PASSWORD
-        fromService:
-          name: kong-rate-limit-redis
-          type: redis
-          property: password
+          property: connectionString
       # ─────────────────────────────────────
       # SERVICE HOSTNAMES + PORTS for envsubst in entrypoint.sh
       #
