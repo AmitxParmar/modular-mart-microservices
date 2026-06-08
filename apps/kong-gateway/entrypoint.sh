@@ -89,9 +89,15 @@ echo "  order-service    → ${UPSTREAM_PROTOCOL}://${ORDER_SERVICE_HOST}:${ORDE
 echo "  payment-service  → ${UPSTREAM_PROTOCOL}://${PAYMENT_SERVICE_HOST}:${PAYMENT_SERVICE_PORT}"
 echo "  notification     → ${UPSTREAM_PROTOCOL}://${NOTIFICATION_SERVICE_HOST}:${NOTIFICATION_SERVICE_PORT}"
 echo "  frontend-url     → ${FRONTEND_URL}"
-MASKED_SECRET="${GATEWAY_INTERNAL_SECRET:0:4}****"
+MASKED_SECRET=$(printf "%s" "$GATEWAY_INTERNAL_SECRET" | cut -c 1-4)
+MASKED_SECRET="${MASKED_SECRET}****"
 echo "  gateway-secret   → ${MASKED_SECRET} (first 4 chars shown)"
-MASKED_REDIS_PW="${REDIS_PASSWORD:0:4}****"
+if [ -n "$REDIS_PASSWORD" ]; then
+  MASKED_REDIS_PW=$(printf "%s" "$REDIS_PASSWORD" | cut -c 1-4)
+  MASKED_REDIS_PW="${MASKED_REDIS_PW}****"
+else
+  MASKED_REDIS_PW="(none)"
+fi
 echo "  redis            → ${REDIS_HOST}:${REDIS_PORT} (pw: ${MASKED_REDIS_PW})"
 
 # ── Render kong.yml from template ─────────────────────────────────────────────
