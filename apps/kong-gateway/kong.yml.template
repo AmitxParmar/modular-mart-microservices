@@ -133,12 +133,14 @@ services:
       policy: redis
       minute: 600
       hour: 10000
-      redis_host: ${REDIS_HOST}
-      redis_port: ${REDIS_PORT}
-      redis_password: ${REDIS_PASSWORD}
-      redis_timeout: 2000       # 2s — fail open, don't block requests if Redis is slow
-      redis_ssl: false           # Render internal Redis uses plain TCP
-      redis_ssl_verify: false
+      redis:
+        host: ${REDIS_HOST}
+        port: ${REDIS_PORT}
+        username: ${REDIS_USERNAME}
+        password: ${REDIS_PASSWORD}
+        timeout: 2000       # 2s — fail open, don't block requests if Redis is slow
+        ssl: ${REDIS_SSL}
+        ssl_verify: false
       error_code: 429
       error_message: "Too many requests. Please try again in a minute."
   - name: request-transformer
@@ -164,12 +166,14 @@ services:
       policy: redis
       minute: 1000
       hour: 20000
-      redis_host: ${REDIS_HOST}
-      redis_port: ${REDIS_PORT}
-      redis_password: ${REDIS_PASSWORD}
-      redis_timeout: 2000
-      redis_ssl: false
-      redis_ssl_verify: false
+      redis:
+        host: ${REDIS_HOST}
+        port: ${REDIS_PORT}
+        username: ${REDIS_USERNAME}
+        password: ${REDIS_PASSWORD}
+        timeout: 2000
+        ssl: ${REDIS_SSL}
+        ssl_verify: false
       error_code: 429
       error_message: "Too many requests. Please try again in a minute."
   - name: request-transformer
@@ -195,12 +199,14 @@ services:
       policy: redis
       minute: 600
       hour: 10000
-      redis_host: ${REDIS_HOST}
-      redis_port: ${REDIS_PORT}
-      redis_password: ${REDIS_PASSWORD}
-      redis_timeout: 2000
-      redis_ssl: false
-      redis_ssl_verify: false
+      redis:
+        host: ${REDIS_HOST}
+        port: ${REDIS_PORT}
+        username: ${REDIS_USERNAME}
+        password: ${REDIS_PASSWORD}
+        timeout: 2000
+        ssl: ${REDIS_SSL}
+        ssl_verify: false
       error_code: 429
       error_message: "Too many requests. Please try again in a minute."
   - name: request-transformer
@@ -226,12 +232,14 @@ services:
       policy: redis
       minute: 300
       hour: 5000
-      redis_host: ${REDIS_HOST}
-      redis_port: ${REDIS_PORT}
-      redis_password: ${REDIS_PASSWORD}
-      redis_timeout: 2000
-      redis_ssl: false
-      redis_ssl_verify: false
+      redis:
+        host: ${REDIS_HOST}
+        port: ${REDIS_PORT}
+        username: ${REDIS_USERNAME}
+        password: ${REDIS_PASSWORD}
+        timeout: 2000
+        ssl: ${REDIS_SSL}
+        ssl_verify: false
       error_code: 429
       error_message: "Too many requests. Please try again in a minute."
   - name: request-transformer
@@ -257,12 +265,14 @@ services:
       policy: redis
       minute: 600
       hour: 10000
-      redis_host: ${REDIS_HOST}
-      redis_port: ${REDIS_PORT}
-      redis_password: ${REDIS_PASSWORD}
-      redis_timeout: 2000
-      redis_ssl: false
-      redis_ssl_verify: false
+      redis:
+        host: ${REDIS_HOST}
+        port: ${REDIS_PORT}
+        username: ${REDIS_USERNAME}
+        password: ${REDIS_PASSWORD}
+        timeout: 2000
+        ssl: ${REDIS_SSL}
+        ssl_verify: false
       error_code: 429
       error_message: "Too many requests. Please try again in a minute."
   - name: request-transformer

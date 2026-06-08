@@ -50,10 +50,23 @@ export class UsersService {
   }
 
   /**
-   * Returns a list of role names for a specific user.
+   * Returns a list of role names for a specific user, with JIT sync fallback.
    */
   async getUserRoles(clerkId: string): Promise<string[]> {
-    const user = await this.findByClerkId(clerkId);
+    let user = await this.findByClerkId(clerkId);
+    if (!user) {
+      this.logger.info(
+        `User ${clerkId} not found in DB during role query. Triggering JIT sync.`,
+      );
+      try {
+        user = await this.syncService.syncClerkUser(clerkId);
+      } catch (error) {
+        this.logger.error(
+          `JIT sync failed during role query for ${clerkId}: ${error.message}`,
+        );
+        return [];
+      }
+    }
     return user?.roles?.map((r) => r.name) || [];
   }
 

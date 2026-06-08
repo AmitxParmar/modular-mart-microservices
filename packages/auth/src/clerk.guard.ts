@@ -96,6 +96,8 @@ export class ClerkAuthGuard implements CanActivate {
     const meta = payload.publicMetadata ?? payload.public_metadata;
     const internalId: string | undefined = payload.internalId ?? meta?.internalId;
 
+    this.logger.info(`ClerkAuthGuard: Processing JWT payload for sub=${userId}. keys=${JSON.stringify(Object.keys(payload))}, publicMetadataKeys=${meta ? JSON.stringify(Object.keys(meta)) : 'none'}, internalId=${internalId || 'undefined'}`);
+
     if (!internalId) {
       this.logger.warn(`ClerkAuthGuard: internalId missing for user ${userId}. Sync might be pending.`);
     }

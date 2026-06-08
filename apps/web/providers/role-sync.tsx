@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useAuthStore, UserRole } from '@/hooks/use-auth-store';
 import { useUser } from '@clerk/nextjs';
 import { api } from '@/lib/api-client';
@@ -14,6 +14,9 @@ const EMPTY_ROLES: UserRole[] = [];
 export function RoleSync() {
   // Use a single hook for all Clerk state to ensure consistency
   const { isSignedIn, user, isLoaded } = useUser();
+
+  // Keep track of user IDs currently in-flight or recently failed to prevent spam loops
+  const syncInProgress = useRef<string | null>(null);
 
   // ... rest of selectors ...
   const currentStoreRoles = useAuthStore((state) => state.roles);
@@ -38,6 +41,11 @@ export function RoleSync() {
   // JIT Sync: If user is logged in but missing internalId, trigger sync
   useEffect(() => {
     if (isLoaded && isSignedIn && user && !user.publicMetadata?.internalId) {
+      if (syncInProgress.current === user.id) {
+        return;
+      }
+      syncInProgress.current = user.id;
+
       console.group('🔐 RoleSync: JIT Sync Triggered');
       console.log('User is logged in but missing internalId in metadata.');
       console.log('Clerk ID:', user.id);
@@ -48,11 +56,21 @@ export function RoleSync() {
         .then((res) => {
           console.log('✅ JIT Sync Successful:', res.data);
           console.groupEnd();
+          syncInProgress.current = null;
         })
         .catch(err => {
           console.error('❌ JIT Sync Failed:', err);
           console.groupEnd();
+          // Reset after a delay (e.g. 5 seconds) to allow retrying if needed,
+          // but prevents high-frequency loops.
+          setTimeout(() => {
+            if (syncInProgress.current === user.id) {
+              syncInProgress.current = null;
+            }
+          }, 5000);
         });
+    } else if (isLoaded && (!isSignedIn || (user && user.publicMetadata?.internalId))) {
+      syncInProgress.current = null;
     }
   }, [isLoaded, isSignedIn, user?.id, user?.publicMetadata?.internalId]);
 

@@ -59,23 +59,32 @@ fi
 CS=$(echo "$REDIS_CONNECTION_STRING" | sed -E 's|^rediss?://||')  # strip redis:// or rediss://
 if echo "$CS" | grep -q '@'; then
   # Has auth section (credentials@host:port)
-  # Upstash format: default:PASSWORD@HOST:PORT
-  if echo "$CS" | grep -q ':.*@'; then
-    # Has username:password@host:port
-    REDIS_PASSWORD=$(echo "$CS" | sed -E 's|^[^:]+:([^@]+)@.*|\1|')
+  # e.g. default:PASSWORD@flowing-husky-143846.upstash.io:6379
+  CS_AUTH=$(echo "$CS" | sed 's|@[^@]*$||')
+  CS_HOSTPORT=$(echo "$CS" | sed 's|.*@||')
+  if echo "$CS_AUTH" | grep -q ':'; then
+    REDIS_USERNAME=$(echo "$CS_AUTH" | cut -d':' -f1)   # e.g. "default" (required by Upstash)
+    REDIS_PASSWORD=$(echo "$CS_AUTH" | cut -d':' -f2-)  # everything after first ':'
   else
-    # Has :password@host:port or password@host:port
-    REDIS_PASSWORD=$(echo "$CS" | sed 's|:||;s|@.*||')
+    REDIS_USERNAME=""
+    REDIS_PASSWORD="$CS_AUTH"
   fi
-  CS_HOSTPORT=$(echo "$CS" | sed 's|.*@||')             # take after '@'
 else
+  REDIS_USERNAME=""
   REDIS_PASSWORD=""
   CS_HOSTPORT="$CS"
 fi
 REDIS_HOST=$(echo "$CS_HOSTPORT" | sed 's|:.*||')          # take before last ':'
 REDIS_PORT=$(echo "$CS_HOSTPORT" | sed 's|.*:||')          # take after last ':'
-export REDIS_HOST REDIS_PORT REDIS_PASSWORD
-echo "[entrypoint] Parsed Redis → host=${REDIS_HOST} port=${REDIS_PORT} password=($(echo "${REDIS_PASSWORD}" | wc -c | tr -d ' ') chars)"
+
+if echo "$REDIS_CONNECTION_STRING" | grep -q "^rediss://"; then
+  REDIS_SSL="true"
+else
+  REDIS_SSL="false"
+fi
+
+export REDIS_HOST REDIS_PORT REDIS_USERNAME REDIS_PASSWORD REDIS_SSL
+echo "[entrypoint] Parsed Redis → host=${REDIS_HOST} port=${REDIS_PORT} ssl=${REDIS_SSL} username=${REDIS_USERNAME} password=($(echo "${REDIS_PASSWORD}" | wc -c | tr -d ' ') chars)"
 
 # ── Export cleaned values so envsubst can see them ────────────────────────────
 export USER_SERVICE_HOST CATALOG_SERVICE_HOST ORDER_SERVICE_HOST \
@@ -98,7 +107,7 @@ if [ -n "$REDIS_PASSWORD" ]; then
 else
   MASKED_REDIS_PW="(none)"
 fi
-echo "  redis            → ${REDIS_HOST}:${REDIS_PORT} (pw: ${MASKED_REDIS_PW})"
+echo "  redis            → ${REDIS_HOST}:${REDIS_PORT} (ssl: ${REDIS_SSL}, pw: ${MASKED_REDIS_PW})"
 
 # ── Render kong.yml from template ─────────────────────────────────────────────
 envsubst \
@@ -110,7 +119,7 @@ envsubst \
    ${UPSTREAM_PROTOCOL}
    ${GATEWAY_INTERNAL_SECRET}
    ${FRONTEND_URL}
-   ${REDIS_HOST} ${REDIS_PORT} ${REDIS_PASSWORD}' \
+   ${REDIS_HOST} ${REDIS_PORT} ${REDIS_USERNAME} ${REDIS_PASSWORD} ${REDIS_SSL}' \
   < /etc/kong/kong.yml.template \
   > /etc/kong/kong.yml
 
@@ -119,7 +128,7 @@ echo "[entrypoint] kong.yml rendered successfully."
 # ── Verify critical vars were actually substituted ──────────────────────────
 # Note: REDIS_PASSWORD is intentionally excluded — it may be empty on Redis
 # instances without auth, which is valid (substitution still occurs, to empty string).
-for check_var in GATEWAY_INTERNAL_SECRET REDIS_HOST REDIS_PORT; do
+for check_var in GATEWAY_INTERNAL_SECRET REDIS_HOST REDIS_PORT REDIS_SSL REDIS_USERNAME; do
   if grep -q "\${${check_var}}" /etc/kong/kong.yml; then
     echo "[entrypoint] ERROR: ${check_var} was not substituted in kong.yml!"
     echo "[entrypoint] Check that the variable is exported and visible to envsubst."
