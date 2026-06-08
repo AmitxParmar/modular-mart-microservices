@@ -56,11 +56,18 @@ fi
 #   → REDIS_HOST=oregon-redis.render.com
 #   → REDIS_PORT=6379
 #   → REDIS_PASSWORD=s3cr3t
-CS=$(echo "$REDIS_CONNECTION_STRING" | sed 's|redis://||')  # strip redis://
+CS=$(echo "$REDIS_CONNECTION_STRING" | sed -E 's|^rediss?://||')  # strip redis:// or rediss://
 if echo "$CS" | grep -q '@'; then
   # Has auth section (credentials@host:port)
-  REDIS_PASSWORD=$(echo "$CS" | sed 's|:||;s|@.*||')       # strip leading ':', take before '@'
-  CS_HOSTPORT=$(echo "$CS" | sed 's|[^@]*@||')             # take after '@'
+  # Upstash format: default:PASSWORD@HOST:PORT
+  if echo "$CS" | grep -q ':.*@'; then
+    # Has username:password@host:port
+    REDIS_PASSWORD=$(echo "$CS" | sed -E 's|^[^:]+:([^@]+)@.*|\1|')
+  else
+    # Has :password@host:port or password@host:port
+    REDIS_PASSWORD=$(echo "$CS" | sed 's|:||;s|@.*||')
+  fi
+  CS_HOSTPORT=$(echo "$CS" | sed 's|.*@||')             # take after '@'
 else
   REDIS_PASSWORD=""
   CS_HOSTPORT="$CS"
