@@ -22,6 +22,16 @@ envVarGroups:
         sync: false
 
 services:
+  # ─── Redis (rate-limit store for Kong) ──────────────────────────────────────────
+  # Stores rate-limit counters outside Kong's Lua VM, freeing ~30-80MB of
+  # Kong's 512MB budget. Counter keys are tiny (< 1KB each) so the free
+  # tier's 25MB data cap is more than sufficient for rate-limit state.
+  - type: redis
+    name: kong-rate-limit-redis
+    plan: free
+    region: singapore
+    maxmemoryPolicy: allkeys-lru   # evict oldest keys under pressure (safe for counters)
+
   # ─── Kong API Gateway ────────────────────────────────────────────────────────
   - type: web
     name: kong-gateway
@@ -68,6 +78,31 @@ services:
         value: "10m"
       - key: KONG_UPSTREAM_KEEPALIVE_POOL_SIZE
         value: "32"
+      # Reduce log-ring-buffer memory; warn level still catches all errors
+      - key: KONG_LOG_LEVEL
+        value: "warn"
+      # Free keepalive connection slots faster (default 75s holds TCP memory)
+      - key: KONG_NGINX_HTTP_KEEPALIVE_TIMEOUT
+        value: "30"
+      # ─────────────────────────────────────
+      # Redis connection details (from the kong-rate-limit-redis service above)
+      # Used by the rate-limiting plugin (policy: redis).
+      # ─────────────────────────────────────
+      - key: REDIS_HOST
+        fromService:
+          name: kong-rate-limit-redis
+          type: redis
+          property: host
+      - key: REDIS_PORT
+        fromService:
+          name: kong-rate-limit-redis
+          type: redis
+          property: port
+      - key: REDIS_PASSWORD
+        fromService:
+          name: kong-rate-limit-redis
+          type: redis
+          property: password
       # ─────────────────────────────────────
       # SERVICE HOSTNAMES + PORTS for envsubst in entrypoint.sh
       #
@@ -102,6 +137,11 @@ services:
         value: "443"
       - key: FRONTEND_URL
         sync: false   # e.g. https://modular-mart-microservices-web.vercel.app
+      # GATEWAY_INTERNAL_SECRET must be explicitly listed here so that envsubst
+      # in entrypoint.sh can substitute it into kong.yml. The fromGroup below
+      # sets it in the container, but explicit listing makes the dependency clear.
+      - key: GATEWAY_INTERNAL_SECRET
+        sync: false
       - fromGroup: shared-infra
 
   # ─── User Service ─────────────────────────────────────────────────────────────
@@ -174,8 +214,9 @@ services:
       - key: DATABASE_URL
         sync: false
       - key: USER_SERVICE_URL
-        # Internal Render URL
-        value: http://user-service-ov6b:3001
+        # Public Render URL — free tier has no private networking
+        # Replace with your actual user-service .onrender.com hostname
+        sync: false
 
   # ─── Payment Service ──────────────────────────────────────────────────────────
   - type: web
@@ -199,8 +240,9 @@ services:
       - key: DATABASE_URL
         sync: false
       - key: ORDER_SERVICE_URL
-        # Internal Render URL
-        value: http://order-service-j1or:3002
+        # Public Render URL — free tier has no private networking
+        # Replace with your actual order-service .onrender.com hostname
+        sync: false
 
   # ─── Notification Service ─────────────────────────────────────────────────────
   - type: web
@@ -220,7 +262,7 @@ services:
     envVars:
       - fromGroup: shared-infra
       - key: PORT
-        value: "3005"
+        value: "3003"
       - key: DATABASE_URL
         sync: false
       - key: SMTP_HOST
