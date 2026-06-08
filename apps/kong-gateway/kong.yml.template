@@ -120,7 +120,7 @@ services:
   - name: rate-limiting
     config:
       policy: local
-      minute: 100
+      minute: 300
   - name: request-transformer
     config:
       add:
@@ -142,7 +142,7 @@ services:
   - name: rate-limiting
     config:
       policy: local
-      minute: 200
+      minute: 500
   - name: request-transformer
     config:
       add:
@@ -164,7 +164,7 @@ services:
   - name: rate-limiting
     config:
       policy: local
-      minute: 50
+      minute: 200
   - name: request-transformer
     config:
       add:
@@ -186,7 +186,7 @@ services:
   - name: rate-limiting
     config:
       policy: local
-      minute: 30
+      minute: 100
   - name: request-transformer
     config:
       add:
@@ -208,7 +208,7 @@ services:
   - name: rate-limiting
     config:
       policy: local
-      minute: 100
+      minute: 300
   - name: request-transformer
     config:
       add:
@@ -244,6 +244,9 @@ plugins:
     origins:
     - http://localhost:3000
     - http://localhost:4000
+    - https://modular-mart-microservices-web.vercel.app
+    - /^https:\/\/modular-mart-microservices.*\.vercel\.app$/
+    - ${FRONTEND_URL}
     credentials: true
     exposed_headers:
     - x-request-id

@@ -19,7 +19,8 @@ envsubst \
    ${PAYMENT_SERVICE_HOST} ${PAYMENT_SERVICE_PORT}
    ${NOTIFICATION_SERVICE_HOST} ${NOTIFICATION_SERVICE_PORT}
    ${UPSTREAM_PROTOCOL}
-   ${GATEWAY_INTERNAL_SECRET}' \
+   ${GATEWAY_INTERNAL_SECRET}
+   ${FRONTEND_URL}' \
   < /etc/kong/kong.yml.template \
   > /etc/kong/kong.yml
 

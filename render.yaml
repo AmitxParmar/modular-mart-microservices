@@ -47,6 +47,12 @@ services:
         value: 127.0.0.1:8001
       - key: KONG_STATUS_LISTEN
         value: 0.0.0.0:8100
+      - key: KONG_TRUSTED_IPS
+        value: "0.0.0.0/0,::/0" # Trust Render's proxy to pass X-Forwarded-For
+      - key: KONG_REAL_IP_HEADER
+        value: "X-Forwarded-For"
+      - key: KONG_REAL_IP_RECURSIVE
+        value: "on"
       # ─────────────────────────────────────
       # MEMORY OPTIMIZATIONS (Render Free 512MB)
       # ─────────────────────────────────────
@@ -94,6 +100,8 @@ services:
         sync: false   # e.g. notification-service-xxxx.onrender.com
       - key: NOTIFICATION_SERVICE_PORT
         value: "443"
+      - key: FRONTEND_URL
+        sync: false   # e.g. https://modular-mart-microservices-web.vercel.app
       - fromGroup: shared-infra
 
   # ─── User Service ─────────────────────────────────────────────────────────────
