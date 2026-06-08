@@ -7,8 +7,13 @@ ORDER_SERVICE_HOST=$(echo "$ORDER_SERVICE_HOST" | sed -e 's|^https://||' -e 's|^
 PAYMENT_SERVICE_HOST=$(echo "$PAYMENT_SERVICE_HOST" | sed -e 's|^https://||' -e 's|^http://||' -e 's|/$||')
 NOTIFICATION_SERVICE_HOST=$(echo "$NOTIFICATION_SERVICE_HOST" | sed -e 's|^https://||' -e 's|^http://||' -e 's|/$||')
 
+# If FRONTEND_URL is not set or empty, provide a safe fallback so we don't get an empty list item in the YAML
+if [ -z "$FRONTEND_URL" ]; then
+  FRONTEND_URL="http://localhost:3000"
+fi
+
 # Export them so envsubst can see the updated values
-export USER_SERVICE_HOST CATALOG_SERVICE_HOST ORDER_SERVICE_HOST PAYMENT_SERVICE_HOST NOTIFICATION_SERVICE_HOST
+export USER_SERVICE_HOST CATALOG_SERVICE_HOST ORDER_SERVICE_HOST PAYMENT_SERVICE_HOST NOTIFICATION_SERVICE_HOST FRONTEND_URL
 
 # Render the Kong declarative config by substituting environment variables.
 # All vars listed here must be set in docker-compose.yml / render.yaml.
