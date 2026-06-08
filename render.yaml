@@ -22,16 +22,6 @@ envVarGroups:
         sync: false
 
 services:
-  # ─── Redis (rate-limit store for Kong) ──────────────────────────────────────────
-  # Stores rate-limit counters outside Kong's Lua VM, freeing ~30-80MB of
-  # Kong's 512MB budget. Counter keys are tiny (< 1KB each) so the free
-  # tier's 25MB data cap is more than sufficient for rate-limit state.
-  - type: redis
-    name: kong-rate-limit-redis
-    plan: free
-    region: singapore
-    maxmemoryPolicy: allkeys-lru   # evict oldest keys under pressure (safe for counters)
-    ipAllowList: []                # no external access; only Render-internal services connect
 
   # ─── Kong API Gateway ────────────────────────────────────────────────────────
   - type: web
@@ -85,17 +75,6 @@ services:
       # Free keepalive connection slots faster (default 75s holds TCP memory)
       - key: KONG_NGINX_HTTP_KEEPALIVE_TIMEOUT
         value: "30"
-      # ─────────────────────────────────────
-      # Redis connection string (from the kong-rate-limit-redis service above).
-      # entrypoint.sh parses this into REDIS_HOST / REDIS_PORT / REDIS_PASSWORD
-      # for use in kong.yml. Only connectionString, host, and port are valid
-      # fromService properties for Redis — password must come from connectionString.
-      # ─────────────────────────────────────
-      - key: REDIS_CONNECTION_STRING
-        fromService:
-          name: kong-rate-limit-redis
-          type: redis
-          property: connectionString
       # ─────────────────────────────────────
       # SERVICE HOSTNAMES + PORTS for envsubst in entrypoint.sh
       #

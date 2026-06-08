@@ -126,21 +126,14 @@ services:
     - /api/users
     strip_path: false
   plugins:
-  # ── Rate limiting: Redis-backed so counters survive Kong restarts and are
-  #    shared across workers. No per-worker Lua table memory cost.
+  # ── Rate limiting: local policy — accurate with a single Nginx worker.
+  #    Redis policy requires Render private networking (paid plan) to resolve
+  #    internal hostnames. Local is zero-dependency and sufficient here.
   - name: rate-limiting
     config:
-      policy: redis
+      policy: local
       minute: 600
       hour: 10000
-      redis:
-        host: ${REDIS_HOST}
-        port: ${REDIS_PORT}
-        username: ${REDIS_USERNAME}
-        password: ${REDIS_PASSWORD}
-        timeout: 2000       # 2s — fail open, don't block requests if Redis is slow
-        ssl: ${REDIS_SSL}
-        ssl_verify: false
       error_code: 429
       error_message: "Too many requests. Please try again in a minute."
   - name: request-transformer
@@ -163,17 +156,9 @@ services:
   plugins:
   - name: rate-limiting
     config:
-      policy: redis
+      policy: local
       minute: 1000
       hour: 20000
-      redis:
-        host: ${REDIS_HOST}
-        port: ${REDIS_PORT}
-        username: ${REDIS_USERNAME}
-        password: ${REDIS_PASSWORD}
-        timeout: 2000
-        ssl: ${REDIS_SSL}
-        ssl_verify: false
       error_code: 429
       error_message: "Too many requests. Please try again in a minute."
   - name: request-transformer
@@ -196,17 +181,9 @@ services:
   plugins:
   - name: rate-limiting
     config:
-      policy: redis
+      policy: local
       minute: 600
       hour: 10000
-      redis:
-        host: ${REDIS_HOST}
-        port: ${REDIS_PORT}
-        username: ${REDIS_USERNAME}
-        password: ${REDIS_PASSWORD}
-        timeout: 2000
-        ssl: ${REDIS_SSL}
-        ssl_verify: false
       error_code: 429
       error_message: "Too many requests. Please try again in a minute."
   - name: request-transformer
@@ -229,17 +206,9 @@ services:
   plugins:
   - name: rate-limiting
     config:
-      policy: redis
+      policy: local
       minute: 300
       hour: 5000
-      redis:
-        host: ${REDIS_HOST}
-        port: ${REDIS_PORT}
-        username: ${REDIS_USERNAME}
-        password: ${REDIS_PASSWORD}
-        timeout: 2000
-        ssl: ${REDIS_SSL}
-        ssl_verify: false
       error_code: 429
       error_message: "Too many requests. Please try again in a minute."
   - name: request-transformer
@@ -262,17 +231,9 @@ services:
   plugins:
   - name: rate-limiting
     config:
-      policy: redis
+      policy: local
       minute: 600
       hour: 10000
-      redis:
-        host: ${REDIS_HOST}
-        port: ${REDIS_PORT}
-        username: ${REDIS_USERNAME}
-        password: ${REDIS_PASSWORD}
-        timeout: 2000
-        ssl: ${REDIS_SSL}
-        ssl_verify: false
       error_code: 429
       error_message: "Too many requests. Please try again in a minute."
   - name: request-transformer
