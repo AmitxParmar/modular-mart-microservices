@@ -12,7 +12,7 @@ import { CatalogService } from './catalog.service';
 import { ClerkAuthGuard, CurrentUser, Roles, RolesGuard } from '@repo/auth';
 import type { ClerkUser } from '@repo/auth';
 import { Product } from './entities/product.entity';
-import { MessagePattern, EventPattern, Payload, Ctx, RmqContext } from '@nestjs/microservices';
+import { MessagePattern, Payload, Ctx, RmqContext } from '@nestjs/microservices';
 import { EVENT_PATTERNS } from '@repo/contracts';
 import { RabbitMQMessageHandler } from '../common/rabbitmq-message-handler.decorator';
 
@@ -92,17 +92,29 @@ export class CatalogController {
   @Get('products')
   getProducts(
     @Query('categoryId') categoryId?: string,
+    @Query('categorySlug') categorySlug?: string,
+    @Query('brand') brand?: string,
     @Query('minPrice') minPrice?: string,
     @Query('maxPrice') maxPrice?: string,
+    @Query('rating') rating?: string,
+    @Query('discount') discount?: string,
+    @Query('inStock') inStock?: string,
     @Query('search') search?: string,
+    @Query('sort') sort?: string,
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: string,
   ) {
     return this.catalogService.getProducts({
       categoryId,
+      categorySlug,
+      brand,
       minPrice: minPrice && !Number.isNaN(Number.parseFloat(minPrice)) ? Number.parseFloat(minPrice) : undefined,
       maxPrice: maxPrice && !Number.isNaN(Number.parseFloat(maxPrice)) ? Number.parseFloat(maxPrice) : undefined,
+      rating: rating && !Number.isNaN(Number.parseFloat(rating)) ? Number.parseFloat(rating) : undefined,
+      discount: discount && !Number.isNaN(Number.parseFloat(discount)) ? Number.parseFloat(discount) : undefined,
+      inStock: inStock === 'true',
       search,
+      sort,
       cursor,
       limit: limit && !Number.isNaN(Number.parseInt(limit, 10)) ? Number.parseInt(limit, 10) : undefined,
     });

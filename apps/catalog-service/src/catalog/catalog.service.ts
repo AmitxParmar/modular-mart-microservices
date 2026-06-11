@@ -30,17 +30,29 @@ export class CatalogService implements OnModuleInit {
 
   async getProducts(filters: {
     categoryId?: string;
+    categorySlug?: string;
+    brand?: string;
     minPrice?: number;
     maxPrice?: number;
+    rating?: number;
+    discount?: number;
+    inStock?: boolean;
     search?: string;
+    sort?: string;
     cursor?: string;
     limit?: number;
   }) {
     const {
       categoryId,
+      categorySlug,
+      brand,
       minPrice,
       maxPrice,
+      rating,
+      discount,
+      inStock,
       search,
+      sort,
       cursor,
       limit = 10,
     } = filters;
@@ -55,12 +67,32 @@ export class CatalogService implements OnModuleInit {
       query.andWhere('category.id = :categoryId', { categoryId });
     }
 
+    if (categorySlug) {
+      query.andWhere('category.slug = :categorySlug', { categorySlug });
+    }
+
+    if (brand) {
+      query.andWhere('product.brand = :brand', { brand });
+    }
+
     if (minPrice !== undefined) {
       query.andWhere('product.price >= :minPrice', { minPrice });
     }
 
     if (maxPrice !== undefined) {
       query.andWhere('product.price <= :maxPrice', { maxPrice });
+    }
+
+    if (rating !== undefined) {
+      query.andWhere('product.averageRating >= :rating', { rating });
+    }
+
+    if (discount !== undefined) {
+      query.andWhere('product.discountPercentage >= :discount', { discount });
+    }
+
+    if (inStock) {
+      query.andWhere('product.stockQuantity > 0');
     }
 
     if (search) {
@@ -70,18 +102,42 @@ export class CatalogService implements OnModuleInit {
       );
     }
 
+    // Clone query for aggregations before pagination and sorting
+    const aggregationQuery = query.clone();
+
     if (cursor) {
-      // UUIDv7 is time-sorted, so we can use it directly as a cursor for stable pagination
       query.andWhere('product.id < :cursor', { cursor });
     }
 
-    // Sort by ID descending (newest first)
-    query.orderBy('product.id', 'DESC');
+    // Apply Sorting
+    switch (sort) {
+      case 'price_asc':
+        query.orderBy('product.price', 'ASC');
+        break;
+      case 'price_desc':
+        query.orderBy('product.price', 'DESC');
+        break;
+      case 'rating_desc':
+        query.orderBy('product.averageRating', 'DESC');
+        break;
+      case 'newest':
+        query.orderBy('product.createdAt', 'DESC');
+        break;
+      case 'best_selling':
+        query.orderBy('product.reviewCount', 'DESC');
+        break;
+      default:
+        query.orderBy('product.id', 'DESC');
+        break;
+    }
 
-    // Take limit + 1 to determine if there is a next page
     query.take(limit + 1);
 
-    const products = await query.getMany();
+    const [products, aggregations] = await Promise.all([
+      query.getMany(),
+      this.getFilterAggregations(aggregationQuery),
+    ]);
+
     const hasNextPage = products.length > limit;
     const items = hasNextPage ? products.slice(0, limit) : products;
     const nextCursor = hasNextPage ? items[items.length - 1].id : null;
@@ -90,6 +146,34 @@ export class CatalogService implements OnModuleInit {
       items,
       nextCursor,
       hasNextPage,
+      metadata: {
+        aggregations,
+      },
+    };
+  }
+
+  private async getFilterAggregations(baseQuery: any) {
+    // 1. Brand aggregations
+    // We need to use a separate query because baseQuery has joins and where clauses
+    const brandCounts = await baseQuery
+      .select('product.brand', 'brand')
+      .addSelect('COUNT(product.id)', 'count')
+      .groupBy('product.brand')
+      .getRawMany();
+
+    const brands = brandCounts.reduce((acc, curr) => {
+      if (curr.brand) {
+        acc[curr.brand] = parseInt(curr.count, 10);
+      }
+      return acc;
+    }, {});
+
+    // 2. Attribute aggregations
+    // For now, we'll just return brands. Implementing dynamic attributes aggregation
+    // requires more complex query manipulation or a different approach.
+    
+    return {
+      brands,
     };
   }
 

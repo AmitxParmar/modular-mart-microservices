@@ -2,8 +2,11 @@
 
 import { useProducts } from './queries';
 import { ProductGrid } from './product-grid';
+import { useFilterState } from './hooks/use-filter-state';
+import { FilterToolbar } from './components/filter-toolbar';
 
 export function ProductsSection() {
+  const { filters } = useFilterState();
   const { 
     data, 
     isLoading, 
@@ -11,9 +14,10 @@ export function ProductsSection() {
     fetchNextPage, 
     hasNextPage, 
     isFetchingNextPage 
-  } = useProducts({ limit: 8 });
+  } = useProducts({ ...filters, limit: 8 });
 
   const products = data?.pages.flatMap((page) => page.items) ?? [];
+  const totalProducts = data?.pages[0]?.metadata?.total ?? products.length;
 
   if (isLoading) {
     return (
@@ -27,7 +31,7 @@ export function ProductsSection() {
 
   if (isError) {
     return (
-      <p className="text-sm text-destructive">
+      <p className="text-sm text-destructive font-medium bg-destructive/10 p-4 rounded-lg">
         Failed to load products. Make sure the catalog service is running.
       </p>
     );
@@ -35,18 +39,30 @@ export function ProductsSection() {
 
   return (
     <section>
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold tracking-tight">Products</h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          Showing {products.length} products from the catalog.
-        </p>
+      <div className="mb-2 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Products</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            Showing {products.length} of {totalProducts} products.
+          </p>
+        </div>
       </div>
-      <ProductGrid 
-        products={products} 
-        hasNextPage={hasNextPage}
-        isFetchingNextPage={isFetchingNextPage}
-        onLoadMore={() => fetchNextPage()}
-      />
+      
+      <FilterToolbar />
+      
+      {products.length === 0 ? (
+        <div className="text-center py-20 bg-muted/30 rounded-2xl border-2 border-dashed">
+          <p className="text-muted-foreground font-medium">No products found matching your filters.</p>
+          <p className="text-sm text-muted-foreground mt-1">Try adjusting your filters or clearing them.</p>
+        </div>
+      ) : (
+        <ProductGrid 
+          products={products} 
+          hasNextPage={hasNextPage}
+          isFetchingNextPage={isFetchingNextPage}
+          onLoadMore={() => fetchNextPage()}
+        />
+      )}
     </section>
   );
 }

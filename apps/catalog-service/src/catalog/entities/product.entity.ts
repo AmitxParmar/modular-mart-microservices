@@ -1,6 +1,7 @@
-import { Entity, Column, Index, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, Column, Index, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
 import { BaseEntity } from '@repo/database';
 import { Category } from './category.entity';
+import { ProductAttribute } from './product-attribute.entity';
 
 @Entity('products')
 export class Product extends BaseEntity {
@@ -14,6 +15,9 @@ export class Product extends BaseEntity {
   @Index()
   @JoinColumn({ name: 'category_id' })
   category: Category;
+
+  @OneToMany(() => ProductAttribute, (attribute) => attribute.product)
+  attributes: ProductAttribute[];
 
   @Column()
   name: string;
@@ -43,4 +47,19 @@ export class Product extends BaseEntity {
 
   @Column({ name: 'is_active', default: true })
   isActive: boolean;
+
+  @Column({ nullable: true })
+  @Index()
+  brand: string;
+
+  @Column('decimal', { name: 'average_rating', precision: 2, scale: 1, default: 0 })
+  @Index()
+  averageRating: number;
+
+  @Column({ name: 'review_count', type: 'int', default: 0 })
+  reviewCount: number;
+
+  @Column({ name: 'discount_percentage', type: 'int', default: 0 })
+  @Index()
+  discountPercentage: number;
 }

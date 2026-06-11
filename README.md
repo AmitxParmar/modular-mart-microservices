@@ -3,13 +3,14 @@
 ## 🧠 System Overview
 Modular Mart is a cloud-native, microservices-based e-commerce platform designed with a focus on **domain isolation**, **event-driven choreography**, and **deep observability**. It has evolved from a single-vendor store into a full **multi-vendor marketplace**.
 
-- **API Gateway**: The single entry point using NestJS, handling routing, rate limiting, and auth verification.
+- **API Gateway**: The single entry point using **Kong**, handling routing, rate limiting, and auth verification. A NestJS-based gateway exists as a legacy alternative.
 - **User Service**: Manages identity and profiles, synced with **Clerk**.
 - **Catalog Service**: Manages product inventory, categories, and **seller product approvals**.
 - **Order Service**: Core domain managing orders, seller-specific splits, and the **Transactional Outbox-based saga**.
 - **Payment Service**: Handles Stripe payments, webhooks, and asynchronous payment status updates.
 - **Notification Service**: A robust multi-channel notification engine (Email, SMS, Push, In-App) with **real-time SSE updates**.
 - **Web Frontend**: A modern Next.js storefront with dedicated **Customer** and **Seller** dashboards.
+- **Docs**: A Next.js-based documentation site providing developer guides and API references.
 
 ---
 
@@ -20,10 +21,11 @@ The system follows the **Database-per-Service** and **Microservice Chassis** pat
 graph TB
     subgraph Client_Layer [Client Layer]
         Web[Next.js Storefront / Dashboards]
+        Docs[Next.js Docs Site]
     end
 
     subgraph Entry_Layer [Entry Layer]
-        Gateway[API Gateway]
+        Gateway[Kong API Gateway]
         Auth[Clerk Auth]
     end
 
@@ -56,6 +58,7 @@ graph TB
     end
 
     Web --> Gateway
+    Docs --> Gateway
     Gateway --> Auth
     Gateway --> UserSvc
     Gateway --> CatalogSvc
@@ -93,7 +96,7 @@ Checkout is handled through an asynchronous **Choreographed Saga** combined with
 ```mermaid
 sequenceDiagram
     participant U as User
-    participant Gateway as API Gateway
+    participant Gateway as Kong API Gateway
     participant Order as Order Service
     participant Catalog as Catalog Service
     participant Payment as Payment Service
@@ -155,8 +158,10 @@ Managed via **Turborepo**, the codebase is optimized for sharing types and logic
 ```text
 e-commerce-microservices/
 ├── apps/
-│   ├── api-gateway/            # Entry point & Reverse Proxy
+│   ├── api-gateway/            # Legacy NestJS-based gateway
 │   ├── catalog-service/        # Products, Inventory, & Categories
+│   ├── docs/                   # Developer documentation site
+│   ├── kong-gateway/           # Primary API Gateway
 │   ├── order-service/          # Order lifecycle & Saga coordination
 │   ├── payment-service/        # Stripe integration & webhooks
 │   ├── notification-service/   # Multi-channel (SSE, Email, SMS)
@@ -167,6 +172,9 @@ e-commerce-microservices/
 │   ├── common/                 # Chassis (Logging, Tracing, Health, Metrics)
 │   ├── contracts/              # Shared DTOs & Event Patterns (Source of Truth)
 │   ├── database/               # Shared TypeORM config
+│   ├── eslint-config/          # Shared ESLint configuration
+│   ├── shared-types/           # Shared TypeScript types and interfaces
+│   ├── typescript-config/      # Shared tsconfig.json files
 │   └── ui/                     # Design System (Tailwind + Shadcn)
 ```
 
@@ -176,8 +184,8 @@ e-commerce-microservices/
 
 - **Backend**: NestJS, TypeORM, PostgreSQL, RabbitMQ
 - **Frontend**: Next.js 14 (App Router), Tailwind CSS, Shadcn UI
+- **API Gateway**: Kong
 - **Observability**: Loki, Prometheus, Grafana, Jaeger
 - **Identity**: Clerk (Auth-as-a-Service)
 - **Payments**: Stripe (Elements + Webhooks)
 - **Infrastructure**: Docker, Turborepo, Render
-

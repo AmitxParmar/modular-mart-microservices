@@ -7,19 +7,34 @@
 
 // ─── Shared Types ─────────────────────────────────────────────────────────────
 
+export interface FilterAggregation {
+  [key: string]: { [value: string]: number };
+}
+
 export interface PaginatedResponse<T> {
   items: T[];
   nextCursor: string | null;
   hasNextPage: boolean;
+  metadata?: {
+    total?: number;
+    aggregations?: FilterAggregation;
+  };
 }
 
 export interface ProductFilters {
   categoryId?: string;
+  categorySlug?: string;
+  brand?: string;
   minPrice?: number;
   maxPrice?: number;
+  rating?: number;
+  discount?: number;
+  inStock?: boolean;
   search?: string;
+  sort?: string;
   limit?: number;
   cursor?: string;
+  [key: string]: string | number | boolean | undefined;
 }
 
 export type UserRole = 'CUSTOMER' | 'SELLER' | 'ADMIN';
@@ -74,6 +89,10 @@ export interface Product {
   price: number;
   stockQuantity: number;
   category?: Category | null;
+  brand: string | null;
+  averageRating: number;
+  reviewCount: number;
+  discountPercentage: number;
   sellerId: string;
   status: ProductStatus;
   isActive: boolean;
