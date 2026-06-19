@@ -2,10 +2,10 @@
 
 ## ✅ Completed Improvements
 
-### 1. Observability Pillar (LGTM Stack)
-- **Tracing**: Full distributed tracing via Jaeger. Spans propagate through HTTP and RabbitMQ.
-- **Logging**: Standardized JSON logging via `nestjs-pino` with automatic Correlation ID injection.
-- **Metrics**: Real-time throughput and error rate tracking via Prometheus and Grafana.
+### 1. Observability Pillar (LGTM Stack & Kong Gateway)
+- **Tracing**: Full distributed tracing via Jaeger. Spans propagate through HTTP (via Kong Gateway's OpenTelemetry plugin) and RabbitMQ.
+- **Logging**: Standardized JSON logging via `nestjs-pino` with automatic Correlation ID injection. Kong Gateway logs are forwarded to Loki via Promtail.
+- **Metrics**: Real-time throughput and error rate tracking via Prometheus and Grafana. Kong Gateway exposes metrics via its Prometheus plugin.
 
 ### 2. Reliability & Resilience
 - **Transactional Outbox**: Guaranteed event delivery for the Checkout Saga.
@@ -238,10 +238,12 @@ describe("Order validation", () => {
 
 ## Security Improvements
 
+## Security Improvements
+
 ### 1. Authentication & Authorization
 
-**Current State**: Basic JWT validation
-**Improvement**: Enhanced security measures
+**Current State**: Basic JWT validation handled by NestJS guards.
+**Improvement**: Enhanced security measures enforced at the API Gateway level by Kong.
 
 #### Rate Limiting Enhancement
 
@@ -272,8 +274,8 @@ const rateLimit = new RateLimiterMemory({
 
 ### 2. Input Validation
 
-**Current State**: Basic validation
-**Improvement**: Comprehensive validation pipeline
+**Current State**: Basic validation within services.
+**Improvement**: Comprehensive validation pipeline, including schema validation at the API Gateway.
 
 ```typescript
 // Schema validation with Zod
@@ -296,10 +298,10 @@ async createOrder(@Body() orderData: CreateOrderDto) {
 }
 ```
 
-### 3. Security Headers
+### 3. Security Headers & Gateway Enforcement
 
-**Current State**: Basic headers
-**Improvement**: Comprehensive security headers
+**Current State**: Basic headers handled by NestJS.
+**Improvement**: Kong Gateway enforces comprehensive security headers and policies globally.
 
 ```typescript
 // Security middleware
@@ -331,6 +333,13 @@ export class SecurityMiddleware implements NestMiddleware {
   }
 }
 ```
+
+**Kong Gateway Security Features**: 
+- **JWT Verification**: Enforces authentication via Clerk JWTs.
+- **Rate Limiting**: Configured globally and per-route using Redis.
+- **Request Size Limiting**: Enforces a maximum payload size (10MB).
+- **IP Whitelisting/Blacklisting**: Applied for specific routes (e.g., Admin).
+- **Security Headers**: Injected globally via `response-transformer` plugin.
 
 ## Testing Improvements
 

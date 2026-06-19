@@ -30,9 +30,9 @@
 - **Risk**: High-concurrency inventory updates from multiple sellers could lead to database contention.
 - **Mitigation**: **Pessimistic Locking** is implemented in the Catalog Service to ensure atomic stock decrements.
 
-### 3. Third-party Availability
-- **Risk**: Dependence on Clerk (Auth) and Stripe (Payments).
-- **Mitigation**: Implemented robust webhook handlers with idempotency guards and retries.
+### 4. Shared Redis Dependency for Gateway Features
+- **Risk**: Increased reliance on a single shared Redis instance for Kong Gateway's rate limiting and caching introduces a potential single point of failure and noisy neighbor issues if not managed properly.
+- **Mitigation**: Use a managed Redis service with robust availability. Implement careful monitoring of Redis performance and resource utilization. Consider separate Redis instances for caching and rate limiting in production if performance is impacted.
 
 ---
 

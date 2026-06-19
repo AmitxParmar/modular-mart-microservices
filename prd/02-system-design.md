@@ -11,7 +11,7 @@ graph TB
     end
 
     subgraph "Entry Layer"
-        Gateway[API Gateway]
+        KongGateway[Kong Gateway OSS]
         Auth[Clerk Identity Provider]
     end
 
@@ -30,6 +30,7 @@ graph TB
         PaymentDB[(Payment PostgreSQL)]
         NotifDB[(Notification PostgreSQL)]
         EventBus[(RabbitMQ)]
+        Redis[(Shared Redis)]
     end
 
     subgraph "Observability (LGTM)"
@@ -39,11 +40,13 @@ graph TB
         Grafana[Grafana Unified Dashboards]
     end
 
-    Web --> Gateway
-    Gateway --> UserSvc
-    Gateway --> CatalogSvc
-    Gateway --> OrderSvc
-    Gateway --> PaymentSvc
+    Web --> KongGateway
+    KongGateway --> UserSvc
+    KongGateway --> CatalogSvc
+    KongGateway --> OrderSvc
+    KongGateway --> PaymentSvc
+
+    KongGateway -- Rate Limiting & Caching --> Redis
 
     UserSvc --> UserDB
     CatalogSvc --> CatalogDB
@@ -62,10 +65,14 @@ graph TB
 
 ## Services/Modules
 
-### 1. API Gateway (NestJS)
+### 1. API Gateway (Kong Gateway OSS)
 - **Reverse Proxy**: Routes traffic to downstream services based on path prefixes.
-- **Security**: Enforces rate limiting and global authentication guards.
-- **Correlation**: Injects `X-Request-ID` into every request for distributed tracing.
+- **Security**: Enforces JWT verification (Clerk), security headers (CSP, HSTS, X-Frame-Options), CORS, and request size limiting.
+- **Rate Limiting**: Distributed rate limiting per IP and per route using a shared external Redis instance.
+- **Response Caching**: Proxy caching for high-traffic endpoints (e.g., catalog listings) to reduce backend load.
+- **Correlation**: Injects and propagates `X-Request-ID` into every request for distributed tracing.
+- **Health Checks & Failover**: Active health checks on upstreams to automatically remove unhealthy targets from the load balancing pool, preventing cascading failures.
+- **Metrics**: Exposes Prometheus metrics for request latency, throughput, error rates, cache hit ratio, and rate limit rejections.
 
 ### 2. User Service (NestJS + TypeORM)
 - **Profile Management**: Stores user metadata synced from Clerk via webhooks.

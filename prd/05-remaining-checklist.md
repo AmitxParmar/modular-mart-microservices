@@ -28,11 +28,12 @@
 ## 🎯 P0 - Critical Next Steps
 
 #### 1. Redis Catalog Caching
-**Status**: Researching  
-**Learning Focus**: Read-aside and write-through caching patterns.
-- [ ] Implement Redis caching for high-traffic `/catalog/products` endpoints.
-- [ ] Handle cache invalidation on product updates or approval.
-- [ ] Practice "Cache Aside" pattern for search results.
+**Status**: In Progress (Initial Kong Proxy Cache Implemented)
+**Learning Focus**: Distributed caching, cache invalidation, and integrating application-level caching.
+- [x] Configure Kong Gateway's `proxy-cache` for `/catalog/products` endpoints with 5-minute TTL.
+- [ ] Implement application-level Redis caching for complex catalog queries.
+- [ ] Design and implement robust cache invalidation strategies on product updates/approvals.
+- [ ] Practice "Cache Aside" pattern for search results where Kong proxy cache is insufficient.
 
 #### 2. Infrastructure as Code (IaC)
 **Status**: Planning  

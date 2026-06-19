@@ -35,7 +35,7 @@ This project focuses on:
 ### ✅ Completed & Working
 
 - **Core Architecture**: Microservices foundation with Turborepo monorepo.
-- **API Gateway**: Central entry point with rate limiting and reverse proxying.
+- **API Gateway**: Kong Gateway (OSS) for central entry point, Redis-backed rate limiting, and proxy caching.
 - **User Service**: Identity management with Clerk and local profile syncing.
 - **Catalog Service**: Multi-vendor product management with approval workflows.
 - **Order Service**: Transactional outbox-based saga with seller-specific order splits.
@@ -93,7 +93,7 @@ This project focuses on:
 - **Frontend Hosting**: Vercel (learn serverless deployment)
 - **Backend Hosting**: Render (learn service deployment)
 - **CI/CD**: GitHub Actions (learn automation)
-- **Monitoring**: Basic logging and health checks
+- **Monitoring**: Full LGTM stack (Loki, Grafana, Prometheus, Jaeger)
 
 ---
 

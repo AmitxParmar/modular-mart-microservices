@@ -2,6 +2,7 @@
 
 ## API Gateway Endpoints
 **Base URL**: `http://localhost:8000/api` (Local) / `https://api.modularmart.com/api` (Prod)
+*Note: The API Gateway is now implemented using Kong Gateway OSS.*
 
 ### Routing Strategy
 - `/api/users/*` → User Service
@@ -118,6 +119,20 @@ Marks all unread notifications for the user as read.
 
 **Response**: `200 OK` when service is alive
 
+### 4. Kong Gateway Monitoring
+
+**Metrics Endpoint**: `GET /kong-admin/metrics` (Admin API, internal only)
+**Tracing**: Integrated with Jaeger via OpenTelemetry plugin.
+**Logs**: Kong access logs are forwarded to Loki via Promtail.
+
+**Key Metrics Exposed (via Prometheus plugin)**:
+- Request latency (p50, p95, p99)
+- Throughput (requests/second)
+- Error rates (4xx, 5xx)
+- Cache hit ratio
+- Rate limit rejections
+- Upstream health status
+
 ## Error Responses
 
 ### Standard Error Format
@@ -151,12 +166,14 @@ Marks all unread notifications for the user as read.
 - `INTERNAL_ERROR`: Unexpected server error
 
 ## Rate Limiting
+Kong Gateway now handles distributed rate limiting using a shared Redis instance for consistent enforcement across all API Gateway instances.
 
-### Limits by Endpoint
+### Limits by Endpoint (Managed by Kong Gateway)
 
-- **Public APIs**: 100 requests/minute per IP
+- **Public APIs**: 100 requests/minute per IP (global default)
 - **Authenticated APIs**: 1000 requests/minute per user
-- **Checkout APIs**: 10 requests/minute per user
+- **Checkout APIs (Order Service)**: 50 requests/minute per user
+- **Payment Processing APIs (Payment Service)**: 30 requests/minute per user
 - **Admin APIs**: 5000 requests/minute per user
 
 ### Headers
