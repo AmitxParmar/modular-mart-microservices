@@ -1,28 +1,15 @@
-import { Module, Global } from '@nestjs/common';
-import { ClientsModule, Transport } from '@nestjs/microservices';
-import { ConfigService, ConfigModule } from '@nestjs/config';
-import { createRmqOptions } from '@repo/common/messaging';
+import { Module } from '@nestjs/common';
+import { EventBusModule } from '@repo/common/messaging';
 
-@Global()
+/**
+ * MessagingModule for order-service.
+ *
+ * Replaces the RABBITMQ_SERVICE ClientProxy with EventBusModule.
+ * CATALOG_SERVICE, PAYMENT_SERVICE, and AUTH_SERVICE remain as separate RPC
+ * clients (request-response pattern) registered in their own module.
+ */
 @Module({
-  imports: [
-    ClientsModule.registerAsync([
-      {
-        name: 'RABBITMQ_SERVICE',
-        imports: [ConfigModule],
-        inject: [ConfigService],
-        useFactory: (configService: ConfigService) => ({
-          transport: Transport.RMQ,
-          options: createRmqOptions({
-            urls: [configService.get<string>('RABBITMQ_URL') ?? ''],
-            queue: 'catalog_orders_queue',
-            deadLetterExchange: 'dlx_exchange',
-            deadLetterRoutingKey: 'dlq_catalog_orders_queue',
-          }),
-        }),
-      },
-    ]),
-  ],
-  exports: [ClientsModule],
+  imports: [EventBusModule],
+  exports: [EventBusModule],
 })
 export class MessagingModule {}

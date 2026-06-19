@@ -19,63 +19,63 @@ import { NotificationChannel } from './notification-channel.entity';
 export class Notification {
   // Use UUID for primary key to ensure uniqueness across distributed systems
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   // External User ID (likely from Clerk)
   @Column({ name: 'user_id' })
   @Index()
-  userId: string;
+  userId!: string;
 
   // Type of notification (e.g., ORDER_CREATED)
   @Column({
     type: 'enum',
     enum: NotificationType,
   })
-  type: NotificationType;
+  type!: NotificationType;
 
   // Priority level for delivery (CRITICAL, HIGH, BULK)
   @Column({
     type: 'enum',
     enum: NotificationPriority,
   })
-  priority: NotificationPriority;
+  priority!: NotificationPriority;
 
   // Optional subject line for channels like Email
   @Column({ nullable: true })
-  subject: string;
+  subject!: string;
 
   // Main content of the notification (can be string or JSON)
   @Column({ type: 'text', nullable: true })
-  content: string;
+  content!: string;
 
   // Additional structured data related to the notification (e.g., orderId)
   @Column({ type: 'jsonb', nullable: true })
-  metadata: any;
+  metadata!: any;
 
   // Optional time for scheduled delivery
   @Column({ name: 'scheduled_at', type: 'timestamp', nullable: true })
-  scheduledAt: Date;
+  scheduledAt!: Date;
 
   // Tracks if the user has seen the notification in the UI
   @Column({ name: 'is_read', default: false })
   @Index({ where: '"is_read" = false' })
-  isRead: boolean;
+  isRead!: boolean;
 
   // Timestamp of when the notification was marked as read
   @Column({ name: 'read_at', type: 'timestamp', nullable: true })
-  readAt: Date;
+  readAt!: Date;
 
   // Database audit fields
   @CreateDateColumn({ name: 'created_at' })
   @Index()
-  createdAt: Date;
+  createdAt!: Date;
 
   @UpdateDateColumn({ name: 'updated_at' })
-  updatedAt: Date;
+  updatedAt!: Date;
 
   // One notification can be delivered via multiple channels
   @OneToMany(() => NotificationChannel, (channel) => channel.notification, {
     cascade: true,
   })
-  channels: NotificationChannel[];
+  channels!: NotificationChannel[];
 }

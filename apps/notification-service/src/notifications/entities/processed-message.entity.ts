@@ -13,18 +13,18 @@ import {
 @Entity('processed_messages')
 export class ProcessedMessage {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   // Unique ID from the incoming RabbitMQ message
   @Column({ name: 'message_id', unique: true })
   @Index()
-  messageId: string;
+  messageId!: string;
 
   // Type of event that was processed
   @Column({ name: 'event_type' })
-  eventType: string;
+  eventType!: string;
 
   // Audit field for when the message was successfully processed
   @CreateDateColumn({ name: 'processed_at' })
-  processedAt: Date;
+  processedAt!: Date;
 }

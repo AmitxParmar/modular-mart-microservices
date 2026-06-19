@@ -2,13 +2,9 @@ import './tracing';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { Logger } from '@repo/common';
-import {
-  createRmqOptions,
-  startAllMicroservicesWithRetry,
-} from '@repo/common/messaging';
+import { bootstrapMessaging } from '@repo/common/messaging';
 import helmet from 'helmet';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { Transport, MicroserviceOptions } from '@nestjs/microservices';
 import { ConfigService } from '@nestjs/config';
 
 async function bootstrap() {
@@ -17,7 +13,7 @@ async function bootstrap() {
     rawBody: true, // Required: captures raw bytes for Clerk webhook signature verification
   });
 
-  // Use Pino Logger globally
+  // Use custom Logger from common package (mapped to Pino/OpenTelemetry)
   app.useLogger(app.get(Logger));
 
   // Security HTTP Headers
@@ -26,55 +22,29 @@ async function bootstrap() {
   // Global route prefix — gateway forwards /api/* paths as-is
   app.setGlobalPrefix('api', { exclude: ['health/*path', 'metrics'] });
 
-  // Enable CORS
-
+  // Enable CORS — useful for development and cross-origin gateway requests
   app.enableCors({
     origin: '*', // API Gateway will usually call this internally, but useful for dev
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });
 
-  // Trust proxy for correct client IP detection (behind API Gateway)
+  // Trust proxy for correct client IP detection (behind API Gateway or Load Balancer)
   app.set('trust proxy', 1);
 
   const configService = app.get(ConfigService);
   const rabbitmqUrl =
     configService.get<string>('RABBITMQ_URL') || 'amqp://localhost:5672';
 
-  // Configure RabbitMQ Microservice for internal RBAC calls (from order-service, etc.)
-  app.connectMicroservice<MicroserviceOptions>({
-    transport: Transport.RMQ,
-    options: createRmqOptions({
-      urls: [rabbitmqUrl],
-      queue: 'user.auth_queue',
-      deadLetterExchange: 'dlx_exchange',
-      deadLetterRoutingKey: 'dlq_user.auth_queue',
-    }),
+  // Setup Messaging (RabbitMQ) with automatic reconnection
+  await bootstrapMessaging(app, {
+    service: 'user',
+    rabbitmqUrl,
+    logger: app.get(Logger),
   });
 
-  // Dead-letter queue consumer: connected so undeliverable messages are not silently dropped.
-  // Add a dedicated @EventPattern handler for DLQ alerts/alerting here if needed.
-  app.connectMicroservice<MicroserviceOptions>({
-    transport: Transport.RMQ,
-    options: createRmqOptions({
-      urls: [rabbitmqUrl],
-      queue: 'dlq_user.auth_queue',
-    }),
-  });
-
-  // Use configured PORT or fallback from ConfigService
   const port = configService.get<number>('PORT', 3001);
-  const tcpPort = configService.get<number>('TCP_PORT', 3011);
-
   await app.listen(port);
-  void startAllMicroservicesWithRetry(() => app.startAllMicroservices(), {
-    logger: console,
-    serviceName: 'user-service',
-  });
-  const logger = app.get(Logger);
-  logger.log(
-    `User Service listening on HTTP port ${port} and TCP port ${tcpPort}`,
-    'Bootstrap',
-  );
+  app.get(Logger).log(`User Service listening on port ${port}`, 'Bootstrap');
 }
 void bootstrap();

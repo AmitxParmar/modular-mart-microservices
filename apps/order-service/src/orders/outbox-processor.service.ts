@@ -1,19 +1,18 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { OutboxEvent } from './entities/outbox-event.entity';
-import { ClientProxy, RmqRecordBuilder } from '@nestjs/microservices';
-import { PinoLogger } from '@repo/common';
-import { EVENT_PATTERNS } from '@repo/contracts';
+import { RmqRecordBuilder } from '@nestjs/microservices';
+import { PinoLogger, EventBus } from '@repo/common';
+
 
 @Injectable()
 export class OutboxProcessorService {
   constructor(
     @InjectRepository(OutboxEvent)
     private readonly outboxRepo: Repository<OutboxEvent>,
-    @Inject('CATALOG_SERVICE') private readonly catalogClient: ClientProxy,
-    @Inject('PAYMENT_SERVICE') private readonly paymentClient: ClientProxy,
+    private readonly eventBus: EventBus,
     private readonly logger: PinoLogger,
   ) {}
 
@@ -42,15 +41,10 @@ export class OutboxProcessorService {
           })
           .build();
         
-        let client: ClientProxy;
-        if (event.eventType === EVENT_PATTERNS.ORDER_CREATED) {
-          client = this.paymentClient;
-        } else {
-          // Default to catalog service for stock reserve/cancelled/rejected events
-          client = this.catalogClient;
-        }
-
-        client.emit(event.eventType, record);
+        // Route is determined by the event pattern (routing key), not by which client
+        // we use. EventBus publishes to domain.events exchange; the broker routes
+        // based on the pattern to the correct service queue.
+        this.eventBus.emit(event.eventType, record);
         
         // Mark as processed
         event.processed = true;

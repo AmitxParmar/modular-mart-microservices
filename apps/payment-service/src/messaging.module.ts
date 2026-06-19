@@ -1,36 +1,14 @@
-import { Module, Global } from '@nestjs/common';
-import { ClientsModule, Transport } from '@nestjs/microservices';
-import { ConfigService, ConfigModule } from '@nestjs/config';
-import { createRmqOptions } from '@repo/common/messaging';
+import { Module } from '@nestjs/common';
+import { EventBusModule } from '@repo/common/messaging';
 
 /**
- * Global RabbitMQ publisher client.
- * payment-service PUBLISHES to the exchange:
- *   - payment.succeeded
- *   - payment.failed
+ * MessagingModule for payment-service.
  *
- * It LISTENS on its own queue: payments_queue
+ * payment-service PUBLISHES: payment.succeeded.v1 / payment.failed.v1
+ * payment-service CONSUMES:  payment.events (connected in main.ts via bootstrapMessaging)
  */
-@Global()
 @Module({
-  imports: [
-    ClientsModule.registerAsync([
-      {
-        name: 'RABBITMQ_SERVICE',
-        imports: [ConfigModule],
-        inject: [ConfigService],
-        useFactory: (configService: ConfigService) => ({
-          transport: Transport.RMQ,
-          options: createRmqOptions({
-            urls: [configService.get<string>('RABBITMQ_URL') ?? ''],
-            queue: 'catalog_orders_queue',
-            deadLetterExchange: 'dlx_exchange',
-            deadLetterRoutingKey: 'dlq_catalog_orders_queue',
-          }),
-        }),
-      },
-    ]),
-  ],
-  exports: [ClientsModule],
+  imports: [EventBusModule],
+  exports: [EventBusModule],
 })
 export class MessagingModule {}

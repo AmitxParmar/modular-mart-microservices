@@ -17,38 +17,38 @@ import { NotificationChannelType } from '../enums/notification-channel.enum';
 @Unique(['type', 'channel'])
 export class NotificationTemplate {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   // The event type this template is for
   @Column({
     type: 'enum',
     enum: NotificationType,
   })
-  type: NotificationType;
+  type!: NotificationType;
 
   // The delivery channel this template is optimized for
   @Column({
     type: 'enum',
     enum: NotificationChannelType,
   })
-  channel: NotificationChannelType;
+  channel!: NotificationChannelType;
 
   // Optional subject line template (supports {{placeholders}})
   @Column({ nullable: true })
-  subject: string;
+  subject!: string;
 
   // Main body template (supports {{placeholders}})
   @Column({ type: 'text' })
-  body: string;
+  body!: string;
 
   // Allows deactivating templates without deleting them
   @Column({ name: 'is_active', default: true })
-  isActive: boolean;
+  isActive!: boolean;
 
   // Database audit fields
   @CreateDateColumn({ name: 'created_at' })
-  createdAt: Date;
+  createdAt!: Date;
 
   @UpdateDateColumn({ name: 'updated_at' })
-  updatedAt: Date;
+  updatedAt!: Date;
 }

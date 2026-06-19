@@ -12,7 +12,6 @@ export const envSchema = z.object({
     (val) => (val === '' ? undefined : val),
     z.url().default('amqp://localhost:5672'),
   ),
-  RABBITMQ_EXCHANGE: z.string().default('mart.events'),
 
   // Email (Nodemailer)
   SMTP_HOST: z.string().optional(),

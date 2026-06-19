@@ -1,7 +1,7 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { ClientProxy } from '@nestjs/microservices';
+import { EventBus } from '@repo/common';
 import { EVENT_PATTERNS, PaymentSucceededEvent, PaymentFailedEvent } from '@repo/contracts';
 import { Payment, PaymentStatus } from '../entities/payment.entity';
 import { PinoLogger } from '@repo/common';
@@ -22,7 +22,7 @@ export class StripeWebhookService {
     private readonly logger: PinoLogger,
     @InjectRepository(Payment)
     private readonly paymentRepo: Repository<Payment>,
-    @Inject('RABBITMQ_SERVICE') private readonly rabbitClient: ClientProxy,
+    private readonly eventBus: EventBus,
   ) {}
 
   /**
@@ -72,7 +72,7 @@ export class StripeWebhookService {
       paidAt: new Date().toISOString(),
     };
 
-    this.rabbitClient.emit(EVENT_PATTERNS.PAYMENT_SUCCEEDED, eventPayload);
+    this.eventBus.emit(EVENT_PATTERNS.PAYMENT_SUCCEEDED, eventPayload);
   }
 
   /**
@@ -118,6 +118,6 @@ export class StripeWebhookService {
       failedAt: new Date().toISOString(),
     };
 
-    this.rabbitClient.emit(EVENT_PATTERNS.PAYMENT_FAILED, failurePayload);
+    this.eventBus.emit(EVENT_PATTERNS.PAYMENT_FAILED, failurePayload);
   }
 }

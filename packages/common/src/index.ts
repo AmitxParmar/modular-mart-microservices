@@ -25,4 +25,7 @@ export { MetricsModule } from "./metrics/metrics.module";
 export { SentryModule } from "./sentry/sentry.module";
 
 // Tracing
-export { startTracing } from "./tracing";
+export { startTracing } from './tracing';
+
+// Messaging
+export { EventBus, EventBusModule } from './messaging/event-bus';

@@ -4,8 +4,8 @@ import { Repository, In } from 'typeorm';
 import { Product } from './entities/product.entity';
 import { Category } from './entities/category.entity';
 import { ProcessedMessage } from './entities/processed-message.entity';
-import { ClientProxy, RmqRecordBuilder } from '@nestjs/microservices';
-import { PinoLogger } from '@repo/common';
+import { RmqRecordBuilder } from '@nestjs/microservices';
+import { PinoLogger, EventBus } from '@repo/common';
 import { EVENT_PATTERNS } from '@repo/contracts';
 import { randomUUID } from 'node:crypto';
 
@@ -19,8 +19,7 @@ export class CatalogService implements OnModuleInit {
     @InjectRepository(ProcessedMessage)
     private readonly processedRepo: Repository<ProcessedMessage>,
     private readonly logger: PinoLogger,
-    @Inject('RABBITMQ_SERVICE')
-    private readonly rabbitClient: ClientProxy,
+    private readonly eventBus: EventBus,
   ) {}
 
   onModuleInit() {
@@ -161,12 +160,15 @@ export class CatalogService implements OnModuleInit {
       .groupBy('product.brand')
       .getRawMany();
 
-    const brands = brandCounts.reduce((acc, curr) => {
-      if (curr.brand) {
-        acc[curr.brand] = parseInt(curr.count, 10);
-      }
-      return acc;
-    }, {});
+    const brands = brandCounts.reduce(
+      (acc: Record<string, number>, curr: { brand: string; count: string }) => {
+        if (curr.brand) {
+          acc[curr.brand] = parseInt(curr.count, 10);
+        }
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
 
     // 2. Attribute aggregations
     // For now, we'll just return brands. Implementing dynamic attributes aggregation
@@ -353,7 +355,7 @@ export class CatalogService implements OnModuleInit {
           messageId: randomUUID(),
         })
         .build();
-      this.rabbitClient.emit(EVENT_PATTERNS.STOCK_RELEASED, record);
+      this.eventBus.emit(EVENT_PATTERNS.STOCK_RELEASED, record);
       this.logger.info(`Emitted STOCK_RELEASED event for Order ${orderId}.`);
     }
     return result;
@@ -416,7 +418,7 @@ export class CatalogService implements OnModuleInit {
           messageId: randomUUID(),
         })
         .build();
-      this.rabbitClient.emit(EVENT_PATTERNS.STOCK_RESERVED, record);
+      this.eventBus.emit(EVENT_PATTERNS.STOCK_RESERVED, record);
     } else {
       this.logger.warn(`Failed to reserve stock for Order ${orderId}: ${result.error}. Emitting stock.reserve.failed.`);
       const payload = {
@@ -429,7 +431,7 @@ export class CatalogService implements OnModuleInit {
           messageId: randomUUID(),
         })
         .build();
-      this.rabbitClient.emit(EVENT_PATTERNS.STOCK_RESERVE_FAILED, record);
+      this.eventBus.emit(EVENT_PATTERNS.STOCK_RESERVE_FAILED, record);
     }
   }
 

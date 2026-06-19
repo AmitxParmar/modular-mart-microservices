@@ -14,31 +14,31 @@ import {
 @Entity('notification_preferences')
 export class NotificationPreference {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   // External User ID (Clerk)
   @Column({ name: 'user_id', unique: true })
   @Index()
-  userId: string;
+  userId!: string;
 
   // Channel toggle settings
   @Column({ name: 'email_enabled', default: true })
-  emailEnabled: boolean;
+  emailEnabled!: boolean;
 
   @Column({ name: 'sms_enabled', default: false })
-  smsEnabled: boolean;
+  smsEnabled!: boolean;
 
   @Column({ name: 'push_enabled', default: true })
-  pushEnabled: boolean;
+  pushEnabled!: boolean;
 
   // Toggle for promotional/marketing notifications
   @Column({ name: 'marketing_enabled', default: false })
-  marketingEnabled: boolean;
+  marketingEnabled!: boolean;
 
   // Database audit fields
   @CreateDateColumn({ name: 'created_at' })
-  createdAt: Date;
+  createdAt!: Date;
 
   @UpdateDateColumn({ name: 'updated_at' })
-  updatedAt: Date;
+  updatedAt!: Date;
 }

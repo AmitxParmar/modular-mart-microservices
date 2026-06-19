@@ -8,29 +8,40 @@
  * services will get a compile-time error if they're out of sync.
  */
 
-// ─── Routing keys (use these constants for RabbitMQ routing) ─────────────────
+/**
+ * Event versioning convention:
+ *   - All patterns carry a `.v1` suffix.
+ *   - When a breaking schema change is needed, add `.v2` patterns and deploy
+ *     consumers BEFORE updating publishers (blue-green consumer upgrade).
+ */
 export const EVENT_PATTERNS = {
-  USER_CREATED: 'user.created',
-  USER_UPDATED: 'user.updated',
-  USER_DELETED: 'user.deleted',
-  GET_USER_ROLE: 'user.get_role',
-  GET_USER_ID: 'user.get_id',
-  ORDER_CREATED: 'order.created',
-  ORDER_APPROVED: 'order.approved',
-  ORDER_REJECTED: 'order.rejected',
-  ORDER_STATUS_UPDATED: 'order.status_updated',
-  ORDER_DELIVERED: 'order.delivered',
-  ORDER_CANCELLED: 'order.cancelled',
-  STOCK_RESERVED: 'stock.reserved',
-  STOCK_RELEASED: 'stock.released',
-  STOCK_RESERVE_REQUESTED: 'stock.reserve.requested',
-  STOCK_RESERVE_FAILED: 'stock.reserve.failed',
-  ORDER_PAID: 'order.paid',
-  PAYMENT_SUCCEEDED: 'payment.succeeded',
-  PAYMENT_FAILED: 'payment.failed',
+  USER_CREATED: 'user.created.v1',
+  USER_UPDATED: 'user.updated.v1',
+  USER_DELETED: 'user.deleted.v1',
+  GET_USER_ROLE: 'user.get_role.v1',
+  GET_USER_ID: 'user.get_id.v1',
+  ORDER_CREATED: 'order.created.v1',
+  ORDER_APPROVED: 'order.approved.v1',
+  ORDER_REJECTED: 'order.rejected.v1',
+  ORDER_STATUS_UPDATED: 'order.status_updated.v1',
+  ORDER_DELIVERED: 'order.delivered.v1',
+  ORDER_CANCELLED: 'order.cancelled.v1',
+  STOCK_RESERVED: 'stock.reserved.v1',
+  STOCK_RELEASED: 'stock.released.v1',
+  STOCK_RESERVE_REQUESTED: 'stock.reserve.requested.v1',
+  STOCK_RESERVE_FAILED: 'stock.reserve.failed.v1',
+  ORDER_PAID: 'order.paid.v1',
+  PAYMENT_SUCCEEDED: 'payment.succeeded.v1',
+  PAYMENT_FAILED: 'payment.failed.v1',
 } as const;
 
 export type EventPattern = (typeof EVENT_PATTERNS)[keyof typeof EVENT_PATTERNS];
+
+/**
+ * Notification priority field — replaces the old 3-queue priority system.
+ * Producers attach this to any event; notification-service handles dispatch internally.
+ */
+export type NotificationPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 
 export enum OrderStatus {
   PENDING = 'PENDING',
@@ -102,6 +113,8 @@ export interface OrderCreatedEvent {
   totalAmount: number;
   currency: string;
   createdAt: string;
+  /** Optional priority hint for the notification-service internal dispatcher. */
+  priority?: NotificationPriority;
 }
 
 export interface OrderStatusUpdatedEvent {
@@ -164,6 +177,7 @@ export interface PaymentSucceededEvent {
   amount: number;
   currency: string;
   paidAt: string;
+  priority?: NotificationPriority;
 }
 
 export interface PaymentFailedEvent {
@@ -171,4 +185,5 @@ export interface PaymentFailedEvent {
   userId: string;
   reason: string;
   failedAt: string;
+  priority?: NotificationPriority;
 }

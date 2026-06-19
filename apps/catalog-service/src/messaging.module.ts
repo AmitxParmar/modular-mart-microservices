@@ -1,42 +1,19 @@
-import { Module, Global } from '@nestjs/common';
-import { ClientsModule, Transport } from '@nestjs/microservices';
-import { ConfigService, ConfigModule } from '@nestjs/config';
-import { createRmqOptions } from '@repo/common/messaging';
+import { Module } from '@nestjs/common';
+import { EventBusModule } from '@repo/common/messaging';
 
-@Global()
+/**
+ * MessagingModule for catalog-service.
+ *
+ * Previously registered two separate ClientProxy tokens (ORDER_SERVICE and
+ * RABBITMQ_SERVICE) both pointing to the same queue — two TCP connections for
+ * the same job.  EventBusModule provides a single 'RMQ_EVENT_BUS' connection
+ * for all fire-and-forget event publishing.
+ *
+ * Note: ORDER_SERVICE and AUTH_SERVICE are RPC clients (request-response) and
+ * are registered separately in catalog.module.ts — they are NOT replaced here.
+ */
 @Module({
-  imports: [
-    ClientsModule.registerAsync([
-      {
-        name: 'ORDER_SERVICE',
-        imports: [ConfigModule],
-        inject: [ConfigService],
-        useFactory: (configService: ConfigService) => ({
-          transport: Transport.RMQ,
-          options: createRmqOptions({
-            urls: [configService.get<string>('RABBITMQ_URL') ?? ''],
-            queue: 'catalog_orders_queue',
-            deadLetterExchange: 'dlx_exchange',
-            deadLetterRoutingKey: 'dlq_catalog_orders_queue',
-          }),
-        }),
-      },
-      {
-        name: 'RABBITMQ_SERVICE',
-        imports: [ConfigModule],
-        inject: [ConfigService],
-        useFactory: (configService: ConfigService) => ({
-          transport: Transport.RMQ,
-          options: createRmqOptions({
-            urls: [configService.get<string>('RABBITMQ_URL') ?? ''],
-            queue: 'catalog_orders_queue',
-            deadLetterExchange: 'dlx_exchange',
-            deadLetterRoutingKey: 'dlq_catalog_orders_queue',
-          }),
-        }),
-      },
-    ]),
-  ],
-  exports: [ClientsModule],
+  imports: [EventBusModule],
+  exports: [EventBusModule],
 })
 export class MessagingModule {}
