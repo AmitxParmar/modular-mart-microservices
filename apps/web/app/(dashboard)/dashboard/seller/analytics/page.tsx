@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 import { useSellerStats } from "@/features/seller/queries";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -17,6 +19,11 @@ import { DollarSign, TrendingUp, ShoppingBag, CheckCircle2 } from "lucide-react"
 
 export default function SellerAnalyticsPage() {
   const { data: stats, isLoading } = useSellerStats();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const chartData = stats ? [
     { name: "Pending", value: stats.orderStatusBreakdown.pending, color: "#f59e0b" },
@@ -78,7 +85,7 @@ export default function SellerAnalyticsPage() {
         </CardHeader>
         <CardContent>
           <div className="h-[350px] w-full">
-            {isLoading ? (
+            {isLoading || !mounted ? (
               <Skeleton className="h-full w-full" />
             ) : (
               <ResponsiveContainer width="100%" height="100%">

@@ -19,7 +19,7 @@ export function MobileFilters() {
   return (
     <div className="lg:hidden shrink-0">
       <Sheet>
-        <SheetTrigger asChild>
+        <SheetTrigger>
           <Button variant="outline" size="sm" className="relative h-9 gap-2">
             <SlidersHorizontal className="size-4" />
             Filters
