@@ -8,7 +8,7 @@ import {
   Patch,
 } from '@nestjs/common';
 import { Payload, Ctx, RmqContext, MessagePattern } from '@nestjs/microservices';
-import { PinoLogger } from '@repo/common';
+import { PinoLogger, BusinessMetricsService } from '@repo/common';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import {
@@ -18,7 +18,7 @@ import {
   RolesGuard,
   type ClerkUser,
 } from '@repo/auth';
-import { EVENT_PATTERNS, OrderStatus } from '@repo/contracts';
+import { EVENT_PATTERNS, EventSchemas, OrderStatus } from '@repo/contracts';
 import type { PaymentSucceededEvent } from '@repo/contracts';
 import { RabbitMQMessageHandler } from '../common/rabbitmq-message-handler.decorator';
 
@@ -27,27 +27,45 @@ export class OrdersController {
   constructor(
     private readonly logger: PinoLogger,
     private readonly ordersService: OrdersService,
+    private readonly metrics: BusinessMetricsService,
   ) {}
 
   @RabbitMQMessageHandler(EVENT_PATTERNS.PAYMENT_SUCCEEDED)
   async handlePaymentSucceeded(@Payload() data: PaymentSucceededEvent) {
-    this.logger.info(
-      `Received PAYMENT_SUCCEEDED RMQ event for Order ${data.orderId}`,
-    );
-    await this.ordersService.markOrderAsPaid(data.orderId, data.paymentId);
+    // Validate schema before processing — prevents broken saga state from malformed payloads
+    const parsed = EventSchemas.PaymentSucceeded.safeParse(data);
+    if (!parsed.success) {
+      this.logger.error(
+        `[Schema] Invalid ${EVENT_PATTERNS.PAYMENT_SUCCEEDED} payload: ${parsed.error.message}`,
+      );
+      this.metrics.dlqMessagesTotal.inc({ service: 'order-service', pattern: EVENT_PATTERNS.PAYMENT_SUCCEEDED });
+      return; // ack: don't reprocess permanently-invalid messages
+    }
+
+    this.logger.info(`Received PAYMENT_SUCCEEDED RMQ event for Order ${parsed.data.orderId}`);
+    await this.ordersService.markOrderAsPaid(parsed.data.orderId, parsed.data.paymentId);
+    this.metrics.paymentSuccessTotal.inc({ currency: parsed.data.currency ?? 'INR' });
   }
 
   @RabbitMQMessageHandler(EVENT_PATTERNS.STOCK_RESERVED)
   async handleStockReserved(
-    @Payload() data: { orderId: string; items: { productId: string; quantity: number }[] },
+    @Payload() data: { orderId: string; items: { productId: string; quantity: number }[]; reservedAt: string },
     @Ctx() context: RmqContext,
   ) {
+    const parsed = EventSchemas.StockReserved.safeParse(data);
+    if (!parsed.success) {
+      this.logger.error(
+        `[Schema] Invalid ${EVENT_PATTERNS.STOCK_RESERVED} payload: ${parsed.error.message}`,
+      );
+      return;
+    }
+
     const message = context.getMessage();
-    const messageId = message?.properties?.messageId || `${data.orderId}:reserved`;
+    const messageId = message?.properties?.messageId || `${parsed.data.orderId}:reserved`;
     this.logger.info(
-      `Received STOCK_RESERVED RMQ event for Order ${data.orderId} (messageId: ${messageId})`,
+      `Received STOCK_RESERVED RMQ event for Order ${parsed.data.orderId} (messageId: ${messageId})`,
     );
-    await this.ordersService.handleStockReserved(data.orderId, data.items, messageId);
+    await this.ordersService.handleStockReserved(parsed.data.orderId, parsed.data.items, messageId);
   }
 
   @RabbitMQMessageHandler(EVENT_PATTERNS.STOCK_RESERVE_FAILED)
@@ -55,12 +73,22 @@ export class OrdersController {
     @Payload() data: { orderId: string; reason: string },
     @Ctx() context: RmqContext,
   ) {
+    const parsed = EventSchemas.StockReserveFailed.safeParse(data);
+    if (!parsed.success) {
+      this.logger.error(
+        `[Schema] Invalid ${EVENT_PATTERNS.STOCK_RESERVE_FAILED} payload: ${parsed.error.message}`,
+      );
+      return;
+    }
+
     const message = context.getMessage();
-    const messageId = message?.properties?.messageId || `${data.orderId}:reserve-failed`;
+    const messageId = message?.properties?.messageId || `${parsed.data.orderId}:reserve-failed`;
     this.logger.info(
-      `Received STOCK_RESERVE_FAILED RMQ event for Order ${data.orderId} (messageId: ${messageId})`,
+      `Received STOCK_RESERVE_FAILED RMQ event for Order ${parsed.data.orderId} (messageId: ${messageId})`,
     );
-    await this.ordersService.handleStockReserveFailed(data.orderId, data.reason, messageId);
+    await this.ordersService.handleStockReserveFailed(parsed.data.orderId, parsed.data.reason, messageId);
+    this.metrics.stockReservationFailuresTotal.inc({ reason: parsed.data.reason?.slice(0, 50) ?? 'unknown' });
+    this.metrics.sagaCompensationsTotal.inc({ trigger: 'stock_failed' });
   }
 
   @RabbitMQMessageHandler(EVENT_PATTERNS.PAYMENT_FAILED)
@@ -68,12 +96,22 @@ export class OrdersController {
     @Payload() data: { orderId: string; reason: string },
     @Ctx() context: RmqContext,
   ) {
+    const parsed = EventSchemas.PaymentFailed.safeParse(data);
+    if (!parsed.success) {
+      this.logger.error(
+        `[Schema] Invalid ${EVENT_PATTERNS.PAYMENT_FAILED} payload: ${parsed.error.message}`,
+      );
+      return;
+    }
+
     const message = context.getMessage();
-    const messageId = message?.properties?.messageId || `${data.orderId}:payment-failed`;
+    const messageId = message?.properties?.messageId || `${parsed.data.orderId}:payment-failed`;
     this.logger.info(
-      `Received PAYMENT_FAILED RMQ event for Order ${data.orderId} (messageId: ${messageId})`,
+      `Received PAYMENT_FAILED RMQ event for Order ${parsed.data.orderId} (messageId: ${messageId})`,
     );
-    await this.ordersService.handlePaymentFailed(data.orderId, data.reason, messageId);
+    await this.ordersService.handlePaymentFailed(parsed.data.orderId, parsed.data.reason, messageId);
+    this.metrics.paymentFailureTotal.inc({ reason: parsed.data.reason?.slice(0, 50) ?? 'unknown' });
+    this.metrics.sagaCompensationsTotal.inc({ trigger: 'payment_failed' });
   }
 
   @MessagePattern('orders.count')

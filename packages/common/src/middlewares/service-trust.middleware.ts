@@ -19,13 +19,12 @@ export class ServiceTrustMiddleware implements NestMiddleware {
   constructor(private readonly configService: ConfigService) {}
 
   use(req: Request, res: Response, next: NextFunction): void {
-    // Allow health and metrics routes to bypass the secret check
+    // Allow health check routes to bypass the secret check.
+    // /metrics is protected at the controller level via InternalOnlyGuard.
     const path = req.originalUrl || req.url;
     if (
       path.startsWith('/health/') ||
-      path.startsWith('/api/health/') ||
-      path === '/metrics' ||
-      path === '/api/metrics'
+      path.startsWith('/api/health/')
     ) {
       return next();
     }

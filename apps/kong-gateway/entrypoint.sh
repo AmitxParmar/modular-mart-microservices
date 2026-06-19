@@ -20,7 +20,8 @@ for var in USER_SERVICE_HOST CATALOG_SERVICE_HOST ORDER_SERVICE_HOST \
            PAYMENT_SERVICE_HOST NOTIFICATION_SERVICE_HOST \
            USER_SERVICE_PORT CATALOG_SERVICE_PORT ORDER_SERVICE_PORT \
            PAYMENT_SERVICE_PORT NOTIFICATION_SERVICE_PORT \
-           UPSTREAM_PROTOCOL GATEWAY_INTERNAL_SECRET; do
+           UPSTREAM_PROTOCOL GATEWAY_INTERNAL_SECRET \
+           CLERK_ISSUER_URL CLERK_JWT_PUBLIC_KEY; do
   eval val=\$$var
   if [ -z "$val" ]; then
     MISSING_VARS="$MISSING_VARS $var"
@@ -50,7 +51,8 @@ fi
 
 # ── Export cleaned values so envsubst can see them ────────────────────────────
 export USER_SERVICE_HOST CATALOG_SERVICE_HOST ORDER_SERVICE_HOST \
-       PAYMENT_SERVICE_HOST NOTIFICATION_SERVICE_HOST FRONTEND_URL
+       PAYMENT_SERVICE_HOST NOTIFICATION_SERVICE_HOST FRONTEND_URL \
+       CLERK_ISSUER_URL CLERK_JWT_PUBLIC_KEY
 
 # ── Debug: print resolved targets (mask secret) ───────────────────────────────
 echo "[entrypoint] Resolved service targets:"
@@ -73,7 +75,9 @@ envsubst \
    ${NOTIFICATION_SERVICE_HOST} ${NOTIFICATION_SERVICE_PORT}
    ${UPSTREAM_PROTOCOL}
    ${GATEWAY_INTERNAL_SECRET}
-   ${FRONTEND_URL}' \
+   ${FRONTEND_URL}
+   ${CLERK_ISSUER_URL}
+   ${CLERK_JWT_PUBLIC_KEY}' \
   < /etc/kong/kong.yml.template \
   > /etc/kong/kong.yml
 
@@ -82,7 +86,7 @@ echo "[entrypoint] kong.yml rendered successfully."
 # ── Verify critical vars were actually substituted ──────────────────────────
 # Note: REDIS_PASSWORD is intentionally excluded — it may be empty on Redis
 # instances without auth, which is valid (substitution still occurs, to empty string).
-for check_var in GATEWAY_INTERNAL_SECRET; do
+for check_var in GATEWAY_INTERNAL_SECRET CLERK_ISSUER_URL CLERK_JWT_PUBLIC_KEY; do
   if grep -q "\${${check_var}}" /etc/kong/kong.yml; then
     echo "[entrypoint] ERROR: ${check_var} was not substituted in kong.yml!"
     echo "[entrypoint] Check that the variable is exported and visible to envsubst."

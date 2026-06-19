@@ -1,12 +1,15 @@
 /**
  * @repo/contracts — Shared event payload types for RabbitMQ messaging.
  *
- * RULE: This package must contain NO runtime code.
- * Only TypeScript interfaces, types, and enums.
- *
- * When you change a type here, both the publisher and subscriber
- * services will get a compile-time error if they're out of sync.
+ * RULE: This package contains TypeScript interfaces, types, enums, AND
+ * Zod runtime schemas for payload validation. The schemas live in schemas.ts.
+ * When you change a type here, both the publisher and subscriber services
+ * will get a compile-time error if they're out of sync.
  */
+
+// Zod runtime schemas — use in every event consumer to validate payloads
+export { EventSchemas } from './schemas';
+export type { EventSchemaKeys } from './schemas';
 
 /**
  * Event versioning convention:

@@ -41,6 +41,22 @@ upstreams:
   - target: ${NOTIFICATION_SERVICE_HOST}:${NOTIFICATION_SERVICE_PORT}
 
 # ─────────────────────────────────────
+# CONSUMERS
+#
+# Kong JWT plugin requires a consumer to attach credentials to.
+# All Clerk-authenticated users share this single consumer — the actual
+# user identity is carried by X-Credential-Identifier (the JWT `sub` claim).
+# ─────────────────────────────────────
+consumers:
+- username: clerk-users
+  jwt_secrets:
+  - algorithm: RS256
+    # The `key` must match the `iss` claim in the Clerk JWT.
+    # Clerk sets iss = your Clerk Frontend API URL (e.g. https://fun-hippo-3.clerk.accounts.dev)
+    key: ${CLERK_ISSUER_URL}
+    rsa_public_key: "${CLERK_JWT_PUBLIC_KEY}"
+
+# ─────────────────────────────────────
 # SERVICES & ROUTES
 # ─────────────────────────────────────
 services:
@@ -57,6 +73,13 @@ services:
       status_code: 200
       message: "Kong Gateway is healthy"
 
+# ─────────────────────────────────────
+# USER SERVICE
+#
+# Split into two routes:
+#   1. clerk-webhook-route  — public, no JWT (Clerk uses HMAC svix, not Bearer)
+#   2. user-routes          — protected by Clerk JWT
+# ─────────────────────────────────────
 - name: user-service
   host: user-service-upstream
   protocol: ${UPSTREAM_PROTOCOL}
@@ -64,10 +87,33 @@ services:
   read_timeout: 60000
   write_timeout: 60000
   routes:
+  # ── Public: Clerk webhook (has its own HMAC verification in the service) ──
+  - name: clerk-webhook-route
+    paths:
+    - /api/users/webhooks
+    strip_path: false
+    # No jwt plugin on this route — Clerk verifies svix HMAC inside user-service
+
+  # ── Protected: all other /api/users/* endpoints ──
   - name: user-routes
     paths:
     - /api/users
     strip_path: false
+    plugins:
+    - name: jwt
+      config:
+        # Look for the token in the Authorization header only.
+        # Avoids cookie or query-param token leakage.
+        header_names:
+        - Authorization
+        # Validate the `iss` claim against the consumer key.
+        claims_to_verify:
+        - exp
+        # Forward the Clerk user ID (sub claim) to downstream services
+        # as X-Credential-Identifier. Services can read this without
+        # re-verifying the full JWT.
+        key_claim_name: iss
+
   plugins:
   # ── Rate limiting: local policy — accurate with a single Nginx worker.
   #    Redis policy requires Render private networking (paid plan) to resolve
@@ -85,6 +131,13 @@ services:
         headers:
         - "X-Gateway-Secret:${GATEWAY_INTERNAL_SECRET}"
 
+# ─────────────────────────────────────
+# CATALOG SERVICE — PUBLIC
+#
+# Product browsing is unauthenticated. No JWT plugin.
+# Cart endpoints (/api/catalog/cart) that require auth are enforced
+# inside the catalog-service itself using the forwarded X-Clerk-User-Id header.
+# ─────────────────────────────────────
 - name: catalog-service
   host: catalog-service-upstream
   protocol: ${UPSTREAM_PROTOCOL}
@@ -110,6 +163,9 @@ services:
         headers:
         - "X-Gateway-Secret:${GATEWAY_INTERNAL_SECRET}"
 
+# ─────────────────────────────────────
+# ORDER SERVICE — PROTECTED
+# ─────────────────────────────────────
 - name: order-service
   host: order-service-upstream
   protocol: ${UPSTREAM_PROTOCOL}
@@ -121,6 +177,14 @@ services:
     paths:
     - /api/orders
     strip_path: false
+    plugins:
+    - name: jwt
+      config:
+        header_names:
+        - Authorization
+        claims_to_verify:
+        - exp
+        key_claim_name: iss
   plugins:
   - name: rate-limiting
     config:
@@ -135,6 +199,9 @@ services:
         headers:
         - "X-Gateway-Secret:${GATEWAY_INTERNAL_SECRET}"
 
+# ─────────────────────────────────────
+# PAYMENT SERVICE — PROTECTED
+# ─────────────────────────────────────
 - name: payment-service
   host: payment-service-upstream
   protocol: ${UPSTREAM_PROTOCOL}
@@ -146,6 +213,14 @@ services:
     paths:
     - /api/payments
     strip_path: false
+    plugins:
+    - name: jwt
+      config:
+        header_names:
+        - Authorization
+        claims_to_verify:
+        - exp
+        key_claim_name: iss
   plugins:
   - name: rate-limiting
     config:
@@ -160,6 +235,9 @@ services:
         headers:
         - "X-Gateway-Secret:${GATEWAY_INTERNAL_SECRET}"
 
+# ─────────────────────────────────────
+# NOTIFICATION SERVICE — PROTECTED
+# ─────────────────────────────────────
 - name: notification-service
   host: notification-service-upstream
   protocol: ${UPSTREAM_PROTOCOL}
@@ -171,6 +249,14 @@ services:
     paths:
     - /api/notifications
     strip_path: false
+    plugins:
+    - name: jwt
+      config:
+        header_names:
+        - Authorization
+        claims_to_verify:
+        - exp
+        key_claim_name: iss
   plugins:
   - name: rate-limiting
     config:
